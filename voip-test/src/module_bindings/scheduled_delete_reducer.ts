@@ -30,34 +30,34 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type VoiceData = {
-  id: number,
-  data: number[],
+
+import { VoiceDataDeleteSchedule as __VoiceDataDeleteSchedule } from "./voice_data_delete_schedule_type";
+
+export type ScheduledDelete = {
+  arg: __VoiceDataDeleteSchedule,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace VoiceData {
+export namespace ScheduledDelete {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU32Type()),
-      new ProductTypeElement("data", AlgebraicType.createArrayType(AlgebraicType.createF32Type())),
+      new ProductTypeElement("arg", __VoiceDataDeleteSchedule.getTypeScriptAlgebraicType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: VoiceData): void {
-    VoiceData.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ScheduledDelete): void {
+    ScheduledDelete.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): VoiceData {
-    return VoiceData.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ScheduledDelete {
+    return ScheduledDelete.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

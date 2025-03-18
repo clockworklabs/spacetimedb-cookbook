@@ -34,14 +34,20 @@ import {
 // Import and reexport all reducer arg types
 import { AddVoiceData } from "./add_voice_data_reducer.ts";
 export { AddVoiceData };
+import { ScheduledDelete } from "./scheduled_delete_reducer.ts";
+export { ScheduledDelete };
 
 // Import and reexport all table handle types
 import { VoiceDataTableHandle } from "./voice_data_table.ts";
 export { VoiceDataTableHandle };
+import { VoiceDataDeleteScheduleTableHandle } from "./voice_data_delete_schedule_table.ts";
+export { VoiceDataDeleteScheduleTableHandle };
 
 // Import and reexport all types
 import { VoiceData } from "./voice_data_type.ts";
 export { VoiceData };
+import { VoiceDataDeleteSchedule } from "./voice_data_delete_schedule_type.ts";
+export { VoiceDataDeleteSchedule };
 
 const REMOTE_MODULE = {
   tables: {
@@ -50,11 +56,20 @@ const REMOTE_MODULE = {
       rowType: VoiceData.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
+    voice_data_delete_schedule: {
+      tableName: "voice_data_delete_schedule",
+      rowType: VoiceDataDeleteSchedule.getTypeScriptAlgebraicType(),
+      primaryKey: "Id",
+    },
   },
   reducers: {
     add_voice_data: {
       reducerName: "add_voice_data",
       argsType: AddVoiceData.getTypeScriptAlgebraicType(),
+    },
+    scheduled_delete: {
+      reducerName: "scheduled_delete",
+      argsType: ScheduledDelete.getTypeScriptAlgebraicType(),
     },
   },
   // Constructors which are used by the DbConnectionImpl to
@@ -84,6 +99,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "AddVoiceData", args: AddVoiceData }
+| { name: "ScheduledDelete", args: ScheduledDelete }
 ;
 
 export class RemoteReducers {
@@ -105,12 +121,33 @@ export class RemoteReducers {
     this.connection.offReducer("add_voice_data", callback);
   }
 
+  scheduledDelete(arg: VoiceDataDeleteSchedule) {
+    const __args = { arg };
+    let __writer = new BinaryWriter(1024);
+    ScheduledDelete.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("scheduled_delete", __argsBuffer, this.setCallReducerFlags.scheduledDeleteFlags);
+  }
+
+  onScheduledDelete(callback: (ctx: ReducerEventContext, arg: VoiceDataDeleteSchedule) => void) {
+    this.connection.onReducer("scheduled_delete", callback);
+  }
+
+  removeOnScheduledDelete(callback: (ctx: ReducerEventContext, arg: VoiceDataDeleteSchedule) => void) {
+    this.connection.offReducer("scheduled_delete", callback);
+  }
+
 }
 
 export class SetReducerFlags {
   addVoiceDataFlags: CallReducerFlags = 'FullUpdate';
   addVoiceData(flags: CallReducerFlags) {
     this.addVoiceDataFlags = flags;
+  }
+
+  scheduledDeleteFlags: CallReducerFlags = 'FullUpdate';
+  scheduledDelete(flags: CallReducerFlags) {
+    this.scheduledDeleteFlags = flags;
   }
 
 }
@@ -120,6 +157,10 @@ export class RemoteTables {
 
   get voiceData(): VoiceDataTableHandle {
     return new VoiceDataTableHandle(this.connection.clientCache.getOrCreateTable<VoiceData>(REMOTE_MODULE.tables.voice_data));
+  }
+
+  get voiceDataDeleteSchedule(): VoiceDataDeleteScheduleTableHandle {
+    return new VoiceDataDeleteScheduleTableHandle(this.connection.clientCache.getOrCreateTable<VoiceDataDeleteSchedule>(REMOTE_MODULE.tables.voice_data_delete_schedule));
   }
 }
 

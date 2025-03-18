@@ -1,6 +1,3 @@
-listening to yourself in the demo is disabled by default. If you wanna listen to yourself, comment out the line: https://github.com/Lethalchip/spacetimedb-cookbook/blob/master/voip-test/src/App.tsx#L16
-
-
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

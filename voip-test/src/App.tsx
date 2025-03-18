@@ -12,7 +12,7 @@ const App = () => {
   stdb.conn.db.voiceData.onInsert((ctx: EventContext, row: VoiceData) => {
     if(ctx.event.tag !== "Reducer") return;
     
-    //if you wanna listen to yourself, comment out the below.
+    //if you wanna listen to yourself, comment out the below. 
     if(ctx.event.value.callerIdentity.toHexString() === stdb.identity.toHexString()) return;
 
     const audioContext = new AudioContext();

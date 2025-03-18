@@ -13,7 +13,6 @@
     "@clockworklabs/spacetimedb-sdk": "^1.0.3",
     "@types/webrtc": "^0.0.45",
     "get-user-media-promise": "^1.1.4",
-    "microphone-stream": "^6.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
