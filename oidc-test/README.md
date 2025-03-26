@@ -1,3 +1,10 @@
+
+
+
+https://github.com/user-attachments/assets/74ab2ea7-36d0-4f39-b649-ac51824d935d
+
+
+
 ### You're gonna wanna update main.tsx LN9-10 with your openid connect issuer information, to use google, for example, follow this guide: https://developers.google.com/identity/protocols/oauth2
 
 ### You also need to modify Home.tsx LN21 with your domain/module name. 
