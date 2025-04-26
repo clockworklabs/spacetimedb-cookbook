@@ -1,0 +1,29 @@
+set shell := ["bash", "-cu"]
+
+_default:
+  @just -l
+
+deps:
+  @echo "Deps are:"
+  @echo "--> rust"
+  @echo "--> python"
+  @echo "--> spacetime-cli"
+
+venv:
+  @echo "Setting up Venv"
+  python -m venv venv
+  source venv/bin/activate
+  pip install --upgrade pip
+  pip install -r ./requirements.txt
+
+
+generate:
+  spacetime generate -o ./src/module_bindings/ -l rust -p ../server/
+
+build:
+  @maturin build -r
+  @cp target/wheels/client-0.1.0-cp37-abi3-manylinux_2_34_x86_64.whl .
+
+run:
+  @maturin develop
+  python client.py
