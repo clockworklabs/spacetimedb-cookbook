@@ -22,10 +22,6 @@ def main():
     subs = ["SELECT * FROM person"]
     ctx.subscribe(subs, on_applied, on_error)
 
-    print("Subscribed!")
-    # ctx.subscribe_to_all()
-    #TODO: on applied & on error
-
     stdb.reducers.add(ctx,"Myname1")
     stdb.reducers.say_hello(ctx)
     print("Called reducers")
