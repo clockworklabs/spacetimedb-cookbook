@@ -196,7 +196,8 @@ pub fn update_all_positions(ctx: &ReducerContext, _arg: UpdatePositionTimer) {
         });
 
         if low_resolution {
-            ctx.db.entity_position_hr().insert(EntityPositionHR {
+            // Update all low res positions
+            ctx.db.entity_position_lr().insert(EntityPositionLR {
                 id: row.id,
                 transform: row.transform,
             });
