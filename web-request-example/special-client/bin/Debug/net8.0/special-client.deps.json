@@ -1,0 +1,59 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "special-client/1.0.0": {
+        "dependencies": {
+          "SpacetimeDB.ClientSDK": "1.1.1"
+        },
+        "runtime": {
+          "special-client.dll": {}
+        }
+      },
+      "SpacetimeDB.BSATN.Runtime/1.1.1": {
+        "runtime": {
+          "lib/net8.0/SpacetimeDB.BSATN.Runtime.dll": {
+            "assemblyVersion": "1.1.1.0",
+            "fileVersion": "1.1.1.0"
+          }
+        }
+      },
+      "SpacetimeDB.ClientSDK/1.1.1": {
+        "dependencies": {
+          "SpacetimeDB.BSATN.Runtime": "1.1.1"
+        },
+        "runtime": {
+          "lib/netstandard2.1/SpacetimeDB.ClientSDK.dll": {
+            "assemblyVersion": "1.1.1.0",
+            "fileVersion": "1.1.1.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "special-client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SpacetimeDB.BSATN.Runtime/1.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ImBHBd2CVBheQOpPCxQJ3GdFUHURe7I5ElpY9U+hCNTackM4hEvJBRD/cfU+EbPUFJJ2Ys9FpFNztKC1eHsnpw==",
+      "path": "spacetimedb.bsatn.runtime/1.1.1",
+      "hashPath": "spacetimedb.bsatn.runtime.1.1.1.nupkg.sha512"
+    },
+    "SpacetimeDB.ClientSDK/1.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-WoQyMXSdqKFyK+eXABLOk4DpXm7iE1jHR42DaUc93lLqCeh2TN8t3EYYivduMFWQCdvZu4a2SURURS8UqrQrzQ==",
+      "path": "spacetimedb.clientsdk/1.1.1",
+      "hashPath": "spacetimedb.clientsdk.1.1.1.nupkg.sha512"
+    }
+  }
+}

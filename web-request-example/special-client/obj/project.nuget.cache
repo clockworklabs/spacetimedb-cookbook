@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "Zq/2aB1mHZg=",
+  "success": true,
+  "projectFilePath": "E:\\Users\\scott\\Pogly\\spacetimedb-cookbook\\web-request-example\\special-client\\special-client.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\scott\\.nuget\\packages\\spacetimedb.bsatn.runtime\\1.1.1\\spacetimedb.bsatn.runtime.1.1.1.nupkg.sha512",
+    "C:\\Users\\scott\\.nuget\\packages\\spacetimedb.clientsdk\\1.1.1\\spacetimedb.clientsdk.1.1.1.nupkg.sha512"
+  ],
+  "logs": []
+}
