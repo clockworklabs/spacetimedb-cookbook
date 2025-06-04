@@ -11,7 +11,7 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     const string SERVER_URL = "http://localhost:3000";
-    const string MODULE_NAME = "spacetimedb-chat";
+    const string MODULE_NAME = "chat-system";
 
     public GameObject ChatPanel, TextObject;
     public TMP_InputField ChatInput;
