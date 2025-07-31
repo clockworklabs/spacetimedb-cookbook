@@ -1,0 +1,35 @@
+/* Ensure the page fills the screen */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;      /* center children horizontally */
+  justify-content: flex-start;
+  padding-top: 2rem;
+  font-family: sans-serif;
+  text-align: center;       /* center all inner text by default */
+}
+
+/* Center the button group horizontally */
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+/* Make sure weather info is also centered */
+.weather-info {
+  max-width: 600px;
+  width: 100%;
+}
+
+.weather-info ul {
+  list-style: none;
+  padding: 0;
+}

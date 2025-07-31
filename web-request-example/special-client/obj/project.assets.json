@@ -1,0 +1,139 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0": {
+      "SpacetimeDB.BSATN.Runtime/1.1.1": {
+        "type": "package",
+        "compile": {
+          "lib/net8.0/SpacetimeDB.BSATN.Runtime.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/SpacetimeDB.BSATN.Runtime.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "SpacetimeDB.ClientSDK/1.1.1": {
+        "type": "package",
+        "dependencies": {
+          "SpacetimeDB.BSATN.Runtime": "1.1.1"
+        },
+        "compile": {
+          "lib/netstandard2.1/SpacetimeDB.ClientSDK.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.1/SpacetimeDB.ClientSDK.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SpacetimeDB.BSATN.Runtime/1.1.1": {
+      "sha512": "ImBHBd2CVBheQOpPCxQJ3GdFUHURe7I5ElpY9U+hCNTackM4hEvJBRD/cfU+EbPUFJJ2Ys9FpFNztKC1eHsnpw==",
+      "type": "package",
+      "path": "spacetimedb.bsatn.runtime/1.1.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "README.md",
+        "analyzers/dotnet/cs/SpacetimeDB.BSATN.Codegen.dll",
+        "lib/net8.0/SpacetimeDB.BSATN.Runtime.dll",
+        "lib/net8.0/SpacetimeDB.BSATN.Runtime.xml",
+        "lib/netstandard2.1/SpacetimeDB.BSATN.Runtime.dll",
+        "lib/netstandard2.1/SpacetimeDB.BSATN.Runtime.xml",
+        "logo.png",
+        "spacetimedb.bsatn.runtime.1.1.1.nupkg.sha512",
+        "spacetimedb.bsatn.runtime.nuspec"
+      ]
+    },
+    "SpacetimeDB.ClientSDK/1.1.1": {
+      "sha512": "WoQyMXSdqKFyK+eXABLOk4DpXm7iE1jHR42DaUc93lLqCeh2TN8t3EYYivduMFWQCdvZu4a2SURURS8UqrQrzQ==",
+      "type": "package",
+      "path": "spacetimedb.clientsdk/1.1.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "lib/netstandard2.1/SpacetimeDB.ClientSDK.dll",
+        "logo.png",
+        "spacetimedb.clientsdk.1.1.1.nupkg.sha512",
+        "spacetimedb.clientsdk.nuspec"
+      ]
+    }
+  },
+  "projectFileDependencyGroups": {
+    "net8.0": [
+      "SpacetimeDB.ClientSDK >= 1.1.1"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\scott\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "E:\\Users\\scott\\Pogly\\spacetimedb-cookbook\\web-request-example\\special-client\\special-client.csproj",
+      "projectName": "special-client",
+      "projectPath": "E:\\Users\\scott\\Pogly\\spacetimedb-cookbook\\web-request-example\\special-client\\special-client.csproj",
+      "packagesPath": "C:\\Users\\scott\\.nuget\\packages\\",
+      "outputPath": "E:\\Users\\scott\\Pogly\\spacetimedb-cookbook\\web-request-example\\special-client\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\scott\\AppData\\Roaming\\NuGet\\NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "projectReferences": {}
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      }
+    },
+    "frameworks": {
+      "net8.0": {
+        "targetAlias": "net8.0",
+        "dependencies": {
+          "SpacetimeDB.ClientSDK": {
+            "target": "Package",
+            "version": "[1.1.1, )"
+          }
+        },
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.408/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  }
+}
