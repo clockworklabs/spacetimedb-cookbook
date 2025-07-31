@@ -9,7 +9,7 @@ const oidcConfig = {
   authority: "", // OpenId Connect Authority URI - example for google: https://accounts.google.com
   client_id: "", // ClientId - example for google would be like... asdfasdfasdfasdfasdfasdf.apps.googleusercontent.com
   disablePKCE: true, // disable PKCE so we don't need a secret
-  code_challenge_method: "S256", // doesn't apply to everything, force RS256
+  code_challenge_method: "S256", // Required by PKCE, should usually be "S256" for most providers
   redirect_uri: "http://localhost:5173/callback", // Our callback URL which will catch the token from google
   post_logout_redirect_uri: "http://localhost:5173", // Where we want to redirect back (our homepage)
   response_type: "code", // Required
