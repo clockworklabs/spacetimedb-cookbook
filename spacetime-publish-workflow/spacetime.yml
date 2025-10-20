@@ -21,10 +21,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install SpacetimeDB CLI
-        run: |
-          curl -sSf https://install.spacetimedb.com > install-spacetime.sh
-          bash install-spacetime.sh --yes
+      - name: "Install Binaryen"
+        run: sudo apt-get -y install binaryen
+
+      - name: Install SpacetimeDB
+        run: curl -sSf https://install.spacetimedb.com | sh -s -- --yes
 
       - name: Login to SpacetimeDB CLI
         env:
