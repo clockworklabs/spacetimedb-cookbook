@@ -1,0 +1,153 @@
+name: SpacetimeDB Publish
+
+on:
+  push:
+    branches:
+      - main
+      - master
+env:
+  DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+  PUBLISH_DIR: ${{ vars.PUBLISH_DIR }}
+  TOKEN: ${{ github.token }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SpacetimeDB CLI
+        run: |
+          curl -sSf https://install.spacetimedb.com > install-spacetime.sh
+          bash install-spacetime.sh --yes
+
+      - name: Login to SpacetimeDB CLI
+        env:
+          SPACETIMEDB_TOKEN: ${{ secrets.SPACETIMEDB_TOKEN }}
+        run: |
+          if [[ -z "$SPACETIMEDB_TOKEN" ]]; then
+            printf "SPACETIMEDB_TOKEN is not set in repository secrets.\nYou can find this value via running: spacetime login show --token\n" >&2
+            exit 1
+          fi
+          spacetime login --token "$SPACETIMEDB_TOKEN"
+
+      - name: Build project (choose ONE stack below)
+        run: |
+          set -euo pipefail
+          cd "$PUBLISH_DIR"
+
+          ################################################################################
+          # Install Rust and build (UNCOMMENT this block if your project is Rust)
+          ################################################################################
+          # echo "Setting up Rust toolchain…"
+          # rustup --version >/dev/null 2>&1 || curl https://sh.rustup.rs -sSf | sh -s -- -y
+          # echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          # rustc --version
+          # cargo --version
+          # rustup target add wasm32-unknown-unknown
+          # cargo build --release
+
+          ################################################################################
+          # Install .NET and build (UNCOMMENT this block if your project is .NET)
+          ################################################################################
+          # echo "Setting up .NET…"
+          # sudo apt-get update -y
+          # sudo apt-get install -y dotnet-sdk-8.0 || true
+          # dotnet --info
+          # dotnet restore
+          # dotnet build -c Release
+
+          ################################################################################
+          # Install Node + pnpm and build (UNCOMMENT this block if your project is JS/TS)
+          ################################################################################
+          # echo "Setting up Node + pnpm…"
+          # corepack enable
+          # corepack prepare pnpm@latest --activate
+          # node --version
+          # pnpm --version
+          # pnpm install --frozen-lockfile || pnpm install
+          # pnpm build || npm run build || true
+
+      - name: Notify Discord (success)
+        if: success()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
+            # Ensure jq exists (Ubuntu runners usually have it; this is safe)
+            command -v jq >/dev/null || { sudo apt-get update -y && sudo apt-get install -y jq; }
+      
+            payload=$(
+              jq -nc \
+                --arg repo       "${{ github.repository }}" \
+                --arg workflow   "${{ github.workflow }}" \
+                --arg run_url    "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                --arg database   "$DATABASE_NAME" \
+                --arg cloud      "$CLOUD_NAME" \
+                --arg title      "SpacetimeDB publish succeeded" \
+                --arg username   "spacetimedb automation" \
+                --argjson color  3066993 \
+                '{
+                  username: $username,
+                  embeds: [{
+                    title: (":white_check_mark: \($title)"),
+                    color: $color,
+                    fields: [
+                      {name:"Repo",     value:$repo,     inline:true},
+                      {name:"Workflow", value:$workflow, inline:true},
+                      {name:"Run",      value:"[\($run_url)](\($run_url))", inline:false},
+                      {name:"Database", value:$database, inline:true},
+                      {name:"Cloud",    value:$cloud,    inline:true}
+                    ],
+                    timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
+                  }]
+                }'
+            )
+            curl -sS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null
+          else
+            echo "DISCORD_WEBHOOK_URL not set; skipping Discord notification."
+          fi
+
+      - name: Notify Discord (failure)
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [[ -n "${DISCORD_WEBHOOK_URL:-}" ]]; then
+            command -v jq >/dev/null || { sudo apt-get update -y && sudo apt-get install -y jq; }
+      
+            payload=$(
+              jq -nc \
+                --arg repo       "${{ github.repository }}" \
+                --arg workflow   "${{ github.workflow }}" \
+                --arg run_url    "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+                --arg database   "$DATABASE_NAME" \
+                --arg cloud      "$CLOUD_NAME" \
+                --arg title      "SpacetimeDB publish FAILED" \
+                --arg username   "spacetimedb automation" \
+                --argjson color  15158332 \
+                '{
+                  username: $username,
+                  embeds: [{
+                    title: (":x: \($title)"),
+                    color: $color,
+                    fields: [
+                      {name:"Repo",     value:$repo,     inline:true},
+                      {name:"Workflow", value:$workflow, inline:true},
+                      {name:"Run",      value:"[\($run_url)](\($run_url))", inline:false},
+                      {name:"Database", value:$database, inline:true},
+                      {name:"Cloud",    value:$cloud,    inline:true}
+                    ],
+                    timestamp: (now | strftime("%Y-%m-%dT%H:%M:%SZ"))
+                  }]
+                }'
+            )
+            curl -sS -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL" >/dev/null
+          else
+            echo "DISCORD_WEBHOOK_URL not set; skipping Discord notification."
+          fi
