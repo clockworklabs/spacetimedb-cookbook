@@ -74,6 +74,14 @@ jobs:
           # pnpm install --frozen-lockfile || pnpm install
           # pnpm build || npm run build || true
 
+
+      - name: Publish database
+         run: |
+          set -euo pipefail
+          cd "$PUBLISH_DIR"
+          echo "Publishing '$DATABASE_NAME' to maincloud..."
+          spacetime publish -s maincloud "$DATABASE_NAME" -y
+
       - name: Notify Discord (success)
         if: success()
         env:
