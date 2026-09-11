@@ -6,6 +6,7 @@ import {
   formatDelta,
   parseComment,
 } from "../live/format";
+import { articleHref } from "../route";
 
 // How long a newly revealed edit stays highlighted.
 const FRESH_MS = 2500;
@@ -34,16 +35,16 @@ export function Ticker({
             className={clock - revealAt < FRESH_MS ? "fresh" : undefined}
           >
             <time dateTime={new Date(at).toISOString()}>{formatClock(at)}</time>
-            <span className={`delta ${deltaClass(bytes)}`}>
+            <a
+              className={`delta ${deltaClass(bytes)}`}
+              href={diffUrl(edit)}
+              target="_blank"
+              rel="noreferrer"
+            >
               {formatDelta(bytes)}
-            </span>
+            </a>
             <div className="entry">
-              <a
-                className="entry-title"
-                href={diffUrl(edit)}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="entry-title" href={articleHref(edit.pageId)}>
                 {edit.title}
               </a>
               <p className="entry-meta">

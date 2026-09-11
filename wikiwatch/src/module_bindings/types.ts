@@ -88,7 +88,9 @@ export const FetchingEdits = __t.object("FetchingEdits", {
 export type FetchingEdits = __Infer<typeof FetchingEdits>;
 
 export const FetchingPreviews = __t.object("FetchingPreviews", {
-  titles: __t.array(__t.string()),
+  get pages() {
+    return __t.array(PreviewPage);
+  },
 });
 export type FetchingPreviews = __Infer<typeof FetchingPreviews>;
 
@@ -108,6 +110,12 @@ export const PollerStatus = __t.object("PollerStatus", {
   editsIngested: __t.u64(),
 });
 export type PollerStatus = __Infer<typeof PollerStatus>;
+
+export const PreviewPage = __t.object("PreviewPage", {
+  pageId: __t.u64(),
+  title: __t.string(),
+});
+export type PreviewPage = __Infer<typeof PreviewPage>;
 
 export const PreviewQueue = __t.object("PreviewQueue", {
   pageId: __t.u64(),

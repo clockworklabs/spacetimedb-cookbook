@@ -110,6 +110,10 @@ input:focus-visible {
   letter-spacing: -0.01em;
 }
 
+.wordmark a {
+  text-decoration: none;
+}
+
 .tagline {
   margin-top: 6px;
   font-family: var(--serif);
@@ -246,12 +250,19 @@ input:focus-visible {
   background: var(--heat);
 }
 
+.card-image-link {
+  display: block;
+}
+
 .card-image {
   display: block;
   width: 100%;
   height: auto;
   aspect-ratio: 3 / 2;
   object-fit: cover;
+  /* Most thumbnails are taller than 3:2, and cropping from the centre cuts
+     off the heads in portraits. Crop from the bottom instead. */
+  object-position: top;
   border-radius: 2px;
   background: var(--rule-soft);
 }
@@ -376,13 +387,15 @@ input:focus-visible {
   min-width: 0;
 }
 
-.ticker {
+.ticker,
+.history {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.ticker li {
+.ticker li,
+.history li {
   display: grid;
   grid-template-columns: auto 3.8em minmax(0, 1fr);
   column-gap: 10px;
@@ -391,7 +404,8 @@ input:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.ticker li.fresh {
+.ticker li.fresh,
+.history li.fresh {
   animation: arrive 2.5s ease-out;
 }
 
@@ -405,17 +419,24 @@ input:focus-visible {
 }
 
 .ticker time,
+.history time,
 .delta {
   padding-top: 0.2em;
   font-size: 0.85rem;
 }
 
-.ticker time {
+.ticker time,
+.history time {
   color: var(--muted);
 }
 
 .delta {
   text-align: right;
+  text-decoration: none;
+}
+
+a.delta:hover {
+  text-decoration: underline;
 }
 
 .delta.added {
@@ -453,12 +474,162 @@ input:focus-visible {
   color: var(--ink);
 }
 
+a.entry-user {
+  text-decoration: none;
+}
+
+a.entry-user:hover {
+  text-decoration: underline;
+}
+
 .entry-flag {
   font-style: italic;
 }
 
 .entry-comment {
   overflow-wrap: anywhere;
+}
+
+/* Article page */
+
+.article {
+  padding-block: 20px 48px;
+}
+
+.back {
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+}
+
+.back a,
+.article-links a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.back a:hover,
+.article-links a:hover {
+  text-decoration: underline;
+}
+
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: start;
+  gap: 48px;
+}
+
+.article-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Wikipedia sends 320px thumbnails, so never stretch them past that. */
+.article-image {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 320px);
+  max-height: 360px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+  background: var(--rule-soft);
+}
+
+.article-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.article-description {
+  color: var(--muted);
+}
+
+.article-summary {
+  max-width: 65ch;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.55;
+}
+
+.article-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 0.9rem;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 12px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+/* The figure reads above its label, while the label stays first for dl. */
+.stats div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.stats dt {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats dd.added {
+  color: var(--added);
+}
+
+.stats dd.removed {
+  color: var(--removed);
+}
+
+.article-trail .trail {
+  height: 64px;
+}
+
+.article-trail figcaption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.history .delta {
+  padding-top: 0.25em;
+}
+
+.history-comment {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.history-comment .entry-section {
+  color: var(--muted);
+}
+
+.tag {
+  padding-inline: 5px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  font-size: 0.78rem;
 }
 
 .colophon {
@@ -527,6 +698,12 @@ input:focus-visible {
   color: var(--ink);
 }
 
+/* The one part of a toast that takes clicks. */
+.toast a {
+  pointer-events: auto;
+  color: var(--link);
+}
+
 .toast-subject,
 .toast-result {
   overflow-wrap: anywhere;
@@ -571,7 +748,8 @@ input:focus-visible {
 }
 
 @media (max-width: 1040px) {
-  .layout {
+  .layout,
+  .article-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -587,6 +765,7 @@ input:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .ticker li.fresh,
+  .history li.fresh,
   .toast,
   .toast.running {
     animation: none;

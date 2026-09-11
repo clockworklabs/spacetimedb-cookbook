@@ -60,7 +60,6 @@ export class LiveStore {
   preview(pageKey: string): ArticlePreview | undefined {
     return this.previews.get(pageKey);
   }
-
   attach(conn: DbConnection): () => void {
     const putEdit = (_ctx: unknown, row: Edit) => {
       this.edits.set(row.rcId.toString(), row);
