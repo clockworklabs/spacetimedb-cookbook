@@ -40,6 +40,7 @@ import {
 // Import all table schema definitions
 import ArticlePreviewRow from "./article_preview_table";
 import EditRow from "./edit_table";
+import FetchLogRow from "./fetch_log_table";
 import PollerStatusRow from "./poller_status_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -102,6 +103,15 @@ const tablesSchema = __schema({
     },
     EditRow,
   ),
+  fetchLog: __table(
+    {
+      name: "fetch_log",
+      indexes: [],
+      constraints: [],
+      event: true,
+    },
+    FetchLogRow,
+  ),
   pollerStatus: __table(
     {
       name: "poller_status",
@@ -137,6 +147,11 @@ type __SchemaWithTableAccessorAliases = Omit<
       (typeof tablesSchema.schemaType.tables)["articlePreview"],
       "accessorName"
     > & { readonly accessorName: "article_preview" };
+    /** @deprecated Use `fetchLog` instead. This alias will be removed in the next major version. */
+    readonly fetch_log: Omit<
+      (typeof tablesSchema.schemaType.tables)["fetchLog"],
+      "accessorName"
+    > & { readonly accessorName: "fetch_log" };
     /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
     readonly poller_status: Omit<
       (typeof tablesSchema.schemaType.tables)["pollerStatus"],
@@ -162,6 +177,7 @@ const REMOTE_MODULE = {
 
 const tableAccessorAliases = {
   article_preview: "articlePreview",
+  fetch_log: "fetchLog",
   poller_status: "pollerStatus",
 } as const;
 
@@ -191,6 +207,8 @@ type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `articlePreview` instead. This alias will be removed in the next major version. */
   readonly article_preview: __DbViewBase["articlePreview"];
+  /** @deprecated Use `fetchLog` instead. This alias will be removed in the next major version. */
+  readonly fetch_log: __DbViewBase["fetchLog"];
   /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
   readonly poller_status: __DbViewBase["pollerStatus"];
 };
@@ -199,6 +217,8 @@ type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
   /** @deprecated Use `articlePreview` instead. This alias will be removed in the next major version. */
   readonly article_preview: __TablesBase["articlePreview"];
+  /** @deprecated Use `fetchLog` instead. This alias will be removed in the next major version. */
+  readonly fetch_log: __TablesBase["fetchLog"];
   /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
   readonly poller_status: __TablesBase["pollerStatus"];
 };

@@ -16,6 +16,7 @@
   --removed: #d73333;
   --heat: #edab00;
   --fresh: #fef6e7;
+  --shadow: rgb(0 0 0 / 0.12);
 
   --serif:
     "Libertinus Serif", "Linux Libertine", Georgia, "Times New Roman", serif;
@@ -34,6 +35,7 @@
     --removed: #fd7865;
     --heat: #ffcc33;
     --fresh: #3a300f;
+    --shadow: rgb(0 0 0 / 0.5);
   }
 }
 
@@ -466,6 +468,98 @@ input:focus-visible {
   color: var(--muted);
 }
 
+/* Fetch activity toasts */
+
+.toasts {
+  position: fixed;
+  inset-inline-end: clamp(16px, 3vw, 48px);
+  inset-block-end: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Informational only; never block clicks on the page beneath. */
+  pointer-events: none;
+}
+
+.toast {
+  padding: 10px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-inline-start: 3px solid var(--heat);
+  border-radius: 2px;
+  box-shadow: 0 4px 16px var(--shadow);
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  animation: toast-in 200ms ease-out;
+  transition:
+    opacity 250ms ease-in,
+    transform 250ms ease-in;
+}
+
+.toast.running {
+  animation:
+    toast-in 200ms ease-out,
+    toast-working 900ms ease-in-out infinite alternate;
+}
+
+.toast.done {
+  border-inline-start-color: var(--added);
+}
+
+.toast.failed {
+  border-inline-start-color: var(--removed);
+}
+
+.toast.leaving {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.toast-head {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.toast-subject,
+.toast-result {
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.toast.failed .toast-result {
+  color: var(--removed);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-working {
+  to {
+    border-inline-start-color: var(--rule);
+  }
+}
+
+@media (max-width: 560px) {
+  .toasts {
+    inset-inline: 16px;
+    width: auto;
+  }
+}
+
 @media (min-width: 1041px) {
   .rail {
     position: sticky;
@@ -492,8 +586,14 @@ input:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ticker li.fresh {
+  .ticker li.fresh,
+  .toast,
+  .toast.running {
     animation: none;
+  }
+
+  .toast {
+    transition: none;
   }
 
   ::view-transition-group(*),
