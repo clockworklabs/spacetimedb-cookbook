@@ -47,6 +47,9 @@ export const article_preview = table(
     summary: t.string(),
     thumbnail: t.option(Thumbnail),
     fetched_at: t.timestamp(),
+    // When the page was last edited. Lets clients subscribe to the previews
+    // for their time window, and lets pruning find previews gone cold.
+    last_edited_at: t.timestamp().index("btree"),
   },
 );
 

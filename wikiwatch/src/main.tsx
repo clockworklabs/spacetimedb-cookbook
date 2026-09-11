@@ -1,12 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import "./styles.css";
 import { Identity } from "spacetimedb";
 import { SpacetimeDBProvider } from "spacetimedb/react";
 import { DbConnection, ErrorContext } from "./module_bindings/index.ts";
 
 const HOST = import.meta.env.VITE_SPACETIMEDB_HOST ?? "ws://localhost:3000";
-const DB_NAME = import.meta.env.VITE_SPACETIMEDB_DB_NAME ?? "react-ts";
+const DB_NAME = import.meta.env.VITE_SPACETIMEDB_DB_NAME ?? "wikiwatch-dev";
 const TOKEN_KEY = `${HOST}/${DB_NAME}/auth_token`;
 
 const onConnect = (_conn: DbConnection, identity: Identity, token: string) => {
