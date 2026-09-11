@@ -8,10 +8,17 @@ import type { ProcedureCtx } from "spacetimedb/server";
 const API_URL = "https://en.wikipedia.org/w/api.php";
 
 // Wikimedia's User-Agent policy asks for a descriptive agent with contact
-// details; generic agents get throttled or blocked.
+// details; generic agents get throttled or blocked. The contact comes from the
+// private settings table rather than the source.
 // https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
-const USER_AGENT =
-  "wikiwatch/0.1 (SpacetimeDB demo module; https://spacetimedb.com)";
+const AGENT_NAME = "wikiwatch/0.1";
+const FALLBACK_CONTACT = "SpacetimeDB demo module; https://spacetimedb.com";
+
+export function userAgent(contact: string | undefined): string {
+  // A line break in a header value would start a new header.
+  const cleaned = contact?.replace(/[\r\n]+/g, " ").trim();
+  return `${AGENT_NAME} (${cleaned || FALLBACK_CONTACT})`;
+}
 
 const REQUEST_TIMEOUT = TimeDuration.fromMillis(10_000);
 
@@ -97,6 +104,7 @@ type RawResponse = {
 // is hit the caller simply resumes from the newest change it received.
 export function fetchRecentChanges(
   http: Http,
+  agent: string,
   start: Timestamp,
   maxPages: number,
 ): RecentChange[] {
@@ -114,7 +122,7 @@ export function fetchRecentChanges(
   const changes: RecentChange[] = [];
   let continuation: Params | undefined = {};
   for (let page = 0; page < maxPages && continuation; page++) {
-    const body = apiGet(http, { ...base, ...continuation });
+    const body = apiGet(http, agent, { ...base, ...continuation });
     for (const rc of body.query?.recentchanges ?? []) {
       changes.push(parseRecentChange(rc));
     }
@@ -124,11 +132,15 @@ export function fetchRecentChanges(
 }
 
 // Fetches hover-card data for up to PREVIEW_BATCH_SIZE pages in one request.
-export function fetchPreviews(http: Http, pageIds: bigint[]): PagePreview[] {
+export function fetchPreviews(
+  http: Http,
+  agent: string,
+  pageIds: bigint[],
+): PagePreview[] {
   if (pageIds.length > PREVIEW_BATCH_SIZE) {
     throw new Error(`At most ${PREVIEW_BATCH_SIZE} pages per preview request`);
   }
-  const body = apiGet(http, {
+  const body = apiGet(http, agent, {
     action: "query",
     prop: "extracts|pageimages|description",
     pageids: pageIds.join("|"),
@@ -143,7 +155,7 @@ export function fetchPreviews(http: Http, pageIds: bigint[]): PagePreview[] {
   return (body.query?.pages ?? []).flatMap(parsePage);
 }
 
-function apiGet(http: Http, params: Params): RawResponse {
+function apiGet(http: Http, agent: string, params: Params): RawResponse {
   const query = encodeQuery({
     ...params,
     format: "json",
@@ -151,7 +163,7 @@ function apiGet(http: Http, params: Params): RawResponse {
     maxlag: MAX_LAG_SECONDS,
   });
   const response = http.fetch(`${API_URL}?${query}`, {
-    headers: { "User-Agent": USER_AGENT },
+    headers: { "User-Agent": agent },
     timeout: REQUEST_TIMEOUT,
   });
   if (response.status !== 200) {

@@ -12,6 +12,7 @@ import {
   PREVIEW_BATCH_SIZE,
   fetchPreviews,
   fetchRecentChanges,
+  userAgent,
   type PagePreview,
 } from "./wikipedia";
 
@@ -45,6 +46,7 @@ const PREVIEW_BATCHES_PER_TICK = 3;
 const MAX_PREVIEW_ATTEMPTS = 3;
 
 const STATUS_ID = 0;
+const SETTINGS_ID = 0;
 const MAX_ERROR_LENGTH = 500;
 
 export const init = spacetimedb.init((ctx) => {
@@ -77,8 +79,11 @@ export const pollWikipedia = spacetimedb.procedure(
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError("pollWikipedia may only be run by the scheduler");
     }
-    ingestRecentChanges(ctx);
-    ingestPreviews(ctx);
+    const agent = ctx.withTx((tx) =>
+      userAgent(tx.db.settings.id.find(SETTINGS_ID)?.wikipedia_contact),
+    );
+    ingestRecentChanges(ctx, agent);
+    ingestPreviews(ctx, agent);
     return {};
   },
 );
@@ -113,7 +118,7 @@ export const pruneOldData = spacetimedb.reducer(
   },
 );
 
-function ingestRecentChanges(ctx: ProcCtx) {
+function ingestRecentChanges(ctx: ProcCtx, agent: string) {
   const cursor = ctx.withTx(
     (tx) => tx.db.poller_status.id.find(STATUS_ID)?.cursor,
   );
@@ -127,7 +132,7 @@ function ingestRecentChanges(ctx: ProcCtx) {
 
   let changes;
   try {
-    changes = fetchRecentChanges(ctx.http, start, MAX_RC_PAGES);
+    changes = fetchRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
   } catch (e) {
     const message = `recentchanges: ${errorMessage(e)}`;
     console.error(message);
@@ -203,7 +208,7 @@ function enqueuePreview(tx: TxCtx, page_id: bigint, title: string) {
   });
 }
 
-function ingestPreviews(ctx: ProcCtx) {
+function ingestPreviews(ctx: ProcCtx, agent: string) {
   const batches = ctx.withTx((tx) => {
     const oldestFirst = [...tx.db.preview_queue.iter()]
       .sort((a, b) => compare(a.enqueued_at, b.enqueued_at))
@@ -215,7 +220,7 @@ function ingestPreviews(ctx: ProcCtx) {
   for (const pageIds of batches) {
     let previews;
     try {
-      previews = fetchPreviews(ctx.http, pageIds);
+      previews = fetchPreviews(ctx.http, agent, pageIds);
     } catch (e) {
       // Wikipedia is struggling; count the attempt and try again next tick.
       const message = `previews: ${errorMessage(e)}`;
