@@ -9,7 +9,15 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import { Thumbnail } from "./types";
 
 export default __t.row({
-  name: __t.string(),
+  pageId: __t.u64().primaryKey().name("page_id"),
+  title: __t.string(),
+  description: __t.option(__t.string()),
+  summary: __t.string(),
+  get thumbnail() {
+    return __t.option(Thumbnail);
+  },
+  fetchedAt: __t.timestamp().name("fetched_at"),
 });
