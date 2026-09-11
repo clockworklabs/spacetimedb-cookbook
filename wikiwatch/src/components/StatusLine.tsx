@@ -11,18 +11,17 @@ type Props = {
   loaded: boolean;
   status: PollerStatus | undefined;
   now: number;
+  // Whether the page replays edits behind real time.
+  delayed: boolean;
 };
 
-export function StatusLine({ isActive, loaded, status, now }: Props) {
+export function StatusLine(props: Props) {
   const wasActive = useRef(false);
   useEffect(() => {
-    if (isActive) wasActive.current = true;
-  }, [isActive]);
+    if (props.isActive) wasActive.current = true;
+  }, [props.isActive]);
 
-  const [text, problem] = describe(
-    { isActive, loaded, status, now },
-    wasActive.current,
-  );
+  const [text, problem] = describe(props, wasActive.current);
   return (
     <p className={problem ? "status problem" : "status"} role="status">
       {text}
@@ -31,7 +30,7 @@ export function StatusLine({ isActive, loaded, status, now }: Props) {
 }
 
 function describe(
-  { isActive, loaded, status, now }: Props,
+  { isActive, loaded, status, now, delayed }: Props,
   wasActive: boolean,
 ): [string, boolean] {
   if (!isActive) {
@@ -59,7 +58,9 @@ function describe(
     ];
   }
   return [
-    `Live. Edits play back ${REPLAY_DELAY_MS / 1000} seconds after they’re made, at the pace they happened.`,
+    delayed
+      ? `Live. Edits play back ${REPLAY_DELAY_MS / 1000} seconds after they’re made, at the pace they happened.`
+      : "Live. New edits appear as soon as the server fetches them from Wikipedia.",
     false,
   ];
 }

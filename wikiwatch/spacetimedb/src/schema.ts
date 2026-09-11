@@ -92,6 +92,13 @@ export const settings = table(
   },
 );
 
+// A page a preview fetch asks for. Carries the id as well as the title, so
+// clients can link to the page they're told about.
+const PreviewPage = t.object("PreviewPage", {
+  page_id: t.u64(),
+  title: t.string(),
+});
+
 // What a fetcher is doing. Each fetch sends a `fetching_*` row when it starts
 // and a `fetched_*` or `*_failed` row when it ends.
 const FetchActivity = t.enum("FetchActivity", {
@@ -102,7 +109,7 @@ const FetchActivity = t.enum("FetchActivity", {
   }),
   edits_failed: t.string(),
   fetching_previews: t.object("FetchingPreviews", {
-    titles: t.array(t.string()),
+    pages: t.array(PreviewPage),
   }),
   fetched_previews: t.object("FetchedPreviews", {
     stored: t.u32(),

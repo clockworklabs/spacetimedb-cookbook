@@ -6,6 +6,14 @@ export function articleUrl(pageId: bigint): string {
   return `${WIKIPEDIA}/?curid=${pageId}`;
 }
 
+export function historyUrl(pageId: bigint): string {
+  return `${WIKIPEDIA}/w/index.php?curid=${pageId}&action=history`;
+}
+
+export function contributionsUrl(userName: string): string {
+  return `${WIKIPEDIA}/wiki/Special:Contributions/${encodeURIComponent(userName)}`;
+}
+
 export function diffUrl(edit: Edit): string {
   return edit.oldRevId === 0n
     ? `${WIKIPEDIA}/w/index.php?oldid=${edit.revId}`
@@ -13,6 +21,10 @@ export function diffUrl(edit: Edit): string {
 }
 
 const numbers = new Intl.NumberFormat("en-GB");
+
+export function formatNumber(count: number): string {
+  return numbers.format(count);
+}
 
 export function formatDelta(bytes: number): string {
   if (bytes > 0) return `+${numbers.format(bytes)}`;

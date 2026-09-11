@@ -1,9 +1,14 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
-import { useSpacetimeDB } from "spacetimedb/react";
+import { useSpacetimeDB, useTable } from "spacetimedb/react";
 import { tables, type DbConnection } from "../module_bindings";
-import type { FetchLog } from "../module_bindings/types";
-import { rankArticles, revealedCount, type ReplayEdit } from "./derive";
+import type { ArticlePreview, FetchLog } from "../module_bindings/types";
+import {
+  rankArticles,
+  revealedCount,
+  scheduleReplay,
+  type ReplayEdit,
+} from "./derive";
 import { applyFetchLog, type FetchToast } from "./fetchActivity";
 import { LiveStore } from "./store";
 
@@ -21,6 +26,26 @@ export function useLiveStore(): LiveStore {
 
   useSyncExternalStore(store.subscribe, store.getVersion);
   return store;
+}
+
+export type Article = {
+  // Oldest first.
+  edits: ReplayEdit[];
+  preview: ArticlePreview | undefined;
+  isReady: boolean;
+};
+
+// One article's preview and every edit to it the server still holds, which
+// reaches much further back than the live store's window.
+export function useArticle(pageId: bigint): Article {
+  const [editRows, editsReady] = useTable(
+    tables.edit.where((row) => row.pageId.eq(pageId)),
+  );
+  const [previews, previewReady] = useTable(
+    tables.articlePreview.where((row) => row.pageId.eq(pageId)),
+  );
+  const edits = useMemo(() => scheduleReplay(editRows).all, [editRows]);
+  return { edits, preview: previews[0], isReady: editsReady && previewReady };
 }
 
 // Toasts describing what the server's Wikipedia fetchers are doing.

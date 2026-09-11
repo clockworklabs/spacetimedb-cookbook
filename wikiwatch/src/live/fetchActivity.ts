@@ -1,4 +1,4 @@
-import type { FetchLog } from "../module_bindings/types";
+import type { FetchLog, PreviewPage } from "../module_bindings/types";
 import { toMillis } from "./derive";
 import { formatClock, plural } from "./format";
 
@@ -9,17 +9,19 @@ const FAILED_MS = 10_000;
 // republished mid-request.
 const UNFINISHED_MS = 30_000;
 const MAX_TOASTS = 4;
-// How many titles a preview batch names before summarising the rest.
-const TITLES_SHOWN = 2;
 
 export type Fetcher = "edits" | "previews";
+
+// What's being fetched: a description for edits, or the articles for previews.
+type Target = { subject: string } | { pages: PreviewPage[] };
 
 export type FetchToast = {
   id: string;
   fetcher: Fetcher;
   state: "running" | "done" | "failed";
-  // What's being fetched. Missing if we connected after the fetch started.
+  // Both missing if we connected after the fetch started.
   subject?: string;
+  pages?: PreviewPage[];
   result?: string;
   expiresAt: number;
 };
@@ -46,11 +48,11 @@ function toToast(
   started: FetchToast | undefined,
   now: number,
 ): FetchToast {
-  const start = (fetcher: Fetcher, subject: string): FetchToast => ({
+  const start = (fetcher: Fetcher, target: Target): FetchToast => ({
     id,
     fetcher,
     state: "running",
-    subject,
+    ...target,
     expiresAt: now + UNFINISHED_MS,
   });
   const settle = (
@@ -62,16 +64,16 @@ function toToast(
     fetcher,
     state: failed ? "failed" : "done",
     subject: started?.subject,
+    pages: started?.pages,
     result,
     expiresAt: now + (failed ? FAILED_MS : DONE_MS),
   });
 
   switch (activity.tag) {
     case "FetchingEdits":
-      return start(
-        "edits",
-        `Changes since ${formatClock(toMillis(activity.value.since))}`,
-      );
+      return start("edits", {
+        subject: `Changes since ${formatClock(toMillis(activity.value.since))}`,
+      });
     case "FetchedEdits": {
       const { received, added } = activity.value;
       return settle(
@@ -83,7 +85,7 @@ function toToast(
     case "EditsFailed":
       return settle("edits", true, activity.value);
     case "FetchingPreviews":
-      return start("previews", summariseTitles(activity.value.titles));
+      return start("previews", { pages: activity.value.pages });
     case "FetchedPreviews": {
       const { stored, missing } = activity.value;
       const result = `${plural(stored, "preview")} stored`;
@@ -96,13 +98,4 @@ function toToast(
     case "PreviewsFailed":
       return settle("previews", true, activity.value);
   }
-}
-
-function summariseTitles(titles: string[]): string {
-  if (titles.length > TITLES_SHOWN + 1) {
-    const rest = titles.length - TITLES_SHOWN;
-    return `${titles.slice(0, TITLES_SHOWN).join(", ")} and ${rest} more`;
-  }
-  if (titles.length <= 1) return titles.join("");
-  return `${titles.slice(0, -1).join(", ")} and ${titles[titles.length - 1]}`;
 }

@@ -233,7 +233,9 @@ function ingestPreviews(ctx: ProcCtx, agent: string) {
     ctx.withTx((tx) =>
       logFetch(tx, fetch_id, {
         tag: "fetching_previews",
-        value: { titles: batch.map((entry) => entry.title) },
+        value: {
+          pages: batch.map(({ page_id, title }) => ({ page_id, title })),
+        },
       }),
     );
 
