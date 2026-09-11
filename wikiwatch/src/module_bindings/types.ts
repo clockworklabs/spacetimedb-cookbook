@@ -10,7 +10,72 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const Person = __t.object("Person", {
-  name: __t.string(),
+export const ArticlePreview = __t.object("ArticlePreview", {
+  pageId: __t.u64(),
+  title: __t.string(),
+  description: __t.option(__t.string()),
+  summary: __t.string(),
+  get thumbnail() {
+    return __t.option(Thumbnail);
+  },
+  fetchedAt: __t.timestamp(),
 });
-export type Person = __Infer<typeof Person>;
+export type ArticlePreview = __Infer<typeof ArticlePreview>;
+
+export const Edit = __t.object("Edit", {
+  rcId: __t.u64(),
+  pageId: __t.u64(),
+  revId: __t.u64(),
+  oldRevId: __t.u64(),
+  title: __t.string(),
+  userName: __t.string(),
+  isBot: __t.bool(),
+  isMinor: __t.bool(),
+  isNew: __t.bool(),
+  isTemp: __t.bool(),
+  isRedirect: __t.bool(),
+  oldLen: __t.u32(),
+  newLen: __t.u32(),
+  comment: __t.string(),
+  tags: __t.array(__t.string()),
+  editedAt: __t.timestamp(),
+});
+export type Edit = __Infer<typeof Edit>;
+
+export const PollTimer = __t.object("PollTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type PollTimer = __Infer<typeof PollTimer>;
+
+export const PollerStatus = __t.object("PollerStatus", {
+  id: __t.u8(),
+  cursor: __t.timestamp(),
+  lastSuccessAt: __t.option(__t.timestamp()),
+  lastError: __t.option(__t.string()),
+  lastErrorAt: __t.option(__t.timestamp()),
+  consecutiveFailures: __t.u32(),
+  editsIngested: __t.u64(),
+});
+export type PollerStatus = __Infer<typeof PollerStatus>;
+
+export const PreviewQueue = __t.object("PreviewQueue", {
+  pageId: __t.u64(),
+  title: __t.string(),
+  attempts: __t.u8(),
+  enqueuedAt: __t.timestamp(),
+});
+export type PreviewQueue = __Infer<typeof PreviewQueue>;
+
+export const PruneTimer = __t.object("PruneTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type PruneTimer = __Infer<typeof PruneTimer>;
+
+export const Thumbnail = __t.object("Thumbnail", {
+  url: __t.string(),
+  width: __t.u32(),
+  height: __t.u32(),
+});
+export type Thumbnail = __Infer<typeof Thumbnail>;
