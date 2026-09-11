@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSpacetimeDB } from "spacetimedb/react";
 import { ArticleCard } from "./components/ArticleCard";
+import { FetchToasts } from "./components/FetchToasts";
 import { PulseRibbon } from "./components/PulseRibbon";
 import { StatusLine } from "./components/StatusLine";
 import { Ticker } from "./components/Ticker";
@@ -12,7 +13,12 @@ import {
   WINDOW_MS,
   type ReplayEdit,
 } from "./live/derive";
-import { useArticleOrder, useLiveStore, useNow } from "./live/hooks";
+import {
+  useArticleOrder,
+  useFetchActivity,
+  useLiveStore,
+  useNow,
+} from "./live/hooks";
 
 const TICK_MS = 250;
 const RERANK_EVERY_MS = 10_000;
@@ -22,6 +28,7 @@ const PULSE_MINUTES = 60;
 
 function App() {
   const store = useLiveStore();
+  const fetches = useFetchActivity();
   const { isActive } = useSpacetimeDB();
   const now = useNow(TICK_MS);
   const clock = now - REPLAY_DELAY_MS;
@@ -138,6 +145,8 @@ function App() {
         </a>
         . The edits are collected by a SpacetimeDB module every 15 seconds.
       </footer>
+
+      <FetchToasts toasts={fetches} now={now} />
     </div>
   );
 }

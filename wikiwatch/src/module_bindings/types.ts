@@ -43,6 +43,55 @@ export const Edit = __t.object("Edit", {
 });
 export type Edit = __Infer<typeof Edit>;
 
+// The tagged union or sum type for the algebraic type `FetchActivity`.
+export const FetchActivity = __t.enum("FetchActivity", {
+  get FetchingEdits() {
+    return FetchingEdits;
+  },
+  get FetchedEdits() {
+    return FetchedEdits;
+  },
+  EditsFailed: __t.string(),
+  get FetchingPreviews() {
+    return FetchingPreviews;
+  },
+  get FetchedPreviews() {
+    return FetchedPreviews;
+  },
+  PreviewsFailed: __t.string(),
+});
+export type FetchActivity = __Infer<typeof FetchActivity>;
+
+export const FetchLog = __t.object("FetchLog", {
+  fetchId: __t.uuid(),
+  get activity() {
+    return FetchActivity;
+  },
+});
+export type FetchLog = __Infer<typeof FetchLog>;
+
+export const FetchedEdits = __t.object("FetchedEdits", {
+  received: __t.u32(),
+  added: __t.u32(),
+});
+export type FetchedEdits = __Infer<typeof FetchedEdits>;
+
+export const FetchedPreviews = __t.object("FetchedPreviews", {
+  stored: __t.u32(),
+  missing: __t.u32(),
+});
+export type FetchedPreviews = __Infer<typeof FetchedPreviews>;
+
+export const FetchingEdits = __t.object("FetchingEdits", {
+  since: __t.timestamp(),
+});
+export type FetchingEdits = __Infer<typeof FetchingEdits>;
+
+export const FetchingPreviews = __t.object("FetchingPreviews", {
+  titles: __t.array(__t.string()),
+});
+export type FetchingPreviews = __Infer<typeof FetchingPreviews>;
+
 export const PollTimer = __t.object("PollTimer", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),

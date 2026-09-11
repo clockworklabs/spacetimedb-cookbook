@@ -2,12 +2,13 @@ import {
   Range,
   SenderError,
   t,
+  type Infer,
   type InferSchema,
   type ProcedureCtx,
   type ReducerCtx,
 } from "spacetimedb/server";
-import { ScheduleAt, Timestamp } from "spacetimedb";
-import spacetimedb, { poll_timer, prune_timer } from "./schema";
+import { ScheduleAt, Timestamp, type Uuid } from "spacetimedb";
+import spacetimedb, { fetch_log, poll_timer, prune_timer } from "./schema";
 import {
   PREVIEW_BATCH_SIZE,
   fetchPreviews,
@@ -119,16 +120,19 @@ export const pruneOldData = spacetimedb.reducer(
 );
 
 function ingestRecentChanges(ctx: ProcCtx, agent: string) {
-  const cursor = ctx.withTx(
-    (tx) => tx.db.poller_status.id.find(STATUS_ID)?.cursor,
-  );
-  if (!cursor) {
+  const fetch_id = ctx.newUuidV7();
+  const start = ctx.withTx((tx) => {
+    const cursor = tx.db.poller_status.id.find(STATUS_ID)?.cursor;
+    if (!cursor) return undefined;
+    const earliest = minus(ctx.timestamp, MAX_BACKFILL);
+    const since = later(minus(cursor, POLL_OVERLAP), earliest);
+    logFetch(tx, fetch_id, { tag: "fetching_edits", value: { since } });
+    return since;
+  });
+  if (!start) {
     console.error("poller_status row is missing; skipping poll");
     return;
   }
-
-  const earliest = minus(ctx.timestamp, MAX_BACKFILL);
-  const start = later(minus(cursor, POLL_OVERLAP), earliest);
 
   let changes;
   try {
@@ -136,7 +140,10 @@ function ingestRecentChanges(ctx: ProcCtx, agent: string) {
   } catch (e) {
     const message = `recentchanges: ${errorMessage(e)}`;
     console.error(message);
-    ctx.withTx((tx) => recordError(tx, message, true));
+    ctx.withTx((tx) => {
+      recordError(tx, message, true);
+      logFetch(tx, fetch_id, { tag: "edits_failed", value: message });
+    });
     return;
   }
 
@@ -161,6 +168,10 @@ function ingestRecentChanges(ctx: ProcCtx, agent: string) {
       last_success_at: tx.timestamp,
       consecutive_failures: 0,
       edits_ingested: status.edits_ingested + BigInt(count),
+    });
+    logFetch(tx, fetch_id, {
+      tag: "fetched_edits",
+      value: { received: changes.length, added: count },
     });
     return count;
   });
@@ -212,12 +223,20 @@ function ingestPreviews(ctx: ProcCtx, agent: string) {
   const batches = ctx.withTx((tx) => {
     const oldestFirst = [...tx.db.preview_queue.iter()]
       .sort((a, b) => compare(a.enqueued_at, b.enqueued_at))
-      .slice(0, PREVIEW_BATCH_SIZE * PREVIEW_BATCHES_PER_TICK)
-      .map((entry) => entry.page_id);
+      .slice(0, PREVIEW_BATCH_SIZE * PREVIEW_BATCHES_PER_TICK);
     return chunk(oldestFirst, PREVIEW_BATCH_SIZE);
   });
 
-  for (const pageIds of batches) {
+  for (const batch of batches) {
+    const fetch_id = ctx.newUuidV7();
+    const pageIds = batch.map((entry) => entry.page_id);
+    ctx.withTx((tx) =>
+      logFetch(tx, fetch_id, {
+        tag: "fetching_previews",
+        value: { titles: batch.map((entry) => entry.title) },
+      }),
+    );
+
     let previews;
     try {
       previews = fetchPreviews(ctx.http, agent, pageIds);
@@ -228,23 +247,33 @@ function ingestPreviews(ctx: ProcCtx, agent: string) {
       ctx.withTx((tx) => {
         pageIds.forEach((id) => recordPreviewAttempt(tx, id));
         recordError(tx, message, false);
+        logFetch(tx, fetch_id, { tag: "previews_failed", value: message });
       });
       return;
     }
-    ctx.withTx((tx) => storePreviews(tx, pageIds, previews));
+    ctx.withTx((tx) => {
+      const stored = storePreviews(tx, pageIds, previews);
+      logFetch(tx, fetch_id, {
+        tag: "fetched_previews",
+        value: { stored, missing: previews.length - stored },
+      });
+    });
   }
 }
 
+// Returns how many previews were stored; the rest were missing pages.
 function storePreviews(
   tx: TxCtx,
   requested: bigint[],
   previews: PagePreview[],
-) {
+): number {
   const answered = new Set<bigint>();
+  let stored = 0;
   for (const preview of previews) {
     answered.add(preview.page_id);
     tx.db.preview_queue.page_id.delete(preview.page_id);
     if (preview.missing) continue;
+    stored++;
 
     const existing = tx.db.article_preview.page_id.find(preview.page_id);
     const row = {
@@ -269,6 +298,15 @@ function storePreviews(
   requested
     .filter((id) => !answered.has(id))
     .forEach((id) => recordPreviewAttempt(tx, id));
+  return stored;
+}
+
+function logFetch(
+  tx: TxCtx,
+  fetch_id: Uuid,
+  activity: Infer<typeof fetch_log.rowType>["activity"],
+) {
+  tx.db.fetch_log.insert({ fetch_id, activity });
 }
 
 function recordPreviewAttempt(tx: TxCtx, page_id: bigint) {

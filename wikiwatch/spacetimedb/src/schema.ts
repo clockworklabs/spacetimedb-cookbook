@@ -92,6 +92,36 @@ export const settings = table(
   },
 );
 
+// What a fetcher is doing. Each fetch sends a `fetching_*` row when it starts
+// and a `fetched_*` or `*_failed` row when it ends.
+const FetchActivity = t.enum("FetchActivity", {
+  fetching_edits: t.object("FetchingEdits", { since: t.timestamp() }),
+  fetched_edits: t.object("FetchedEdits", {
+    received: t.u32(),
+    added: t.u32(),
+  }),
+  edits_failed: t.string(),
+  fetching_previews: t.object("FetchingPreviews", {
+    titles: t.array(t.string()),
+  }),
+  fetched_previews: t.object("FetchedPreviews", {
+    stored: t.u32(),
+    missing: t.u32(),
+  }),
+  previews_failed: t.string(),
+});
+
+// Live fetcher activity for clients to display. An event table: rows are
+// broadcast to subscribers when their transaction commits, and never stored.
+export const fetch_log = table(
+  { name: "fetch_log", public: true, event: true },
+  {
+    // Shared by a fetch's start and end rows, so clients can pair them.
+    fetch_id: t.uuid(),
+    activity: FetchActivity,
+  },
+);
+
 export const poll_timer = table(
   { name: "poll_timer" },
   {
@@ -114,6 +144,7 @@ const spacetimedb = schema({
   preview_queue,
   poller_status,
   settings,
+  fetch_log,
   poll_timer,
   prune_timer,
 });

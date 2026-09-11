@@ -1,8 +1,10 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { useSpacetimeDB } from "spacetimedb/react";
-import type { DbConnection } from "../module_bindings";
+import { tables, type DbConnection } from "../module_bindings";
+import type { FetchLog } from "../module_bindings/types";
 import { rankArticles, revealedCount, type ReplayEdit } from "./derive";
+import { applyFetchLog, type FetchToast } from "./fetchActivity";
 import { LiveStore } from "./store";
 
 export function useLiveStore(): LiveStore {
@@ -19,6 +21,41 @@ export function useLiveStore(): LiveStore {
 
   useSyncExternalStore(store.subscribe, store.getVersion);
   return store;
+}
+
+// Toasts describing what the server's Wikipedia fetchers are doing.
+export function useFetchActivity(): FetchToast[] {
+  const connection = useSpacetimeDB();
+  const [toasts, setToasts] = useState<FetchToast[]>([]);
+
+  useEffect(() => {
+    const conn = connection.getConnection() as DbConnection | null;
+    if (!connection.isActive || !conn) return;
+
+    const onFetch = (_ctx: unknown, row: FetchLog) =>
+      setToasts((current) => applyFetchLog(current, row, Date.now()));
+    conn.db.fetchLog.onInsert(onFetch);
+
+    // A subscription of its own: it lives as long as the connection, where
+    // the store's is replaced as its time window moves.
+    let detached = false;
+    const handle = conn
+      .subscriptionBuilder()
+      .onApplied(() => {
+        if (detached) handle.unsubscribe();
+      })
+      .subscribe([tables.fetchLog]);
+
+    return () => {
+      detached = true;
+      if (handle.isActive()) handle.unsubscribe();
+      conn.db.fetchLog.removeOnInsert(onFetch);
+    };
+    // Attach when the connection comes up; detach when it goes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connection.isActive]);
+
+  return toasts;
 }
 
 export function useNow(intervalMs: number): number {
