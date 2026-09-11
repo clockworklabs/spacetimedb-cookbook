@@ -20,4 +20,5 @@ export default __t.row({
     return __t.option(Thumbnail);
   },
   fetchedAt: __t.timestamp().name("fetched_at"),
+  lastEditedAt: __t.timestamp().name("last_edited_at"),
 });

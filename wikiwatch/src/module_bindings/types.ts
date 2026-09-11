@@ -19,6 +19,7 @@ export const ArticlePreview = __t.object("ArticlePreview", {
     return __t.option(Thumbnail);
   },
   fetchedAt: __t.timestamp(),
+  lastEditedAt: __t.timestamp(),
 });
 export type ArticlePreview = __Infer<typeof ArticlePreview>;
 

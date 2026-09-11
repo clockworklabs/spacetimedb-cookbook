@@ -1,0 +1,504 @@
+/*
+ * Palette from Wikimedia's own design tokens: the cool paper and ink of the
+ * article page, the green and red of a diff's byte counts, and the warning
+ * yellow as the one warm accent, reserved for heat.
+ */
+:root {
+  color-scheme: light dark;
+
+  --paper: #f8f9fa;
+  --ink: #202122;
+  --muted: #54595d;
+  --rule: #c8ccd1;
+  --rule-soft: #eaecf0;
+  --link: #3366cc;
+  --added: #14866d;
+  --removed: #d73333;
+  --heat: #edab00;
+  --fresh: #fef6e7;
+
+  --serif:
+    "Libertinus Serif", "Linux Libertine", Georgia, "Times New Roman", serif;
+  --sans: "Libertinus Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #101418;
+    --ink: #eaecf0;
+    --muted: #a2a9b1;
+    --rule: #54595d;
+    --rule-soft: #27292d;
+    --link: #88a3e8;
+    --added: #4fbf9a;
+    --removed: #fd7865;
+    --heat: #ffcc33;
+    --fresh: #3a300f;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* Only cards take part in view transitions; the rest updates in place. */
+:root {
+  view-transition-name: none;
+}
+
+::view-transition-group(*) {
+  animation-duration: 500ms;
+}
+
+.page {
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 48px);
+}
+
+/* Masthead */
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px 48px;
+  padding-block: 32px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 2.75rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  margin-top: 6px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+
+.status {
+  margin-top: 14px;
+  max-width: 60ch;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.status.problem {
+  color: var(--removed);
+}
+
+.masthead-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.pulse {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.pulse svg {
+  display: block;
+  width: min(360px, calc(100vw - 32px));
+  height: 40px;
+}
+
+.pulse .bar {
+  fill: var(--rule);
+}
+
+.pulse .bar.current {
+  fill: var(--heat);
+}
+
+.pulse figcaption,
+.toggle {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  accent-color: var(--link);
+}
+
+/* Layout */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 48px;
+  padding-block: 28px 48px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+  margin-bottom: 18px;
+}
+
+.section-head h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.4rem;
+}
+
+.section-head p {
+  max-width: 72ch;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.empty {
+  max-width: 50ch;
+  padding-block: 12px;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+/* Article cards */
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-auto-flow: row dense;
+  gap: 32px 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.heat {
+  height: 3px;
+  background: var(--rule-soft);
+}
+
+.heat span {
+  display: block;
+  height: 100%;
+  background: var(--heat);
+}
+
+.card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--rule-soft);
+}
+
+.card h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.3rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.card h3 a {
+  text-decoration: none;
+}
+
+.card h3 a:hover {
+  text-decoration: underline;
+}
+
+.card-description {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.card-summary {
+  max-width: 65ch;
+  font-family: var(--serif);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The hottest article leads, across the full width of the grid. */
+.card.featured {
+  grid-column: 1 / -1;
+}
+
+.featured h3 {
+  font-size: clamp(1.9rem, 3.2vw, 3rem);
+  line-height: 1.05;
+}
+
+.featured .card-summary {
+  font-size: 1.15rem;
+  line-height: 1.55;
+  -webkit-line-clamp: 7;
+}
+
+.featured .trail {
+  height: 56px;
+}
+
+@media (min-width: 720px) {
+  .card.featured {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    align-items: start;
+    gap: 12px 32px;
+  }
+
+  .featured .heat {
+    grid-column: 1 / -1;
+  }
+
+  /* With no image, the body takes the image's place too. */
+  .featured > .card-body:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Edit trail */
+
+.trail {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: 2px;
+}
+
+.trail-axis {
+  stroke: var(--rule);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tick {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tick.added {
+  stroke: var(--added);
+}
+
+.tick.removed {
+  stroke: var(--removed);
+}
+
+.tick.neutral {
+  stroke: var(--muted);
+}
+
+.tick.bot {
+  opacity: 0.45;
+}
+
+/* Latest edits */
+
+.rail {
+  min-width: 0;
+}
+
+.ticker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticker li {
+  display: grid;
+  grid-template-columns: auto 3.8em minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.ticker li.fresh {
+  animation: arrive 2.5s ease-out;
+}
+
+@keyframes arrive {
+  from {
+    background: var(--fresh);
+  }
+  to {
+    background: transparent;
+  }
+}
+
+.ticker time,
+.delta {
+  padding-top: 0.2em;
+  font-size: 0.85rem;
+}
+
+.ticker time {
+  color: var(--muted);
+}
+
+.delta {
+  text-align: right;
+}
+
+.delta.added {
+  color: var(--added);
+}
+
+.delta.removed {
+  color: var(--removed);
+}
+
+.delta.neutral {
+  color: var(--muted);
+}
+
+.entry-title {
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.entry-title:hover {
+  text-decoration: underline;
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.entry-user {
+  color: var(--ink);
+}
+
+.entry-flag {
+  font-style: italic;
+}
+
+.entry-comment {
+  overflow-wrap: anywhere;
+}
+
+.colophon {
+  padding-block: 16px 32px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (min-width: 1041px) {
+  .rail {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1040px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cards > li:nth-child(n + 10) {
+    display: none;
+  }
+
+  .masthead-controls,
+  .pulse {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker li.fresh {
+    animation: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}

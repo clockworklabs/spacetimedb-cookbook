@@ -37,7 +37,8 @@ const PREVIEW_MAX_AGE = 24n * HOUR;
 const POLL_OVERLAP = MINUTE;
 // After downtime, skip ahead rather than back-filling indefinitely.
 const MAX_BACKFILL = HOUR;
-const INITIAL_BACKFILL = 5n * MINUTE;
+// A fresh database fills a client's one-hour window straight away.
+const INITIAL_BACKFILL = MAX_BACKFILL;
 const MAX_RC_PAGES = 5;
 
 const PREVIEW_BATCHES_PER_TICK = 3;
@@ -99,16 +100,16 @@ export const pruneOldData = spacetimedb.reducer(
       ctx.db.edit.rc_id.delete(row.rc_id);
     }
 
-    const orphaned = [...ctx.db.article_preview.iter()].filter(
-      (preview) => !hasAny(ctx.db.edit.page_id.filter(preview.page_id)),
-    );
-    for (const preview of orphaned) {
+    const cold = [
+      ...ctx.db.article_preview.last_edited_at.filter(
+        new Range({ tag: "unbounded" }, { tag: "excluded", value: cutoff }),
+      ),
+    ];
+    for (const preview of cold) {
       ctx.db.article_preview.page_id.delete(preview.page_id);
     }
 
-    console.info(
-      `Pruned ${expired.length} edits and ${orphaned.length} previews`,
-    );
+    console.info(`Pruned ${expired.length} edits and ${cold.length} previews`);
   },
 );
 
@@ -144,6 +145,7 @@ function ingestRecentChanges(ctx: ProcCtx) {
       newest = later(newest, change.edited_at);
       if (tx.db.edit.rc_id.find(change.rc_id)) continue;
       tx.db.edit.insert(change);
+      touchPreview(tx, change.page_id, change.edited_at);
       enqueuePreview(tx, change.page_id, change.title);
       count++;
     }
@@ -161,6 +163,24 @@ function ingestRecentChanges(ctx: ProcCtx) {
   if (inserted > 0) {
     console.info(`Ingested ${inserted} of ${changes.length} recent changes`);
   }
+}
+
+function touchPreview(tx: TxCtx, page_id: bigint, edited_at: Timestamp) {
+  const preview = tx.db.article_preview.page_id.find(page_id);
+  if (preview && compare(edited_at, preview.last_edited_at) > 0) {
+    tx.db.article_preview.page_id.update({
+      ...preview,
+      last_edited_at: edited_at,
+    });
+  }
+}
+
+function latestEdit(tx: TxCtx, page_id: bigint): Timestamp | undefined {
+  let latest: Timestamp | undefined;
+  for (const edit of tx.db.edit.page_id.filter(page_id)) {
+    latest = latest ? later(latest, edit.edited_at) : edit.edited_at;
+  }
+  return latest;
 }
 
 function enqueuePreview(tx: TxCtx, page_id: bigint, title: string) {
@@ -221,6 +241,7 @@ function storePreviews(
     tx.db.preview_queue.page_id.delete(preview.page_id);
     if (preview.missing) continue;
 
+    const existing = tx.db.article_preview.page_id.find(preview.page_id);
     const row = {
       page_id: preview.page_id,
       title: preview.title,
@@ -228,8 +249,12 @@ function storePreviews(
       summary: preview.summary,
       thumbnail: preview.thumbnail,
       fetched_at: tx.timestamp,
+      last_edited_at:
+        latestEdit(tx, preview.page_id) ??
+        existing?.last_edited_at ??
+        tx.timestamp,
     };
-    if (tx.db.article_preview.page_id.find(row.page_id)) {
+    if (existing) {
       tx.db.article_preview.page_id.update(row);
     } else {
       tx.db.article_preview.insert(row);
@@ -276,11 +301,6 @@ function compare(a: Timestamp, b: Timestamp): number {
 
 function later(a: Timestamp, b: Timestamp): Timestamp {
   return compare(a, b) >= 0 ? a : b;
-}
-
-function hasAny(iterable: Iterable<unknown>): boolean {
-  for (const _ of iterable) return true;
-  return false;
 }
 
 function chunk<T>(items: T[], size: number): T[][] {
