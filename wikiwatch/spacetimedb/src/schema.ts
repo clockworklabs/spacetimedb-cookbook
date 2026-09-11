@@ -80,6 +80,18 @@ export const poller_status = table(
   },
 );
 
+// Operator settings (one row, id = 0). Private, so only the database owner
+// can read or change them, with `spacetime sql`; see scripts/set-contact.sh.
+export const settings = table(
+  { name: "settings" },
+  {
+    id: t.u8().primaryKey(),
+    // An email address or URL for Wikipedia's User-Agent policy. Kept in the
+    // database so personal details stay out of the source.
+    wikipedia_contact: t.string(),
+  },
+);
+
 export const poll_timer = table(
   { name: "poll_timer" },
   {
@@ -101,6 +113,7 @@ const spacetimedb = schema({
   article_preview,
   preview_queue,
   poller_status,
+  settings,
   poll_timer,
   prune_timer,
 });

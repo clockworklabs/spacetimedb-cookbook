@@ -6,3 +6,5 @@ dist
 .DS_Store
 
 spacetime.local.json
+# Machine-specific settings, including personal details such as WIKIWATCH_CONTACT.
+.env*.local

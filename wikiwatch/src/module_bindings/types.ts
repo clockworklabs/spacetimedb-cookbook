@@ -74,6 +74,12 @@ export const PruneTimer = __t.object("PruneTimer", {
 });
 export type PruneTimer = __Infer<typeof PruneTimer>;
 
+export const Settings = __t.object("Settings", {
+  id: __t.u8(),
+  wikipediaContact: __t.string(),
+});
+export type Settings = __Infer<typeof Settings>;
+
 export const Thumbnail = __t.object("Thumbnail", {
   url: __t.string(),
   width: __t.u32(),
