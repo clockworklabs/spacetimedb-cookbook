@@ -1,4 +1,11 @@
-import { schema, table, t } from "spacetimedb/server";
+import {
+  schema,
+  table,
+  t,
+  type InferSchema,
+  type ProcedureCtx,
+  type ReducerCtx,
+} from "spacetimedb/server";
 
 // One row per Wikipedia recent-change (edits and page creations, articles
 // only). Keyed by Wikipedia's own rcid, so re-fetching an overlapping window
@@ -156,3 +163,7 @@ const spacetimedb = schema({
   prune_timer,
 });
 export default spacetimedb;
+
+type Schema = InferSchema<typeof spacetimedb>;
+export type TxCtx = ReducerCtx<Schema>;
+export type ProcCtx = ProcedureCtx<Schema>;
