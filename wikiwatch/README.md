@@ -1,116 +1,137 @@
-Get a SpacetimeDB React app running in under 5 minutes.
+# wikiwatch
 
-## Prerequisites
+A live view of what's being edited on English Wikipedia right now.
 
-- [Node.js](https://nodejs.org/) 18+ installed
-- [SpacetimeDB CLI](https://spacetimedb.com/install) installed
+A SpacetimeDB module polls Wikipedia's recent changes every 15 seconds, and keeps the last 24 hours of
+article edits along with a preview of each article. A React client subscribes to those tables and shows
+which articles are busiest.
 
-Install the [SpacetimeDB CLI](https://spacetimedb.com/install) before continuing.
+## What you see
 
----
+- **The front page** ranks the most active articles of the last hour, with recent edits counting most.
+  Each article has a trail of its edits across the hour: additions rise above the line, removals drop
+  below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest edits, and a toggle
+  to hide bot edits. The page replays edits 30 seconds behind real time, which turns the poller's
+  15-second bursts back into a steady stream.
+- **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, and every edit to
+  it that the server still holds, as soon as each one arrives.
+- **Toasts** report what the server's Wikipedia fetchers are doing, and when they fail.
 
-## Create your project
+## Running it locally
 
-Run the `spacetime dev` command to create a new project with a SpacetimeDB module and React client.
-
-This will start the local SpacetimeDB server, publish your module, generate TypeScript bindings, and start the React development server.
-
-```bash
-spacetime dev --template react-ts
-```
-
-
-
-## Open your app
-
-Navigate to [http://localhost:5173](http://localhost:5173) to see your app running.
-
-The template includes a basic React app connected to SpacetimeDB.
-
-
-
-## Explore the project structure
-
-Your project contains both server and client code.
-
-Edit `spacetimedb/src/index.ts` to add tables and reducers. Edit `client/src/App.tsx` to build your UI.
-
-```
-my-spacetime-app/
-├── spacetimedb/          # Your SpacetimeDB module
-│   └── src/
-│       └── index.ts      # Server-side logic
-├── client/               # React frontend
-│   └── src/
-│       ├── App.tsx
-│       └── module_bindings/  # Auto-generated types
-└── package.json
-```
-
-
-
-## Understand tables and reducers
-
-Open `spacetimedb/src/index.ts` to see the module code. The template includes a `person` table and two reducers: `add` to insert a person, and `sayHello` to greet everyone.
-
-Tables store your data. Reducers are functions that modify data — they're the only way to write to the database.
-
-```typescript
-import { schema, table, t } from 'spacetimedb/server';
-
-const spacetimedb = schema({
-  person: table(
-    { public: true },
-    {
-      name: t.string(),
-    }
-  ),
-});
-export default spacetimedb;
-
-export const add = spacetimedb.reducer(
-  { name: t.string() },
-  (ctx, { name }) => {
-    ctx.db.person.insert({ name });
-  }
-);
-
-export const sayHello = spacetimedb.reducer(ctx => {
-  for (const person of ctx.db.person.iter()) {
-    console.info(`Hello, ${person.name}!`);
-  }
-  console.info('Hello, World!');
-});
-```
-
-
-
-## Test with the CLI
-
-Open a new terminal and navigate to your project directory. Then use the SpacetimeDB CLI to call reducers and query your data directly.
+You need Node.js, pnpm and the SpacetimeDB CLI (2.10). The `flake.nix` at the root of this repository
+provides all three: run `direnv allow`, or `nix develop`.
 
 ```bash
-cd my-spacetime-app
+pnpm install
+pnpm --dir spacetimedb install
 
-# Call the add reducer to insert a person
-spacetime call add Alice
+# In another terminal: a local SpacetimeDB server on port 3000.
+spacetime start
 
-# Query the person table
-spacetime sql "SELECT * FROM person"
- name
----------
- "Alice"
+# Publish the module under the database name the client uses by default.
+pnpm spacetime:publish:local wikiwatch-dev
 
-# Call sayHello to greet everyone
-spacetime call say_hello
-
-# View the module logs
-spacetime logs
-2025-01-13T12:00:00.000000Z  INFO: Hello, Alice!
-2025-01-13T12:00:00.000000Z  INFO: Hello, World!
+# Serve the client at http://localhost:5173.
+pnpm dev
 ```
 
-## Next steps
+Publishing starts the poller, and a fresh database back-fills the last hour, so the front page fills up
+after the first poll.
 
-- See the [Chat App Tutorial](https://spacetimedb.com/docs/intro/tutorials/chat-app) for a complete example
-- Read the [TypeScript SDK Reference](https://spacetimedb.com/docs/intro/core-concepts/clients/typescript-reference) for detailed API docs
+### Identify yourself to Wikipedia
+
+Wikimedia's [User-Agent policy][ua-policy] asks API clients for contact details. Put an email address or
+URL in `.env.local`, then store it in the database's private `settings` table:
+
+```bash
+echo 'WIKIWATCH_CONTACT=you@example.com' >> .env.local
+pnpm spacetime:set-contact wikiwatch-dev local
+```
+
+That keeps the contact out of the source, the module bundle and version control. Until it's set, the
+module sends a generic SpacetimeDB address instead.
+
+[ua-policy]: https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy
+
+### Configuration
+
+Settings live in `.env.local`, which is gitignored. With no `.env.local`, the client connects to the local
+server above.
+
+| Variable                   | Read by                   | Default               |
+| -------------------------- | ------------------------- | --------------------- |
+| `VITE_SPACETIMEDB_HOST`    | the client, at build time | `ws://localhost:3000` |
+| `VITE_SPACETIMEDB_DB_NAME` | the client, at build time | `wikiwatch-dev`       |
+| `SPACETIMEDB_HOST`         | `spacetime:set-contact`   | none                  |
+| `SPACETIMEDB_DB_NAME`      | `spacetime:set-contact`   | none                  |
+| `WIKIWATCH_CONTACT`        | `spacetime:set-contact`   | none                  |
+
+The database and server arguments to `spacetime:set-contact` override `SPACETIMEDB_DB_NAME` and
+`SPACETIMEDB_HOST`.
+
+## Changing the module
+
+The client's bindings in `src/module_bindings` are generated from the module and committed. After
+changing a table, reducer or procedure, regenerate them and republish:
+
+```bash
+pnpm spacetime:generate
+pnpm spacetime:publish:local wikiwatch-dev
+```
+
+If existing data can't be migrated to the new schema, add `--delete-data=on-conflict` to the publish.
+
+## Deploying
+
+```bash
+spacetime login
+pnpm spacetime:publish <database name>   # the module, to Maincloud
+pnpm build                               # the client, into dist/
+```
+
+Set `VITE_SPACETIMEDB_HOST` (`wss://maincloud.spacetimedb.com`) and `VITE_SPACETIMEDB_DB_NAME` before
+building. Routes live in the URL fragment, so any static host can serve `dist/` as it is.
+
+## How it works
+
+### The module (`spacetimedb/src`)
+
+| File           | What it does                                                                 |
+| -------------- | ---------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, the scheduled `pollWikipedia` and `pruneOldData`          |
+| `schema.ts`    | The tables                                                                   |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                  |
+| `edits.ts`     | Ingests recent changes into the `edit` table                                 |
+| `previews.ts`  | Queues, fetches and stores article previews                                  |
+| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log` |
+| `time.ts`      | Timestamp arithmetic                                                         |
+
+Every 15 seconds, `pollWikipedia` asks for article edits and page creations since its cursor. It re-reads
+a minute before the cursor, because changes can reach the API slightly after their timestamps, and
+Wikipedia's `rcid` removes the duplicates. After downtime it skips ahead rather than back-filling more
+than an hour. Each new edit queues its article for a preview, and the same run fetches up to three
+batches of twenty, giving up on a page after three failed attempts. It makes HTTP requests, so it's a
+procedure, and it refuses to run for anyone but the scheduler.
+
+Every hour, `pruneOldData` deletes edits older than 24 hours, and the previews of articles nobody has
+edited in that time.
+
+| Table                       | Visibility   | Holds                                                    |
+| --------------------------- | ------------ | -------------------------------------------------------- |
+| `edit`                      | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
+| `article_preview`           | public       | Each article's title, description, summary and thumbnail |
+| `poller_status`             | public       | The poll cursor, and the poller's health                 |
+| `fetch_log`                 | public event | The start and end of each fetch, for the toasts          |
+| `preview_queue`             | private      | Articles waiting for a preview fetch                     |
+| `settings`                  | private      | The contact sent to Wikipedia                            |
+| `poll_timer`, `prune_timer` | private      | The schedules                                            |
+
+### The client (`src`)
+
+- `main.tsx` connects to SpacetimeDB, and `App.tsx` picks a page from the route in `route.ts`.
+- `live/store.ts` subscribes to the edits and previews within a moving time window, replacing the
+  subscription periodically so that old rows leave the client cache.
+- `live/derive.ts` schedules the replay and works out rankings, heat and per-minute counts.
+- `live/hooks.ts` connects the store, per-article subscriptions and fetch toasts to React.
+- `components/` renders it all.
