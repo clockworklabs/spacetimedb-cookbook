@@ -19,8 +19,8 @@ which articles are busiest.
 
 ## Running it locally
 
-You need Node.js, pnpm and the SpacetimeDB CLI (2.10). The `flake.nix` at the root of this repository
-provides all three: run `direnv allow`, or `nix develop`.
+You need Node.js, pnpm, prettier and the SpacetimeDB CLI (2.10). The `flake.nix` at the root of this
+repository provides them all: run `direnv allow`, or `nix develop`.
 
 ```bash
 pnpm install
@@ -30,11 +30,14 @@ pnpm --dir spacetimedb install
 spacetime start
 
 # Publish the module under the database name the client uses by default.
-pnpm spacetime:publish:local wikiwatch-dev
+spacetime publish --server local wikiwatch-dev
 
 # Serve the client at http://localhost:5173.
 pnpm dev
 ```
+
+Run `spacetime` commands from this directory: `spacetime.json` points them at the module in
+`spacetimedb/`, and at Maincloud unless you pass `--server`.
 
 Publishing starts the poller, and a fresh database back-fills the last hour, so the front page fills up
 after the first poll.
@@ -46,7 +49,7 @@ URL in `.env.local`, then store it in the database's private `settings` table:
 
 ```bash
 echo 'WIKIWATCH_CONTACT=you@example.com' >> .env.local
-pnpm spacetime:set-contact wikiwatch-dev local
+scripts/set-contact.sh wikiwatch-dev local
 ```
 
 That keeps the contact out of the source, the module bundle and version control. Until it's set, the
@@ -63,11 +66,11 @@ server above.
 | -------------------------- | ------------------------- | --------------------- |
 | `VITE_SPACETIMEDB_HOST`    | the client, at build time | `ws://localhost:3000` |
 | `VITE_SPACETIMEDB_DB_NAME` | the client, at build time | `wikiwatch-dev`       |
-| `SPACETIMEDB_HOST`         | `spacetime:set-contact`   | none                  |
-| `SPACETIMEDB_DB_NAME`      | `spacetime:set-contact`   | none                  |
-| `WIKIWATCH_CONTACT`        | `spacetime:set-contact`   | none                  |
+| `SPACETIMEDB_HOST`         | `scripts/set-contact.sh`  | none                  |
+| `SPACETIMEDB_DB_NAME`      | `scripts/set-contact.sh`  | none                  |
+| `WIKIWATCH_CONTACT`        | `scripts/set-contact.sh`  | none                  |
 
-The database and server arguments to `spacetime:set-contact` override `SPACETIMEDB_DB_NAME` and
+The database and server arguments to `scripts/set-contact.sh` override `SPACETIMEDB_DB_NAME` and
 `SPACETIMEDB_HOST`.
 
 ## Changing the module
@@ -76,9 +79,14 @@ The client's bindings in `src/module_bindings` are generated from the module and
 changing a table, reducer or procedure, regenerate them and republish:
 
 ```bash
-pnpm spacetime:generate
-pnpm spacetime:publish:local wikiwatch-dev
+spacetime generate
+prettier --write src/module_bindings
+spacetime publish --server local wikiwatch-dev
 ```
+
+`spacetime generate` takes the language and output directory from the generate target in
+`spacetime.json`. Formatting the output with prettier matches the committed bindings, so the diff shows
+only what really changed.
 
 If existing data can't be migrated to the new schema, add `--delete-data=on-conflict` to the publish.
 
@@ -86,8 +94,8 @@ If existing data can't be migrated to the new schema, add `--delete-data=on-conf
 
 ```bash
 spacetime login
-pnpm spacetime:publish <database name>   # the module, to Maincloud
-pnpm build                               # the client, into dist/
+spacetime publish <database name>   # the module, to Maincloud
+pnpm build                          # the client, into dist/
 ```
 
 Set `VITE_SPACETIMEDB_HOST` (`wss://maincloud.spacetimedb.com`) and `VITE_SPACETIMEDB_DB_NAME` before
@@ -97,15 +105,15 @@ building. Routes live in the URL fragment, so any static host can serve `dist/` 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                 |
-| -------------- | ---------------------------------------------------------------------------- |
-| `index.ts`     | The entry: `init`, the scheduled `pollWikipedia` and `pruneOldData`          |
-| `schema.ts`    | The tables                                                                   |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                  |
-| `edits.ts`     | Ingests recent changes into the `edit` table                                 |
-| `previews.ts`  | Queues, fetches and stores article previews                                  |
+| File           | What it does                                                                   |
+| -------------- | ------------------------------------------------------------------------------ |
+| `index.ts`     | The entry: `init`, the scheduled `pollWikipedia` and `pruneOldData`            |
+| `schema.ts`    | The tables                                                                     |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                    |
+| `edits.ts`     | Ingests recent changes into the `edit` table                                   |
+| `previews.ts`  | Queues, fetches and stores article previews                                    |
 | `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log` |
-| `time.ts`      | Timestamp arithmetic                                                         |
+| `time.ts`      | Timestamp arithmetic                                                           |
 
 Every 15 seconds, `pollWikipedia` asks for article edits and page creations since its cursor. It re-reads
 a minute before the cursor, because changes can reach the API slightly after their timestamps, and
