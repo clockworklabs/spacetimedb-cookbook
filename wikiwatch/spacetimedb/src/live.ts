@@ -1,10 +1,10 @@
-// The live set: the recent edits that clients subscribe to, and the previews
-// of the pages they belong to. Rows carry a `live` flag rather than clients
-// filtering on time, so a single subscription stays LIVE_FOR deep, and rows
-// leave client caches as they age without anyone resubscribing.
+// The live set: the recent edits that clients subscribe to. Edits carry a
+// `live` flag rather than clients filtering on time, so a single subscription
+// stays LIVE_FOR deep, and rows leave client caches as they age without anyone
+// resubscribing. Clients join previews to the live edits, so a page's preview
+// leaves along with its last live edit.
 
 import { ScheduleAt, type Timestamp } from "spacetimedb";
-import { coolPreview } from "./previews";
 import type { TxCtx } from "./schema";
 import { MINUTE, compare, minus } from "./time";
 
@@ -29,20 +29,15 @@ export function ensureSweepTimer(tx: TxCtx) {
   });
 }
 
-// Takes edits older than LIVE_FOR out of the live set, along with the previews
-// of pages left with no live edits. Subscribed clients receive each as a delete.
+// Takes edits older than LIVE_FOR out of the live set. Subscribed clients
+// receive each as a delete.
 export function ageLiveSet(tx: TxCtx) {
   const aged = [...tx.db.edit.live.filter(true)].filter(
     (edit) => !isLive(tx, edit.edited_at),
   );
-  const pages = new Set<bigint>();
   for (const edit of aged) {
     tx.db.edit.rc_id.update({ ...edit, live: false });
-    pages.add(edit.page_id);
   }
-  const cooled = [...pages].filter((page_id) => coolPreview(tx, page_id));
 
-  console.info(
-    `Aged ${aged.length} edits and ${cooled.length} previews out of the live set`,
-  );
+  console.info(`Aged ${aged.length} edits out of the live set`);
 }
