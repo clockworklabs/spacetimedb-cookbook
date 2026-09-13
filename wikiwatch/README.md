@@ -8,7 +8,7 @@ which articles are busiest.
 
 ## What you see
 
-- **The front page** ranks the most active articles of the last ten minutes, with recent edits counting
+- **The front page** ranks the most active articles of the last 30 minutes, with recent edits counting
   most. Each article has a trail of its edits across those minutes: additions rise above the line,
   removals drop below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest
   edits, and a toggle to hide bot edits. The page replays edits 30 seconds behind real time, which turns
@@ -125,8 +125,8 @@ procedure, and it refuses to run for anyone but the scheduler.
 
 Edits and previews carry a `live` flag, and clients subscribe to the live rows only. A new edit is live,
 and so is its article's preview. Every five minutes, `sweepLiveSet` clears the flag on edits more than
-ten minutes old, and on the previews of articles left with no live edits. Subscribed clients see each
-one leave as a delete, so their caches stay a few minutes deep without resubscribing. Clients are sent
+30 minutes old, and on the previews of articles left with no live edits. Subscribed clients see each
+one leave as a delete, so their caches stay about half an hour deep without resubscribing. Clients are sent
 every change to a live row, so a live preview isn't rewritten as its article's edits arrive: its
 `last_edited_at` catches up when it leaves the live set.
 
