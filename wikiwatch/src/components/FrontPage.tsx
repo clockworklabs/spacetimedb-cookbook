@@ -7,8 +7,7 @@ import {
   WINDOW_MS,
   type ReplayEdit,
 } from "../live/derive";
-import { useArticleOrder } from "../live/hooks";
-import type { LiveStore } from "../live/store";
+import { useArticleOrder, type LiveSet } from "../live/hooks";
 import { ArticleCard } from "./ArticleCard";
 import { Masthead } from "./Masthead";
 import { PulseRibbon } from "./PulseRibbon";
@@ -20,7 +19,7 @@ const TICKER_LENGTH = 80;
 const WINDOW_MINUTES = WINDOW_MS / 60_000;
 
 type Props = {
-  store: LiveStore;
+  live: LiveSet;
   isActive: boolean;
   now: number;
   hideBots: boolean;
@@ -28,7 +27,7 @@ type Props = {
 };
 
 export function FrontPage({
-  store,
+  live,
   isActive,
   now,
   hideBots,
@@ -36,7 +35,7 @@ export function FrontPage({
 }: Props) {
   const clock = now - REPLAY_DELAY_MS;
 
-  const replay = store.replay;
+  const replay = live.replay;
   const edits = useMemo(
     () =>
       hideBots ? replay.all.filter(({ edit }) => !edit.isBot) : replay.all,
@@ -63,7 +62,7 @@ export function FrontPage({
     latest.push(edits[i]);
   }
 
-  const emptyMessage = store.isLoaded
+  const emptyMessage = live.isLoaded
     ? `No article edits in the last ${WINDOW_MINUTES} minutes yet. The server checks Wikipedia every 15 seconds, so they’ll start appearing shortly.`
     : "Loading the latest edits…";
 
@@ -72,12 +71,12 @@ export function FrontPage({
       <Masthead
         home
         isActive={isActive}
-        loaded={store.isLoaded}
-        status={store.status}
+        loaded={live.isLoaded}
+        status={live.status}
         now={now}
         delayed
       >
-        {store.isLoaded && (
+        {live.isLoaded && (
           <PulseRibbon
             counts={editsPerMinute(edits, revealed, clock, WINDOW_MINUTES)}
           />
@@ -111,7 +110,7 @@ export function FrontPage({
                   key={card.key}
                   pageKey={card.key}
                   edits={card.edits}
-                  preview={store.preview(card.key)}
+                  preview={live.previews.get(card.key)}
                   featured={i === 0}
                   heatShare={hottest > 0 ? card.heat / hottest : 0}
                   clock={clock}

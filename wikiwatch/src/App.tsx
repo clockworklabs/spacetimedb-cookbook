@@ -3,15 +3,15 @@ import { useSpacetimeDB } from "spacetimedb/react";
 import { ArticlePage } from "./components/ArticlePage";
 import { FetchToasts } from "./components/FetchToasts";
 import { FrontPage } from "./components/FrontPage";
-import { useFetchActivity, useLiveStore, useNow } from "./live/hooks";
+import { useFetchActivity, useLiveSet, useNow } from "./live/hooks";
 import { useRoute } from "./route";
 
 const TICK_MS = 250;
 
 function App() {
-  // The live store stays attached on every page, so the front page is ready
+  // The live set stays subscribed on every page, so the front page is ready
   // the moment you come back to it.
-  const store = useLiveStore();
+  const live = useLiveSet();
   const fetches = useFetchActivity();
   const { isActive } = useSpacetimeDB();
   const now = useNow(TICK_MS);
@@ -25,13 +25,13 @@ function App() {
         <ArticlePage
           key={route.pageId.toString()}
           pageId={route.pageId}
-          store={store}
+          live={live}
           isActive={isActive}
           now={now}
         />
       ) : (
         <FrontPage
-          store={store}
+          live={live}
           isActive={isActive}
           now={now}
           hideBots={hideBots}
