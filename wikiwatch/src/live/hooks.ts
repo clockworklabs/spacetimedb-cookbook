@@ -1,31 +1,61 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { useSpacetimeDB, useTable } from "spacetimedb/react";
 import { tables, type DbConnection } from "../module_bindings";
-import type { ArticlePreview, FetchLog } from "../module_bindings/types";
+import type {
+  ArticlePreview,
+  FetchLog,
+  PollerStatus,
+} from "../module_bindings/types";
 import {
   rankArticles,
   revealedCount,
   scheduleReplay,
+  type Replay,
   type ReplayEdit,
 } from "./derive";
 import { applyFetchLog, type FetchToast } from "./fetchActivity";
-import { LiveStore } from "./store";
 
-export function useLiveStore(): LiveStore {
-  const connection = useSpacetimeDB();
-  const [store] = useState(() => new LiveStore());
+export type LiveSet = {
+  replay: Replay;
+  // Keyed by page id.
+  previews: ReadonlyMap<string, ArticlePreview>;
+  status: PollerStatus | undefined;
+  isLoaded: boolean;
+};
 
-  useEffect(() => {
-    const conn = connection.getConnection() as DbConnection | null;
-    if (!connection.isActive || !conn) return;
-    return store.attach(conn);
-    // Attach when the connection comes up; detach when it goes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connection.isActive, store]);
+// The server's live set (its recent edits, and the previews of the pages they
+// belong to) and the poller's status. The server takes rows out of the live
+// set as they age, so these subscriptions never need replacing. useTable
+// filters the shared client cache by each query, which keeps out the non-live
+// rows that article pages subscribe to. Every useTable call opens its own
+// subscription, so call this once, near the top of the app.
+export function useLiveSet(): LiveSet {
+  const [edits, editsReady] = useTable(
+    tables.edit.where((row) => row.live.eq(true)),
+  );
+  const [previews, previewsReady] = useTable(
+    tables.articlePreview.where((row) => row.live.eq(true)),
+  );
+  const [statuses, statusReady] = useTable(tables.pollerStatus);
 
-  useSyncExternalStore(store.subscribe, store.getVersion);
-  return store;
+  const replay = useMemo(() => scheduleReplay(edits), [edits]);
+  const previewsByPage = useMemo(
+    () =>
+      new Map(
+        previews.map(
+          (preview) => [preview.pageId.toString(), preview] as const,
+        ),
+      ),
+    [previews],
+  );
+
+  return {
+    replay,
+    previews: previewsByPage,
+    status: statuses[0],
+    isLoaded: editsReady && previewsReady && statusReady,
+  };
 }
 
 export type Article = {
@@ -36,7 +66,7 @@ export type Article = {
 };
 
 // One article's preview and every edit to it the server still holds, which
-// reaches much further back than the live store's window.
+// reaches much further back than the live set.
 export function useArticle(pageId: bigint): Article {
   const [editRows, editsReady] = useTable(
     tables.edit.where((row) => row.pageId.eq(pageId)),
@@ -61,7 +91,7 @@ export function useFetchActivity(): FetchToast[] {
       setToasts((current) => applyFetchLog(current, row, Date.now()));
     conn.db.fetchLog.onInsert(onFetch);
 
-    // A subscription of its own, so the toasts don't depend on the store.
+    // A subscription of its own, which lives as long as the connection.
     let detached = false;
     const handle = conn
       .subscriptionBuilder()

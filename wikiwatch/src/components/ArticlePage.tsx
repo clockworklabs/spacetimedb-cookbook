@@ -8,8 +8,7 @@ import {
   historyUrl,
   plural,
 } from "../live/format";
-import { useArticle } from "../live/hooks";
-import type { LiveStore } from "../live/store";
+import { useArticle, type LiveSet } from "../live/hooks";
 import { FRONT_PAGE_HREF } from "../route";
 import { EditHistory } from "./EditHistory";
 import { EditTrail } from "./EditTrail";
@@ -22,14 +21,14 @@ const HISTORY_TICK_MS = 5_000;
 
 type Props = {
   pageId: bigint;
-  store: LiveStore;
+  live: LiveSet;
   isActive: boolean;
   now: number;
 };
 
 // One article's preview, and every edit to it the server still holds. Unlike
 // the front page, edits show as soon as they arrive rather than replayed.
-export function ArticlePage({ pageId, store, isActive, now }: Props) {
+export function ArticlePage({ pageId, live, isActive, now }: Props) {
   const { edits, preview, isReady } = useArticle(pageId);
   const latest = edits[edits.length - 1]?.edit;
   const title = preview?.title ?? latest?.title;
@@ -50,8 +49,8 @@ export function ArticlePage({ pageId, store, isActive, now }: Props) {
     <>
       <Masthead
         isActive={isActive}
-        loaded={store.isLoaded}
-        status={store.status}
+        loaded={live.isLoaded}
+        status={live.status}
         now={now}
         delayed={false}
       />

@@ -146,7 +146,7 @@ edited in that time.
 ### The client (`src`)
 
 - `main.tsx` connects to SpacetimeDB, and `App.tsx` picks a page from the route in `route.ts`.
-- `live/store.ts` subscribes once to the live edits and previews, a set the server keeps small.
 - `live/derive.ts` schedules the replay and works out rankings, heat and per-minute counts.
-- `live/hooks.ts` connects the store, per-article subscriptions and fetch toasts to React.
+- `live/hooks.ts` gives React the live set (the edits and previews the server keeps live, through
+  `useTable`), each article's full history, and the fetch toasts.
 - `components/` renders it all.
