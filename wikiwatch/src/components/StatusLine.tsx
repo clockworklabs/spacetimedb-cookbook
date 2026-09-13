@@ -34,11 +34,10 @@ function describe(
   wasActive: boolean,
 ): [string, boolean] {
   if (!isActive) {
+    // SpacetimeDBProvider reconnects on its own, backing off up to 30 seconds
+    // between attempts, so there's nothing for the reader to do but wait.
     return wasActive
-      ? [
-          "Lost the connection to the wikiwatch server. Reload the page to reconnect.",
-          true,
-        ]
+      ? ["Lost the connection to the wikiwatch server. Reconnecting…", true]
       : ["Connecting to the wikiwatch server…", false];
   }
   if (!loaded || !status) {
