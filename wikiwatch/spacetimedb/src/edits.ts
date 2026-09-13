@@ -1,6 +1,7 @@
 // Pulling Wikipedia's recent changes into the edit table.
 
 import type { ProcCtx } from "./schema";
+import { isLive } from "./live";
 import { enqueuePreview, touchPreview } from "./previews";
 import { STATUS_ID, errorMessage, logFetch, recordError } from "./status";
 import { HOUR, MINUTE, later, minus } from "./time";
@@ -11,7 +12,7 @@ import { fetchRecentChanges } from "./wikipedia";
 const POLL_OVERLAP = MINUTE;
 // After downtime, skip ahead rather than back-filling indefinitely.
 const MAX_BACKFILL = HOUR;
-// A fresh database fills a client's one-hour window straight away.
+// A fresh database starts with an hour of history for its article pages.
 export const INITIAL_BACKFILL = MAX_BACKFILL;
 const MAX_RC_PAGES = 5;
 
@@ -52,8 +53,10 @@ export function ingestRecentChanges(ctx: ProcCtx, agent: string) {
     for (const change of changes) {
       newest = later(newest, change.edited_at);
       if (tx.db.edit.rc_id.find(change.rc_id)) continue;
-      tx.db.edit.insert(change);
-      touchPreview(tx, change.page_id, change.edited_at);
+      // Back-filled edits can arrive already too old to be live.
+      const live = isLive(tx, change.edited_at);
+      tx.db.edit.insert({ ...change, live });
+      touchPreview(tx, change.page_id, change.edited_at, live);
       enqueuePreview(tx, change.page_id, change.title);
       count++;
     }

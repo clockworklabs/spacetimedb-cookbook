@@ -1,5 +1,5 @@
 // Article previews: queueing pages that need one, fetching them in batches,
-// and keeping each preview's last_edited_at current.
+// and moving each one in and out of the live set with its page's edits.
 
 import type { Timestamp } from "spacetimedb";
 import type { ProcCtx, TxCtx } from "./schema";
@@ -37,14 +37,42 @@ export function enqueuePreview(tx: TxCtx, page_id: bigint, title: string) {
   });
 }
 
-export function touchPreview(tx: TxCtx, page_id: bigint, edited_at: Timestamp) {
+// Keeps a preview in step with a new edit to its page. A live edit makes the
+// preview live, and from then on it's left alone until coolPreview takes it
+// out again. Clients subscribe to live previews and are sent every rewrite of
+// one, so updating last_edited_at here would resend a busy article's preview
+// with each of its edits.
+export function touchPreview(
+  tx: TxCtx,
+  page_id: bigint,
+  edited_at: Timestamp,
+  live: boolean,
+) {
   const preview = tx.db.article_preview.page_id.find(page_id);
-  if (preview && compare(edited_at, preview.last_edited_at) > 0) {
-    tx.db.article_preview.page_id.update({
-      ...preview,
-      last_edited_at: edited_at,
-    });
-  }
+  if (!preview || preview.live) return;
+  const newer = compare(edited_at, preview.last_edited_at) > 0;
+  if (!live && !newer) return;
+  tx.db.article_preview.page_id.update({
+    ...preview,
+    live,
+    last_edited_at: newer ? edited_at : preview.last_edited_at,
+  });
+}
+
+// Takes a preview out of the live set once its page has no live edits left,
+// catching up the last_edited_at that touchPreview left alone meanwhile.
+// Returns whether it did.
+export function coolPreview(tx: TxCtx, page_id: bigint): boolean {
+  const preview = tx.db.article_preview.page_id.find(page_id);
+  if (!preview?.live) return false;
+  const edits = [...tx.db.edit.page_id.filter(page_id)];
+  if (edits.some((edit) => edit.live)) return false;
+  tx.db.article_preview.page_id.update({
+    ...preview,
+    live: false,
+    last_edited_at: latestEdit(edits) ?? preview.last_edited_at,
+  });
+  return true;
 }
 
 export function ingestPreviews(ctx: ProcCtx, agent: string) {
@@ -106,6 +134,7 @@ function storePreviews(
     stored++;
 
     const existing = tx.db.article_preview.page_id.find(preview.page_id);
+    const edits = [...tx.db.edit.page_id.filter(preview.page_id)];
     const row = {
       page_id: preview.page_id,
       title: preview.title,
@@ -114,9 +143,8 @@ function storePreviews(
       thumbnail: preview.thumbnail,
       fetched_at: tx.timestamp,
       last_edited_at:
-        latestEdit(tx, preview.page_id) ??
-        existing?.last_edited_at ??
-        tx.timestamp,
+        latestEdit(edits) ?? existing?.last_edited_at ?? tx.timestamp,
+      live: edits.some((edit) => edit.live),
     };
     if (existing) {
       tx.db.article_preview.page_id.update(row);
@@ -131,9 +159,9 @@ function storePreviews(
   return stored;
 }
 
-function latestEdit(tx: TxCtx, page_id: bigint): Timestamp | undefined {
+function latestEdit(edits: { edited_at: Timestamp }[]): Timestamp | undefined {
   let latest: Timestamp | undefined;
-  for (const edit of tx.db.edit.page_id.filter(page_id)) {
+  for (const edit of edits) {
     latest = latest ? later(latest, edit.edited_at) : edit.edited_at;
   }
   return latest;

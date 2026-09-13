@@ -27,4 +27,5 @@ export default __t.row({
   comment: __t.string(),
   tags: __t.array(__t.string()),
   editedAt: __t.timestamp().name("edited_at"),
+  live: __t.bool(),
 });

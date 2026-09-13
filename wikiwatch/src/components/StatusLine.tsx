@@ -42,7 +42,7 @@ function describe(
       : ["Connecting to the wikiwatch server…", false];
   }
   if (!loaded || !status) {
-    return ["Loading the last hour of edits…", false];
+    return ["Loading the latest edits…", false];
   }
   if (!status.lastSuccessAt) {
     return [

@@ -8,11 +8,11 @@ which articles are busiest.
 
 ## What you see
 
-- **The front page** ranks the most active articles of the last hour, with recent edits counting most.
-  Each article has a trail of its edits across the hour: additions rise above the line, removals drop
-  below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest edits, and a toggle
-  to hide bot edits. The page replays edits 30 seconds behind real time, which turns the poller's
-  15-second bursts back into a steady stream.
+- **The front page** ranks the most active articles of the last ten minutes, with recent edits counting
+  most. Each article has a trail of its edits across those minutes: additions rise above the line,
+  removals drop below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest
+  edits, and a toggle to hide bot edits. The page replays edits 30 seconds behind real time, which turns
+  the poller's 15-second bursts back into a steady stream.
 - **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, and every edit to
   it that the server still holds, as soon as each one arrives.
 - **Toasts** report what the server's Wikipedia fetchers are doing, and when they fail.
@@ -105,15 +105,16 @@ building. Routes live in the URL fragment, so any static host can serve `dist/` 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                   |
-| -------------- | ------------------------------------------------------------------------------ |
-| `index.ts`     | The entry: `init`, the scheduled `pollWikipedia` and `pruneOldData`            |
-| `schema.ts`    | The tables                                                                     |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                    |
-| `edits.ts`     | Ingests recent changes into the `edit` table                                   |
-| `previews.ts`  | Queues, fetches and stores article previews                                    |
-| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log` |
-| `time.ts`      | Timestamp arithmetic                                                           |
+| File           | What it does                                                                            |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, and the scheduled `pollWikipedia`, `sweepLiveSet` and `pruneOldData` |
+| `schema.ts`    | The tables                                                                              |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
+| `edits.ts`     | Ingests recent changes into the `edit` table                                            |
+| `previews.ts`  | Queues, fetches and stores article previews                                             |
+| `live.ts`      | Ages edits and previews out of the live set that clients subscribe to                   |
+| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`          |
+| `time.ts`      | Timestamp arithmetic                                                                    |
 
 Every 15 seconds, `pollWikipedia` asks for article edits and page creations since its cursor. It re-reads
 a minute before the cursor, because changes can reach the API slightly after their timestamps, and
@@ -122,24 +123,30 @@ than an hour. Each new edit queues its article for a preview, and the same run f
 batches of twenty, giving up on a page after three failed attempts. It makes HTTP requests, so it's a
 procedure, and it refuses to run for anyone but the scheduler.
 
+Edits and previews carry a `live` flag, and clients subscribe to the live rows only. A new edit is live,
+and so is its article's preview. Every five minutes, `sweepLiveSet` clears the flag on edits more than
+ten minutes old, and on the previews of articles left with no live edits. Subscribed clients see each
+one leave as a delete, so their caches stay a few minutes deep without resubscribing. Clients are sent
+every change to a live row, so a live preview isn't rewritten as its article's edits arrive: its
+`last_edited_at` catches up when it leaves the live set.
+
 Every hour, `pruneOldData` deletes edits older than 24 hours, and the previews of articles nobody has
 edited in that time.
 
-| Table                       | Visibility   | Holds                                                    |
-| --------------------------- | ------------ | -------------------------------------------------------- |
-| `edit`                      | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
-| `article_preview`           | public       | Each article's title, description, summary and thumbnail |
-| `poller_status`             | public       | The poll cursor, and the poller's health                 |
-| `fetch_log`                 | public event | The start and end of each fetch, for the toasts          |
-| `preview_queue`             | private      | Articles waiting for a preview fetch                     |
-| `settings`                  | private      | The contact sent to Wikipedia                            |
-| `poll_timer`, `prune_timer` | private      | The schedules                                            |
+| Table                                      | Visibility   | Holds                                                    |
+| ------------------------------------------ | ------------ | -------------------------------------------------------- |
+| `edit`                                     | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
+| `article_preview`                          | public       | Each article's title, description, summary and thumbnail |
+| `poller_status`                            | public       | The poll cursor, and the poller's health                 |
+| `fetch_log`                                | public event | The start and end of each fetch, for the toasts          |
+| `preview_queue`                            | private      | Articles waiting for a preview fetch                     |
+| `settings`                                 | private      | The contact sent to Wikipedia                            |
+| `poll_timer`, `prune_timer`, `sweep_timer` | private      | The schedules                                            |
 
 ### The client (`src`)
 
 - `main.tsx` connects to SpacetimeDB, and `App.tsx` picks a page from the route in `route.ts`.
-- `live/store.ts` subscribes to the edits and previews within a moving time window, replacing the
-  subscription periodically so that old rows leave the client cache.
+- `live/store.ts` subscribes once to the live edits and previews, a set the server keeps small.
 - `live/derive.ts` schedules the replay and works out rankings, heat and per-minute counts.
 - `live/hooks.ts` connects the store, per-article subscriptions and fetch toasts to React.
 - `components/` renders it all.

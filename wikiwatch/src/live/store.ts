@@ -1,25 +1,17 @@
-import { Timestamp } from "spacetimedb";
 import { tables, type DbConnection } from "../module_bindings";
 import type {
   ArticlePreview,
   Edit,
   PollerStatus,
 } from "../module_bindings/types";
-import { scheduleReplay, WINDOW_MS, type Replay } from "./derive";
+import { scheduleReplay, type Replay } from "./derive";
 
-// The subscription covers a fixed time range, so it's replaced periodically
-// to let old rows fall out of the client cache.
-const RESUBSCRIBE_EVERY_MS = 10 * 60_000;
-// Wider than the display window, so rows stay cached for as long as the
-// display might still show them.
-const SUBSCRIPTION_SPAN_MS = WINDOW_MS + RESUBSCRIBE_EVERY_MS + 60_000;
 // Row callbacks fire once per row; batch them into one render.
 const NOTIFY_DELAY_MS = 50;
 
-type Handle = { isActive(): boolean; unsubscribe(): void };
-
-// Mirrors the edits and previews for the recent time window, and tells React
-// (via useSyncExternalStore) when they change.
+// Mirrors the server's live set (its recent edits, and the previews of the
+// pages they belong to), and tells React (via useSyncExternalStore) when it
+// changes.
 export class LiveStore {
   private edits = new Map<string, Edit>();
   private previews = new Map<string, ArticlePreview>();
@@ -61,16 +53,23 @@ export class LiveStore {
     return this.previews.get(pageKey);
   }
   attach(conn: DbConnection): () => void {
+    // The client cache also holds the rows article pages subscribe to, live or
+    // not, and a row leaving the live set arrives as an update when an article
+    // page still wants it. So each row is kept or dropped by its own flag.
     const putEdit = (_ctx: unknown, row: Edit) => {
-      this.edits.set(row.rcId.toString(), row);
+      if (row.live) this.edits.set(row.rcId.toString(), row);
+      else this.edits.delete(row.rcId.toString());
       this.changed();
     };
+    const replaceEdit = (ctx: unknown, _old: Edit, row: Edit) =>
+      putEdit(ctx, row);
     const dropEdit = (_ctx: unknown, row: Edit) => {
       this.edits.delete(row.rcId.toString());
       this.changed();
     };
     const putPreview = (_ctx: unknown, row: ArticlePreview) => {
-      this.previews.set(row.pageId.toString(), row);
+      if (row.live) this.previews.set(row.pageId.toString(), row);
+      else this.previews.delete(row.pageId.toString());
       this.changed();
     };
     const replacePreview = (
@@ -93,6 +92,7 @@ export class LiveStore {
     ) => putStatus(ctx, row);
 
     conn.db.edit.onInsert(putEdit);
+    conn.db.edit.onUpdate(replaceEdit);
     conn.db.edit.onDelete(dropEdit);
     conn.db.articlePreview.onInsert(putPreview);
     conn.db.articlePreview.onUpdate(replacePreview);
@@ -100,38 +100,33 @@ export class LiveStore {
     conn.db.pollerStatus.onInsert(putStatus);
     conn.db.pollerStatus.onUpdate(replaceStatus);
 
-    let current: Handle | undefined;
-    const subscribeToWindow = () => {
-      const since = Timestamp.fromDate(
-        new Date(Date.now() - SUBSCRIPTION_SPAN_MS),
-      );
-      const previous = current;
-      current = conn
-        .subscriptionBuilder()
-        .onApplied(() => {
-          // Unsubscribe only once the new window is in place, so rows the two
-          // windows share never leave the cache.
-          if (previous?.isActive()) previous.unsubscribe();
-          for (const row of conn.db.edit.iter()) putEdit(null, row);
-          for (const row of conn.db.articlePreview.iter())
-            putPreview(null, row);
-          for (const row of conn.db.pollerStatus.iter()) putStatus(null, row);
-          this.loaded = true;
-          this.changed();
-        })
-        .subscribe([
-          tables.edit.where((row) => row.editedAt.gt(since)),
-          tables.articlePreview.where((row) => row.lastEditedAt.gt(since)),
-          tables.pollerStatus,
-        ]);
-    };
-    subscribeToWindow();
-    const timer = setInterval(subscribeToWindow, RESUBSCRIBE_EVERY_MS);
+    // The server takes rows out of the live set as they age, so this one
+    // subscription never needs replacing to keep the cache small.
+    let detached = false;
+    const handle = conn
+      .subscriptionBuilder()
+      .onApplied(() => {
+        if (detached) {
+          handle.unsubscribe();
+          return;
+        }
+        for (const row of conn.db.edit.iter()) putEdit(null, row);
+        for (const row of conn.db.articlePreview.iter()) putPreview(null, row);
+        for (const row of conn.db.pollerStatus.iter()) putStatus(null, row);
+        this.loaded = true;
+        this.changed();
+      })
+      .subscribe([
+        tables.edit.where((row) => row.live.eq(true)),
+        tables.articlePreview.where((row) => row.live.eq(true)),
+        tables.pollerStatus,
+      ]);
 
     return () => {
-      clearInterval(timer);
-      if (current?.isActive()) current.unsubscribe();
+      detached = true;
+      if (handle.isActive()) handle.unsubscribe();
       conn.db.edit.removeOnInsert(putEdit);
+      conn.db.edit.removeOnUpdate(replaceEdit);
       conn.db.edit.removeOnDelete(dropEdit);
       conn.db.articlePreview.removeOnInsert(putPreview);
       conn.db.articlePreview.removeOnUpdate(replacePreview);
