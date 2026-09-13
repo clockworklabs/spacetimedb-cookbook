@@ -32,6 +32,9 @@ export const edit = table(
     comment: t.string(),
     tags: t.array(t.string()),
     edited_at: t.timestamp().index("btree"),
+    // Whether the edit is in the live set that clients subscribe to: made in
+    // the last few minutes (see live.ts).
+    live: t.bool().default(false).index("btree"),
   },
 );
 
@@ -54,9 +57,12 @@ export const article_preview = table(
     summary: t.string(),
     thumbnail: t.option(Thumbnail),
     fetched_at: t.timestamp(),
-    // When the page was last edited. Lets clients subscribe to the previews
-    // for their time window, and lets pruning find previews gone cold.
+    // When the page was last edited, so pruning can find previews gone cold.
+    // Not kept current while the preview is live; see touchPreview.
     last_edited_at: t.timestamp().index("btree"),
+    // Whether the page has live edits, so clients can subscribe to the
+    // previews that go with them.
+    live: t.bool().default(false).index("btree"),
   },
 );
 
@@ -152,6 +158,14 @@ export const prune_timer = table(
   },
 );
 
+export const sweep_timer = table(
+  { name: "sweep_timer" },
+  {
+    scheduled_id: t.u64().primaryKey().autoInc(),
+    scheduled_at: t.scheduleAt(),
+  },
+);
+
 const spacetimedb = schema({
   edit,
   article_preview,
@@ -161,6 +175,7 @@ const spacetimedb = schema({
   fetch_log,
   poll_timer,
   prune_timer,
+  sweep_timer,
 });
 export default spacetimedb;
 

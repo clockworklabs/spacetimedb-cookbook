@@ -61,8 +61,7 @@ export function useFetchActivity(): FetchToast[] {
       setToasts((current) => applyFetchLog(current, row, Date.now()));
     conn.db.fetchLog.onInsert(onFetch);
 
-    // A subscription of its own: it lives as long as the connection, where
-    // the store's is replaced as its time window moves.
+    // A subscription of its own, so the toasts don't depend on the store.
     let detached = false;
     const handle = conn
       .subscriptionBuilder()

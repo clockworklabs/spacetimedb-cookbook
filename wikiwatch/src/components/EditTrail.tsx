@@ -5,7 +5,7 @@ const WIDTH = 600;
 const HEIGHT = 40;
 const MIDLINE = HEIGHT / 2;
 
-// One tick per edit across `spanMs` up to `clock` (by default, the last hour),
+// One tick per edit across `spanMs` up to `clock` (by default, WINDOW_MS),
 // oldest on the left. Additions rise above the line and removals drop below
 // it, on a log scale so a one-word fix and a rewritten section are both
 // visible.

@@ -20,6 +20,7 @@ export const ArticlePreview = __t.object("ArticlePreview", {
   },
   fetchedAt: __t.timestamp(),
   lastEditedAt: __t.timestamp(),
+  live: __t.bool(),
 });
 export type ArticlePreview = __Infer<typeof ArticlePreview>;
 
@@ -40,6 +41,7 @@ export const Edit = __t.object("Edit", {
   comment: __t.string(),
   tags: __t.array(__t.string()),
   editedAt: __t.timestamp(),
+  live: __t.bool(),
 });
 export type Edit = __Infer<typeof Edit>;
 
@@ -136,6 +138,12 @@ export const Settings = __t.object("Settings", {
   wikipediaContact: __t.string(),
 });
 export type Settings = __Infer<typeof Settings>;
+
+export const SweepTimer = __t.object("SweepTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type SweepTimer = __Infer<typeof SweepTimer>;
 
 export const Thumbnail = __t.object("Thumbnail", {
   url: __t.string(),

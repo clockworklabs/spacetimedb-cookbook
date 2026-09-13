@@ -1,11 +1,12 @@
 // The module entry. Its named exports are what SpacetimeDB registers, so
 // only lifecycle hooks, reducers and procedures live here; see edits.ts,
-// previews.ts and status.ts for the work they do.
+// previews.ts, live.ts and status.ts for the work they do.
 
 import { Range, SenderError, t } from "spacetimedb/server";
 import { ScheduleAt } from "spacetimedb";
-import spacetimedb, { poll_timer, prune_timer } from "./schema";
+import spacetimedb, { poll_timer, prune_timer, sweep_timer } from "./schema";
 import { INITIAL_BACKFILL, ingestRecentChanges } from "./edits";
+import { ageLiveSet, ensureSweepTimer } from "./live";
 import { ingestPreviews } from "./previews";
 import { STATUS_ID } from "./status";
 import { HOUR, SECOND, minus } from "./time";
@@ -30,6 +31,7 @@ export const init = spacetimedb.init((ctx) => {
     scheduled_id: 0n,
     scheduled_at: ScheduleAt.interval(PRUNE_INTERVAL),
   });
+  ensureSweepTimer(ctx);
   ctx.db.poller_status.insert({
     id: STATUS_ID,
     cursor: minus(ctx.timestamp, INITIAL_BACKFILL),
@@ -51,12 +53,24 @@ export const pollWikipedia = spacetimedb.procedure(
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError("pollWikipedia may only be run by the scheduler");
     }
-    const agent = ctx.withTx((tx) =>
-      userAgent(tx.db.settings.id.find(SETTINGS_ID)?.wikipedia_contact),
-    );
+    const agent = ctx.withTx((tx) => {
+      ensureSweepTimer(tx);
+      return userAgent(tx.db.settings.id.find(SETTINGS_ID)?.wikipedia_contact);
+    });
     ingestRecentChanges(ctx, agent);
     ingestPreviews(ctx, agent);
     return {};
+  },
+);
+
+export const sweepLiveSet = spacetimedb.reducer(
+  { onSchedule: sweep_timer },
+  { timer: sweep_timer.rowType },
+  (ctx) => {
+    if (!ctx.sender.equals(ctx.databaseIdentity)) {
+      throw new SenderError("sweepLiveSet may only be run by the scheduler");
+    }
+    ageLiveSet(ctx);
   },
 );
 
@@ -77,11 +91,13 @@ export const pruneOldData = spacetimedb.reducer(
       ctx.db.edit.rc_id.delete(row.rc_id);
     }
 
+    // A live preview's last_edited_at is only caught up when it leaves the
+    // live set, so an article busy all day can look cold when it isn't.
     const cold = [
       ...ctx.db.article_preview.last_edited_at.filter(
         new Range({ tag: "unbounded" }, { tag: "excluded", value: cutoff }),
       ),
-    ];
+    ].filter((preview) => !preview.live);
     for (const preview of cold) {
       ctx.db.article_preview.page_id.delete(preview.page_id);
     }

@@ -21,4 +21,5 @@ export default __t.row({
   },
   fetchedAt: __t.timestamp().name("fetched_at"),
   lastEditedAt: __t.timestamp().name("last_edited_at"),
+  live: __t.bool(),
 });

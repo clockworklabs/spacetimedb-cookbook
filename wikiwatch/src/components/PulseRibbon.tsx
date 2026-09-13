@@ -2,8 +2,8 @@ const BAR = 4;
 const GAP = 2;
 const HEIGHT = 40;
 
-// Edits per minute across the last hour. `counts` ends with the minute in
-// progress, which is drawn in the highlight colour.
+// Edits per minute, one bar for each entry in `counts`. `counts` ends with the
+// minute in progress, which is drawn in the highlight colour.
 export function PulseRibbon({ counts }: { counts: number[] }) {
   const max = Math.max(1, ...counts);
   const completed = counts.slice(-6, -1);
@@ -18,7 +18,7 @@ export function PulseRibbon({ counts }: { counts: number[] }) {
         viewBox={`0 0 ${width} ${HEIGHT}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Edits per minute over the last hour. About ${rate} a minute recently.`}
+        aria-label={`Edits per minute over the last ${counts.length} minutes. About ${rate} a minute recently.`}
       >
         {counts.map((count, i) => {
           const height = count === 0 ? 0 : Math.max(1, (count / max) * HEIGHT);

@@ -58,6 +58,12 @@ const tablesSchema = __schema({
           columns: ["lastEditedAt"],
         },
         {
+          accessor: "live",
+          name: "article_preview_live_idx_btree",
+          algorithm: "btree",
+          columns: ["live"],
+        },
+        {
           accessor: "page_id",
           name: "article_preview_page_id_idx_btree",
           algorithm: "btree",
@@ -83,6 +89,12 @@ const tablesSchema = __schema({
           name: "edit_edited_at_idx_btree",
           algorithm: "btree",
           columns: ["editedAt"],
+        },
+        {
+          accessor: "live",
+          name: "edit_live_idx_btree",
+          algorithm: "btree",
+          columns: ["live"],
         },
         {
           accessor: "page_id",
