@@ -87,9 +87,9 @@ export function useFetchActivity(): FetchToast[] {
     const conn = connection.getConnection() as DbConnection | null;
     if (!connection.isActive || !conn) return;
 
-    const onFetch = (_ctx: unknown, row: FetchLog) =>
-      setToasts((current) => applyFetchLog(current, row, Date.now()));
-    conn.db.fetchLog.onInsert(onFetch);
+    conn.db.fetchLog.onInsert((_ctx: unknown, row: FetchLog) =>
+      setToasts((current) => applyFetchLog(current, row, Date.now())),
+    );
 
     // A subscription of its own, which lives as long as the connection.
     let detached = false;
