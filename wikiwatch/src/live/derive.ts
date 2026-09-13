@@ -8,7 +8,7 @@ export const REPLAY_DELAY_MS = 30_000;
 
 // How much history the display works with: as long as the server keeps an
 // edit live (LIVE_FOR in the module).
-export const WINDOW_MS = 10 * 60_000;
+export const WINDOW_MS = 30 * 60_000;
 
 // An edit's contribution to an article's heat halves every ten minutes.
 const HEAT_HALF_LIFE_MS = 10 * 60_000;

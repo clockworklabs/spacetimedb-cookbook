@@ -17,7 +17,7 @@ import { Ticker } from "./Ticker";
 const RERANK_EVERY_MS = 10_000;
 const CARD_COUNT = 21;
 const TICKER_LENGTH = 80;
-const PULSE_MINUTES = WINDOW_MS / 60_000;
+const WINDOW_MINUTES = WINDOW_MS / 60_000;
 
 type Props = {
   store: LiveStore;
@@ -64,7 +64,7 @@ export function FrontPage({
   }
 
   const emptyMessage = store.isLoaded
-    ? "No article edits in the last ten minutes yet. The server checks Wikipedia every 15 seconds, so they’ll start appearing shortly."
+    ? `No article edits in the last ${WINDOW_MINUTES} minutes yet. The server checks Wikipedia every 15 seconds, so they’ll start appearing shortly.`
     : "Loading the latest edits…";
 
   return (
@@ -79,7 +79,7 @@ export function FrontPage({
       >
         {store.isLoaded && (
           <PulseRibbon
-            counts={editsPerMinute(edits, revealed, clock, PULSE_MINUTES)}
+            counts={editsPerMinute(edits, revealed, clock, WINDOW_MINUTES)}
           />
         )}
         <label className="toggle">
@@ -97,9 +97,9 @@ export function FrontPage({
           <div className="section-head">
             <h2 id="articles-heading">Most active articles</h2>
             <p>
-              Ranked by edits in the last ten minutes, with recent ones counting
-              most. Each trail spans those ten minutes: ticks above the line
-              added text, and ticks below removed it.
+              Ranked by edits in the last {WINDOW_MINUTES} minutes, with recent
+              ones counting most. Each trail spans those minutes: ticks above
+              the line added text, and ticks below removed it.
             </p>
           </div>
           {cards.length === 0 ? (

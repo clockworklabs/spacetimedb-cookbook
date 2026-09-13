@@ -1,7 +1,7 @@
 // The live set: the recent edits that clients subscribe to, and the previews
 // of the pages they belong to. Rows carry a `live` flag rather than clients
-// filtering on time, so a single subscription stays a few minutes deep, and
-// rows leave client caches as they age without anyone resubscribing.
+// filtering on time, so a single subscription stays LIVE_FOR deep, and rows
+// leave client caches as they age without anyone resubscribing.
 
 import { ScheduleAt, type Timestamp } from "spacetimedb";
 import { coolPreview } from "./previews";
@@ -9,7 +9,7 @@ import type { TxCtx } from "./schema";
 import { MINUTE, compare, minus } from "./time";
 
 // How long an edit stays live after it's made.
-const LIVE_FOR = 10n * MINUTE;
+const LIVE_FOR = 30n * MINUTE;
 
 // How often edits past LIVE_FOR leave the live set. They stay until the next
 // sweep, so a live edit can be up to LIVE_FOR + SWEEP_INTERVAL old.

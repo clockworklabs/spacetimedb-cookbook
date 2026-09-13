@@ -32,8 +32,8 @@ export const edit = table(
     comment: t.string(),
     tags: t.array(t.string()),
     edited_at: t.timestamp().index("btree"),
-    // Whether the edit is in the live set that clients subscribe to: made in
-    // the last few minutes (see live.ts).
+    // Whether the edit is in the live set that clients subscribe to: made
+    // within LIVE_FOR, give or take a sweep (see live.ts).
     live: t.bool().default(false).index("btree"),
   },
 );
