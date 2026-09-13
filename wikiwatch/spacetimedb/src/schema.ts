@@ -45,7 +45,8 @@ const Thumbnail = t.object("Thumbnail", {
 });
 
 // The hover-card data for an article. Keyed by page id, which survives
-// renames where titles don't.
+// renames where titles don't. Clients subscribe to the previews of the live
+// set by joining this to the live edits on page_id.
 export const article_preview = table(
   { name: "article_preview", public: true },
   {
@@ -57,12 +58,6 @@ export const article_preview = table(
     summary: t.string(),
     thumbnail: t.option(Thumbnail),
     fetched_at: t.timestamp(),
-    // When the page was last edited, so pruning can find previews gone cold.
-    // Not kept current while the preview is live; see touchPreview.
-    last_edited_at: t.timestamp().index("btree"),
-    // Whether the page has live edits, so clients can subscribe to the
-    // previews that go with them.
-    live: t.bool().default(false).index("btree"),
   },
 );
 

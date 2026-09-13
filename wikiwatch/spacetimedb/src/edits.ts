@@ -2,7 +2,7 @@
 
 import type { ProcCtx } from "./schema";
 import { isLive } from "./live";
-import { enqueuePreview, touchPreview } from "./previews";
+import { enqueuePreview } from "./previews";
 import { STATUS_ID, errorMessage, logFetch, recordError } from "./status";
 import { HOUR, MINUTE, later, minus } from "./time";
 import { fetchRecentChanges } from "./wikipedia";
@@ -54,9 +54,7 @@ export function ingestRecentChanges(ctx: ProcCtx, agent: string) {
       newest = later(newest, change.edited_at);
       if (tx.db.edit.rc_id.find(change.rc_id)) continue;
       // Back-filled edits can arrive already too old to be live.
-      const live = isLive(tx, change.edited_at);
-      tx.db.edit.insert({ ...change, live });
-      touchPreview(tx, change.page_id, change.edited_at, live);
+      tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
       enqueuePreview(tx, change.page_id, change.title);
       count++;
     }

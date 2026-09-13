@@ -7,7 +7,7 @@ import { ScheduleAt } from "spacetimedb";
 import spacetimedb, { poll_timer, prune_timer, sweep_timer } from "./schema";
 import { INITIAL_BACKFILL, ingestRecentChanges } from "./edits";
 import { ageLiveSet, ensureSweepTimer } from "./live";
-import { ingestPreviews } from "./previews";
+import { ingestPreviews, prunePreviews } from "./previews";
 import { STATUS_ID } from "./status";
 import { HOUR, SECOND, minus } from "./time";
 import { userAgent } from "./wikipedia";
@@ -90,18 +90,11 @@ export const pruneOldData = spacetimedb.reducer(
     for (const row of expired) {
       ctx.db.edit.rc_id.delete(row.rc_id);
     }
+    const pruned = prunePreviews(
+      ctx,
+      new Set(expired.map((row) => row.page_id)),
+    );
 
-    // A live preview's last_edited_at is only caught up when it leaves the
-    // live set, so an article busy all day can look cold when it isn't.
-    const cold = [
-      ...ctx.db.article_preview.last_edited_at.filter(
-        new Range({ tag: "unbounded" }, { tag: "excluded", value: cutoff }),
-      ),
-    ].filter((preview) => !preview.live);
-    for (const preview of cold) {
-      ctx.db.article_preview.page_id.delete(preview.page_id);
-    }
-
-    console.info(`Pruned ${expired.length} edits and ${cold.length} previews`);
+    console.info(`Pruned ${expired.length} edits and ${pruned} previews`);
   },
 );

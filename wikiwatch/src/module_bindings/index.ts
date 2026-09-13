@@ -52,18 +52,6 @@ const tablesSchema = __schema({
       name: "article_preview",
       indexes: [
         {
-          accessor: "last_edited_at",
-          name: "article_preview_last_edited_at_idx_btree",
-          algorithm: "btree",
-          columns: ["lastEditedAt"],
-        },
-        {
-          accessor: "live",
-          name: "article_preview_live_idx_btree",
-          algorithm: "btree",
-          columns: ["live"],
-        },
-        {
           accessor: "page_id",
           name: "article_preview_page_id_idx_btree",
           algorithm: "btree",

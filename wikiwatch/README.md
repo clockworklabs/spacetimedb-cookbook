@@ -112,7 +112,7 @@ building. Routes live in the URL fragment, so any static host can serve `dist/` 
 | `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
 | `edits.ts`     | Ingests recent changes into the `edit` table                                            |
 | `previews.ts`  | Queues, fetches and stores article previews                                             |
-| `live.ts`      | Ages edits and previews out of the live set that clients subscribe to                   |
+| `live.ts`      | Ages edits out of the live set that clients subscribe to                                |
 | `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`          |
 | `time.ts`      | Timestamp arithmetic                                                                    |
 
@@ -123,15 +123,15 @@ than an hour. Each new edit queues its article for a preview, and the same run f
 batches of twenty, giving up on a page after three failed attempts. It makes HTTP requests, so it's a
 procedure, and it refuses to run for anyone but the scheduler.
 
-Edits and previews carry a `live` flag, and clients subscribe to the live rows only. A new edit is live,
-and so is its article's preview. Every five minutes, `sweepLiveSet` clears the flag on edits more than
-30 minutes old, and on the previews of articles left with no live edits. Subscribed clients see each
-one leave as a delete, so their caches stay about half an hour deep without resubscribing. Clients are sent
-every change to a live row, so a live preview isn't rewritten as its article's edits arrive: its
-`last_edited_at` catches up when it leaves the live set.
+Edits carry a `live` flag, and clients subscribe to the live edits only. A new edit is live, and every
+five minutes `sweepLiveSet` clears the flag on edits more than 30 minutes old. Subscribed clients see
+each one leave as a delete, so their caches stay about half an hour deep without resubscribing. Clients
+get previews by joining `article_preview` to the live edits, so SpacetimeDB sends an article's preview
+with its first live edit and takes it away with its last. The module never tracks which previews are
+live.
 
-Every hour, `pruneOldData` deletes edits older than 24 hours, and the previews of articles nobody has
-edited in that time.
+Every hour, `pruneOldData` deletes edits older than 24 hours, and the previews of articles left with no
+edits.
 
 | Table                                      | Visibility   | Holds                                                    |
 | ------------------------------------------ | ------------ | -------------------------------------------------------- |
@@ -147,6 +147,6 @@ edited in that time.
 
 - `main.tsx` connects to SpacetimeDB, and `App.tsx` picks a page from the route in `route.ts`.
 - `live/derive.ts` schedules the replay and works out rankings, heat and per-minute counts.
-- `live/hooks.ts` gives React the live set (the edits and previews the server keeps live, through
-  `useTable`), each article's full history, and the fetch toasts.
+- `live/hooks.ts` gives React the live set (the edits the server keeps live, and their articles'
+  previews, through `useTable`), each article's full history, and the fetch toasts.
 - `components/` renders it all.

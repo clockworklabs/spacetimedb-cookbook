@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
-import { useSpacetimeDB, useTable } from "spacetimedb/react";
-import { tables, type DbConnection } from "../module_bindings";
+import { useTable } from "spacetimedb/react";
+import { tables } from "../module_bindings";
 import type {
   ArticlePreview,
   FetchLog,
@@ -24,19 +24,28 @@ export type LiveSet = {
   isLoaded: boolean;
 };
 
+// The previews of pages with live edits. SpacetimeDB keeps the join in step
+// with the edits' live flags, so a preview arrives with its page's first live
+// edit and leaves with its last.
+const livePreviews = tables.edit
+  .where((edit) => edit.live.eq(true))
+  .rightSemijoin(tables.articlePreview, (edit, preview) =>
+    edit.pageId.eq(preview.pageId),
+  );
+
 // The server's live set (its recent edits, and the previews of the pages they
-// belong to) and the poller's status. The server takes rows out of the live
+// belong to) and the poller's status. The server takes edits out of the live
 // set as they age, so these subscriptions never need replacing. useTable
 // filters the shared client cache by each query, which keeps out the non-live
-// rows that article pages subscribe to. Every useTable call opens its own
+// edits that article pages subscribe to. It can't filter by a join, so
+// `previews` can also hold the preview of an article page, but that's harmless
+// when previews are looked up by page id. Every useTable call opens its own
 // subscription, so call this once, near the top of the app.
 export function useLiveSet(): LiveSet {
   const [edits, editsReady] = useTable(
     tables.edit.where((row) => row.live.eq(true)),
   );
-  const [previews, previewsReady] = useTable(
-    tables.articlePreview.where((row) => row.live.eq(true)),
-  );
+  const [previews, previewsReady] = useTable(livePreviews);
   const [statuses, statusReady] = useTable(tables.pollerStatus);
 
   const replay = useMemo(() => scheduleReplay(edits), [edits]);
@@ -78,37 +87,18 @@ export function useArticle(pageId: bigint): Article {
   return { edits, preview: previews[0], isReady: editsReady && previewReady };
 }
 
-// Toasts describing what the server's Wikipedia fetchers are doing.
+// Toasts describing what the server's Wikipedia fetchers are doing. fetch_log
+// is an event table, so its rows never stay in the cache: they only arrive
+// through onInsert.
 export function useFetchActivity(): FetchToast[] {
-  const connection = useSpacetimeDB();
   const [toasts, setToasts] = useState<FetchToast[]>([]);
-
-  useEffect(() => {
-    const conn = connection.getConnection() as DbConnection | null;
-    if (!connection.isActive || !conn) return;
-
-    conn.db.fetchLog.onInsert((_ctx: unknown, row: FetchLog) =>
+  // Stable, so useTable doesn't re-register its row callbacks every render.
+  const onInsert = useCallback(
+    (row: FetchLog) =>
       setToasts((current) => applyFetchLog(current, row, Date.now())),
-    );
-
-    // A subscription of its own, which lives as long as the connection.
-    let detached = false;
-    const handle = conn
-      .subscriptionBuilder()
-      .onApplied(() => {
-        if (detached) handle.unsubscribe();
-      })
-      .subscribe([tables.fetchLog]);
-
-    return () => {
-      detached = true;
-      if (handle.isActive()) handle.unsubscribe();
-      conn.db.fetchLog.removeOnInsert(onFetch);
-    };
-    // Attach when the connection comes up; detach when it goes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connection.isActive]);
-
+    [],
+  );
+  useTable(tables.fetchLog, { onInsert });
   return toasts;
 }
 
