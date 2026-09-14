@@ -2,7 +2,8 @@
 
 A live view of English Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) polls
 Wikipedia and keeps 24 hours of article edits and previews. A React + Vite client (`src`) subscribes
-to them. `README.md` covers setup, configuration and deployment in full.
+to them. `README.md` explains the SpacetimeDB patterns it demonstrates and covers local development,
+setup and configuration. `docs/deploying.md` covers deployment.
 
 This directory is one project inside the `spacetimedb-cookbook` repository. The jj repo root and
 `flake.nix` (node, pnpm, prettier, tsc, spacetime 2.10) are one level up.
