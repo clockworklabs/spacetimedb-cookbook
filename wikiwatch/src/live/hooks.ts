@@ -112,7 +112,7 @@ export function useNow(intervalMs: number): number {
 }
 
 type DocumentWithTransitions = Document & {
-  startViewTransition?: (update: () => void) => unknown;
+  startViewTransition?: (update: () => void) => { ready: Promise<void> };
 };
 
 // The ranked order of article cards. Re-ranked every `everyMs` (or when the
@@ -140,9 +140,16 @@ export function useArticleOrder(
     const animate =
       order.length > 0 &&
       doc.startViewTransition !== undefined &&
+      document.visibilityState === "visible" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (animate) {
-      doc.startViewTransition!(() => flushSync(() => setOrder(next)));
+      const transition = doc.startViewTransition!(() =>
+        flushSync(() => setOrder(next)),
+      );
+      // A skipped transition (the tab was hidden mid-way, or a newer one
+      // superseded it) rejects `ready`, but its update still runs, so only
+      // the animation is lost.
+      transition.ready.catch(() => {});
     } else {
       setOrder(next);
     }
