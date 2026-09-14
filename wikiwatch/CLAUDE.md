@@ -1,3 +1,116 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+# wikiwatch
+
+A live view of English Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) polls
+Wikipedia and keeps 24 hours of article edits and previews. A React + Vite client (`src`) subscribes
+to them. `README.md` covers setup, configuration and deployment in full.
+
+This directory is one project inside the `spacetimedb-cookbook` repository. The jj repo root and
+`flake.nix` (node, pnpm, prettier, tsc, spacetime 2.10) are one level up.
+
+## Commands
+
+Run everything from this directory. `spacetime.json` points the CLI at `./spacetimedb`.
+
+```bash
+pnpm install && pnpm --dir spacetimedb install
+
+spacetime start                                   # local server, port 3000
+spacetime publish --server local wikiwatch-dev    # client's default database name
+pnpm dev                                          # http://localhost:5173
+spacetime logs --server local wikiwatch-dev -f
+```
+
+**`spacetime.json` sets the default server to `maincloud`.** Always pass `--server local` in development.
+
+There are no tests and no linter. To verify a change:
+
+```bash
+pnpm build                              # client: tsc -b && vite build
+(cd spacetimedb && tsc --noEmit)        # module typecheck
+prettier --check src spacetimedb/src    # code is prettier-formatted, default config
+```
+
+`spacetime build` only type-checks when `spacetimedb/node_modules` is installed. Without it, it prints
+"tsc not found" and still reports success.
+
+After you change a table, reducer or procedure, regenerate the committed bindings. Don't hand-edit
+`src/module_bindings`.
+
+```bash
+spacetime generate && prettier --write src/module_bindings
+spacetime publish --server local wikiwatch-dev    # add --delete-data=on-conflict if it can't migrate
+```
+
+`scripts/set-contact.sh <db> <server>` stores the Wikimedia User-Agent contact in the private
+`settings` table. The contact is personal data, so it must never go in source code.
+
+## Architecture
+
+### Module
+
+- **`pollWikipedia` is a scheduled *procedure*, not a reducer**, because it makes HTTP requests. It
+  runs every 15s. HTTP happens outside `ctx.withTx`, and each `withTx` block is its own transaction.
+  State that has to survive between those transactions lives in a table (`preview_queue`), so a
+  failed fetch is retried on the next tick. `sweepLiveSet` (every 5 min) and `pruneOldData` (hourly)
+  are scheduled reducers.
+- Every scheduled export rejects callers other than the scheduler with
+  `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
+  scheduled exports need the same guard.
+- **`init` does not run again on republish.** `ensureSweepTimer` is also called from the poller so
+  that databases created before the sweep existed still get a timer. A new timer table needs the
+  same treatment.
+- `index.ts` holds only registered exports (lifecycle hooks, reducers, procedures). The logic lives in
+  `edits.ts`, `previews.ts`, `live.ts` and `status.ts`. `wikipedia.ts` is the MediaWiki API client.
+  `time.ts` does timestamp arithmetic in bigint microseconds.
+
+### The live set (spans server and client)
+
+- Clients don't filter on time. Each `edit` row carries a `live` flag. New edits are live, and the
+  sweep clears the flag once an edit is more than `LIVE_FOR` (30 min) old. Clients subscribe to
+  `edit WHERE live = true`, so aged edits arrive as deletes and nobody ever resubscribes.
+- Previews reach clients through a `rightSemijoin` of live edits onto `article_preview`
+  (`src/live/hooks.ts`). The module never tracks which previews are live.
+- `fetch_log` is an **event table**. The client sees its rows only through `onInsert`, never in the
+  cache. Each fetch's start and end rows share a `fetch_id`.
+
+### Client
+
+- `useLiveSet` is called once in `App.tsx` and stays subscribed on every page. Each `useTable` call
+  opens its own subscription. Article pages add a per-`page_id` subscription that includes non-live
+  edits. Subscriptions share one client cache: `useTable` filters rows by its query, but it can't
+  filter by a join.
+- The front page replays edits `REPLAY_DELAY_MS` (30s) behind real time, spreading edits that share a
+  timestamp second evenly across it (`src/live/derive.ts`, pure functions). Article pages show edits
+  as soon as they arrive.
+- Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
+
+### Constants that must change together
+
+- `LIVE_FOR` (`spacetimedb/src/live.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
+- `RETENTION` (`spacetimedb/src/index.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
+- `POLL_INTERVAL` (15s) is also written into the UI text: the `App.tsx` footer, the `FrontPage.tsx`
+  empty-state message and `StatusLine.tsx`
+
+### Gotchas seen in this codebase
+
+- Codegen turns snake_case columns into camelCase fields, and **enum variant tags into PascalCase**:
+  the server's `fetching_edits` is `case "FetchingEdits"` on the client.
+- Don't name a column after an SQL keyword. The preview summary isn't called `extract` because that
+  broke queries naming the column.
+- A column added to an existing table needs `.default(...)` so the data can migrate (see `edit.live`).
+- `URLSearchParams` isn't guaranteed in the module runtime. `wikipedia.ts` encodes query strings by
+  hand.
+
+---
+
+The rest of this file is the generic SpacetimeDB reference from `spacetime init`. It also appears in
+`.windsurfrules`, `.github/copilot-instructions.md` and `.cursor/rules/`. The wikiwatch section above
+appears in both `CLAUDE.md` and `AGENTS.md`, so a change to one must be copied to the other.
+
 # SpacetimeDB Core Concepts
 
 SpacetimeDB is a relational database that is also a server. It lets you upload application logic directly into the database as modules, eliminating the traditional web/game server layer entirely. Rust, C#, and C++ modules compile to WebAssembly, while TypeScript modules run on V8.
