@@ -1,7 +1,8 @@
 // Pulling Wikipedia's recent changes into the edit table: the first half of
 // each poll.
 
-import { STATUS_ID, type ProcCtx } from "./schema";
+import type { Timestamp } from "spacetimedb";
+import { STATUS_ID, type ProcCtx, type TxCtx } from "./schema";
 import { isLive } from "./live";
 import { enqueuePreview } from "./previews";
 import { errorMessage, logFetch, recordError } from "./status";
@@ -14,23 +15,17 @@ const POLL_OVERLAP = MINUTE;
 // After downtime, skip ahead rather than back-filling indefinitely.
 const MAX_BACKFILL = HOUR;
 // A fresh database starts with an hour of history for its article pages.
-export const INITIAL_BACKFILL = MAX_BACKFILL;
+const INITIAL_BACKFILL = MAX_BACKFILL;
 const MAX_RC_PAGES = 5;
 
 export function ingestRecentChanges(ctx: ProcCtx, agent: string) {
   const fetch_id = ctx.newUuidV7();
   const start = ctx.withTx((tx) => {
-    const cursor = tx.db.poller_status.id.find(STATUS_ID)?.cursor;
-    if (!cursor) return undefined;
-    const earliest = minus(ctx.timestamp, MAX_BACKFILL);
-    const since = later(minus(cursor, POLL_OVERLAP), earliest);
+    const earliest = minus(tx.timestamp, MAX_BACKFILL);
+    const since = later(minus(cursor(tx), POLL_OVERLAP), earliest);
     logFetch(tx, fetch_id, { tag: "fetching_edits", value: { since } });
     return since;
   });
-  if (!start) {
-    console.error("poller_status row is missing; skipping poll");
-    return;
-  }
 
   let changes;
   try {
@@ -77,4 +72,23 @@ export function ingestRecentChanges(ctx: ProcCtx, agent: string) {
   if (inserted > 0) {
     console.info(`Ingested ${inserted} of ${changes.length} recent changes`);
   }
+}
+
+// The poll cursor, from the poller_status row. A new database has no row until
+// its first poll creates one, starting INITIAL_BACKFILL back.
+function cursor(tx: TxCtx): Timestamp {
+  const status = tx.db.poller_status.id.find(STATUS_ID);
+  if (status) return status.cursor;
+
+  const initial = minus(tx.timestamp, INITIAL_BACKFILL);
+  tx.db.poller_status.insert({
+    id: STATUS_ID,
+    cursor: initial,
+    last_success_at: undefined,
+    last_error: undefined,
+    last_error_at: undefined,
+    consecutive_failures: 0,
+    edits_ingested: 0n,
+  });
+  return initial;
 }

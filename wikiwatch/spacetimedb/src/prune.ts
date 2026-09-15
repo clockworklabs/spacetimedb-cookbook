@@ -1,20 +1,13 @@
-// Pruning: every PRUNE_INTERVAL, delete edits older than RETENTION, and the
-// previews of articles that have no edits left.
+// Pruning: every PRUNE_INTERVAL (schedules.ts), delete edits older than
+// RETENTION, and the previews of articles that have no edits left.
 
 import { Range, SenderError } from "spacetimedb/server";
 import spacetimedb, { prune_timer, type TxCtx } from "./schema";
 import { hasEdits } from "./previews";
 import { HOUR, minus } from "./time";
-import { ensureInterval } from "./timers";
-
-const PRUNE_INTERVAL = HOUR;
 
 // How much history to keep.
 const RETENTION = 24n * HOUR;
-
-export function ensurePruning(tx: TxCtx) {
-  ensureInterval(tx.db.prune_timer, PRUNE_INTERVAL);
-}
 
 export const pruneOldData = spacetimedb.reducer(
   { onSchedule: prune_timer },

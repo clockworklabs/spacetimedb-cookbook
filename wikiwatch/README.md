@@ -62,7 +62,8 @@ steps (`spacetimedb/src/edits.ts`):
 
 ```ts
 const start = ctx.withTx((tx) => {
-  const cursor = tx.db.poller_status.id.find(STATUS_ID)?.cursor;
+  const earliest = minus(tx.timestamp, MAX_BACKFILL);
+  const since = later(minus(cursor(tx), POLL_OVERLAP), earliest);
   // ...
 });
 
@@ -89,12 +90,18 @@ keeps its progress:
   fetch fails stays queued for the next poll, until it has failed three times. A preview more than a day
   old is fetched again the next time its article is edited.
 
-`init` runs only when a database is created, not when a module is republished. On its own, a timer added
-in a later version, or an interval changed in one, would never reach a database that's already running.
-So each process has an `ensure` function, which leaves its timer table holding exactly one row at the
-module's current interval, and both `init` and every poll call them all (`ensureSchedules` in
-`spacetimedb/src/poll.ts`). A new or re-timed schedule takes effect within one poll of publishing. The
-poller can even replace its own timer: the old timer's last poll inserts the new one.
+`init` runs only when a database is created, not when a module is republished, so a changed interval or a
+new scheduled process never reaches a running database on its own. Every interval lives in
+`spacetimedb/src/schedules.ts`, whose `updateSchedulers` reducer rewrites any timer row that doesn't match:
+missing, duplicated or at an old interval. `init` runs the same code. After publishing a schedule change,
+call it by hand ([Deploying](docs/deploying.md) has the details):
+
+```bash
+spacetime call --no-config --server maincloud <database name> update_schedulers
+```
+
+Any client can call a reducer, so this one refuses callers who aren't in the private `admin` table. `init`
+adds whoever published the database.
 
 ### A live set that ages on the server
 
@@ -188,19 +195,19 @@ private, so clients can't subscribe to it, and only the database owner can read 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                     |
-| -------------- | -------------------------------------------------------------------------------- |
-| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                       |
-| `schema.ts`    | The tables, and the types stored in them                                         |
-| `poll.ts`      | `pollWikipedia`, which fetches recent changes and then previews every 15 seconds |
-| `edits.ts`     | Ingests recent changes into the `edit` table                                     |
-| `previews.ts`  | Queues, fetches and stores article previews                                      |
-| `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to   |
-| `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                |
-| `timers.ts`    | Keeps each timer table at one row, repeating at the module's current interval    |
-| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`   |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                      |
-| `time.ts`      | Timestamp arithmetic                                                             |
+| File           | What it does                                                                            |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                              |
+| `schema.ts`    | The tables, and the types stored in them                                                |
+| `poll.ts`      | `pollWikipedia`, which fetches recent changes and then previews every 15 seconds        |
+| `edits.ts`     | Ingests recent changes into the `edit` table                                            |
+| `previews.ts`  | Queues, fetches and stores article previews                                             |
+| `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to          |
+| `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                       |
+| `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them |
+| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`          |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
+| `time.ts`      | Timestamp arithmetic                                                                    |
 
 | Table                                      | Visibility   | Holds                                                    |
 | ------------------------------------------ | ------------ | -------------------------------------------------------- |
@@ -210,6 +217,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `fetch_log`                                | public event | The start and end of each fetch, for the toasts          |
 | `preview_queue`                            | private      | Articles waiting for a preview fetch                     |
 | `settings`                                 | private      | The contact sent to Wikipedia                            |
+| `admin`                                    | private      | The identities allowed to call `updateSchedulers`        |
 | `poll_timer`, `prune_timer`, `sweep_timer` | private      | The schedules                                            |
 
 ### The client (`src`)

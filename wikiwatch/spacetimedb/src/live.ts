@@ -8,21 +8,14 @@ import { SenderError } from "spacetimedb/server";
 import type { Timestamp } from "spacetimedb";
 import spacetimedb, { sweep_timer, type TxCtx } from "./schema";
 import { MINUTE, compare, minus } from "./time";
-import { ensureInterval } from "./timers";
 
-// How long an edit stays live after it's made.
+// How long an edit stays live after it's made. Aged edits leave at the next
+// sweep, so a live edit can be up to LIVE_FOR + SWEEP_INTERVAL (schedules.ts)
+// old.
 const LIVE_FOR = 30n * MINUTE;
-
-// How often edits past LIVE_FOR leave the live set. They stay until the next
-// sweep, so a live edit can be up to LIVE_FOR + SWEEP_INTERVAL old.
-const SWEEP_INTERVAL = 5n * MINUTE;
 
 export function isLive(tx: TxCtx, edited_at: Timestamp): boolean {
   return compare(edited_at, minus(tx.timestamp, LIVE_FOR)) >= 0;
-}
-
-export function ensureSweeping(tx: TxCtx) {
-  ensureInterval(tx.db.sweep_timer, SWEEP_INTERVAL);
 }
 
 // Takes edits older than LIVE_FOR out of the live set. Subscribed clients

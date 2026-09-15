@@ -109,6 +109,16 @@ export const settings = table(
 );
 export const SETTINGS_ID = 0;
 
+// The identities allowed to call admin reducers, such as updateSchedulers.
+// init adds whoever published the database. Private, so only the database
+// owner can add more, with `spacetime sql`.
+export const admin = table(
+  { name: "admin" },
+  {
+    identity: t.identity().primaryKey(),
+  },
+);
+
 // A page a preview fetch asks for. Carries the id as well as the title, so
 // clients can link to the page they're told about.
 const PreviewPage = t.object("PreviewPage", {
@@ -148,7 +158,8 @@ export const fetch_log = table(
 );
 
 // The schedules. pollWikipedia (poll.ts), sweepLiveSet (live.ts) and
-// pruneOldData (prune.ts) each name their timer with `onSchedule`.
+// pruneOldData (prune.ts) each name their timer with `onSchedule`. The rows,
+// and the intervals they repeat at, are written by schedules.ts.
 export const poll_timer = table(
   { name: "poll_timer" },
   {
@@ -179,6 +190,7 @@ const spacetimedb = schema({
   preview_queue,
   poller_status,
   settings,
+  admin,
   fetch_log,
   poll_timer,
   prune_timer,
