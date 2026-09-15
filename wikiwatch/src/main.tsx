@@ -5,6 +5,11 @@ import "./styles.css";
 import { Identity } from "spacetimedb";
 import { SpacetimeDBProvider } from "spacetimedb/react";
 import { DbConnection, ErrorContext } from "./module_bindings/index.ts";
+import { DEBUG } from "./debug/enabled.ts";
+import { countWebSocketBytes } from "./debug/wireStats.ts";
+
+// Before the connection opens its socket, so every frame is counted.
+if (DEBUG) countWebSocketBytes();
 
 const HOST = import.meta.env.VITE_SPACETIMEDB_HOST ?? "ws://localhost:3000";
 const DB_NAME = import.meta.env.VITE_SPACETIMEDB_DB_NAME ?? "wikiwatch-dev";

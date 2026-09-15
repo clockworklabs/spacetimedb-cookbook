@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useSpacetimeDB } from "spacetimedb/react";
 import { ArticlePage } from "./components/ArticlePage";
+import { DebugPanel } from "./components/DebugPanel";
 import { FetchToasts } from "./components/FetchToasts";
+import { DEBUG } from "./debug/enabled";
 import { FrontPage } from "./components/FrontPage";
 import { useFetchActivity, useLiveSet, useNow } from "./live/hooks";
 import { useRoute } from "./route";
@@ -48,6 +50,7 @@ function App() {
       </footer>
 
       <FetchToasts toasts={fetches} now={now} />
+      {DEBUG && <DebugPanel />}
     </div>
   );
 }

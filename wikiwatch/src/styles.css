@@ -730,6 +730,59 @@ a.entry-user:hover {
   }
 }
 
+/* Debug panel: client cache sizes */
+
+.debug-panel {
+  position: fixed;
+  inset-inline-end: 16px;
+  inset-block-start: calc(16px + env(safe-area-inset-top, 0px));
+  z-index: 20;
+  padding: 6px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  box-shadow: 0 4px 16px var(--shadow);
+  font:
+    0.75rem/1.4 ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  color: var(--muted);
+  opacity: 0.92;
+}
+
+.debug-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.debug-panel table {
+  margin-top: 4px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.debug-panel th,
+.debug-panel td {
+  padding: 1px 0 1px 12px;
+  text-align: end;
+  font-weight: normal;
+}
+
+.debug-panel th:first-child,
+.debug-panel td:first-child {
+  padding-inline-start: 0;
+  text-align: start;
+}
+
+.debug-panel tfoot td {
+  border-top: 1px solid var(--rule-soft);
+}
+
 @media (max-width: 560px) {
   .toasts {
     inset-inline: 16px;
