@@ -4,9 +4,7 @@
 // re-exported here.
 
 import spacetimedb from "./schema";
-import { ensureSweepTimer } from "./live";
-import { startPolling } from "./poll";
-import { startPruning } from "./prune";
+import { ensureSchedules } from "./poll";
 
 export default spacetimedb;
 
@@ -15,7 +13,5 @@ export { sweepLiveSet } from "./live";
 export { pruneOldData } from "./prune";
 
 export const init = spacetimedb.init((ctx) => {
-  startPolling(ctx);
-  startPruning(ctx);
-  ensureSweepTimer(ctx);
+  ensureSchedules(ctx);
 });

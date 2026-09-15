@@ -61,9 +61,11 @@ spacetime publish --server local wikiwatch-dev    # add --delete-data=on-conflic
 - Every scheduled export rejects callers other than the scheduler with
   `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
   scheduled exports need the same guard.
-- **`init` does not run again on republish.** `ensureSweepTimer` is also called from the poller so
-  that databases created before the sweep existed still get a timer. A new timer table needs the
-  same treatment.
+- **`init` does not run again on republish.** So each process has an idempotent `ensure*` function
+  (`ensurePolling`, `ensureSweeping`, `ensurePruning`) built on `ensureInterval` (`timers.ts`). It
+  leaves the process's timer table holding one row at the current interval, replacing a missing,
+  duplicate or re-timed one. `ensureSchedules` (`poll.ts`) calls them all, from `init` and at the
+  start of every poll. A new scheduled process needs its `ensure*` function added there.
 - `schema.ts` holds every table, the types stored in them (`Edit`, `Thumbnail`, `FetchActivity`), the
   singleton ids and the `TxCtx`/`ProcCtx` context types. Define new tables and database types there.
 - There's one file per process, and each holds its scheduled export, its timer setup and its logic:
