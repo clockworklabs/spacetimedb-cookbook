@@ -89,9 +89,12 @@ keeps its progress:
   fetch fails stays queued for the next poll, until it has failed three times. A preview more than a day
   old is fetched again the next time its article is edited.
 
-`init` runs only when a database is created, not when a module is republished. The sweep timer below
-arrived after wikiwatch was first deployed, so the poller also calls `ensureSweepTimer`, which inserts the
-timer if it's missing. A timer added to a module that's already running needs the same treatment.
+`init` runs only when a database is created, not when a module is republished. On its own, a timer added
+in a later version, or an interval changed in one, would never reach a database that's already running.
+So each process has an `ensure` function, which leaves its timer table holding exactly one row at the
+module's current interval, and both `init` and every poll call them all (`ensureSchedules` in
+`spacetimedb/src/poll.ts`). A new or re-timed schedule takes effect within one poll of publishing. The
+poller can even replace its own timer: the old timer's last poll inserts the new one.
 
 ### A live set that ages on the server
 
@@ -194,6 +197,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `previews.ts`  | Queues, fetches and stores article previews                                      |
 | `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to   |
 | `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                |
+| `timers.ts`    | Keeps each timer table at one row, repeating at the module's current interval    |
 | `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`   |
 | `wikipedia.ts` | A small client for the MediaWiki Action API                                      |
 | `time.ts`      | Timestamp arithmetic                                                             |

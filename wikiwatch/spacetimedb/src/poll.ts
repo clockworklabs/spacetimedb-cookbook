@@ -2,7 +2,6 @@
 // then the previews their articles need (previews.ts).
 
 import { SenderError, t } from "spacetimedb/server";
-import { ScheduleAt } from "spacetimedb";
 import spacetimedb, {
   SETTINGS_ID,
   STATUS_ID,
@@ -10,18 +9,28 @@ import spacetimedb, {
   type TxCtx,
 } from "./schema";
 import { INITIAL_BACKFILL, ingestRecentChanges } from "./edits";
-import { ensureSweepTimer } from "./live";
+import { ensureSweeping } from "./live";
 import { ingestPreviews } from "./previews";
+import { ensurePruning } from "./prune";
 import { SECOND, minus } from "./time";
+import { ensureInterval } from "./timers";
 import { userAgent } from "./wikipedia";
 
 const POLL_INTERVAL = 15n * SECOND;
 
-export function startPolling(tx: TxCtx) {
-  tx.db.poll_timer.insert({
-    scheduled_id: 0n,
-    scheduled_at: ScheduleAt.interval(POLL_INTERVAL),
-  });
+// Brings every scheduled process's timer in line with the module. init runs
+// only when a database is created, not when a module is republished, so every
+// poll calls this too. A new process's timer, or a changed interval, reaches
+// an existing database within one poll.
+export function ensureSchedules(tx: TxCtx) {
+  ensurePolling(tx);
+  ensureSweeping(tx);
+  ensurePruning(tx);
+}
+
+function ensurePolling(tx: TxCtx) {
+  ensureInterval(tx.db.poll_timer, POLL_INTERVAL);
+  if (tx.db.poller_status.id.find(STATUS_ID)) return;
   tx.db.poller_status.insert({
     id: STATUS_ID,
     cursor: minus(tx.timestamp, INITIAL_BACKFILL),
@@ -44,7 +53,7 @@ export const pollWikipedia = spacetimedb.procedure(
       throw new SenderError("pollWikipedia may only be run by the scheduler");
     }
     const agent = ctx.withTx((tx) => {
-      ensureSweepTimer(tx);
+      ensureSchedules(tx);
       return userAgent(tx.db.settings.id.find(SETTINGS_ID)?.wikipedia_contact);
     });
     ingestRecentChanges(ctx, agent);

@@ -5,9 +5,10 @@
 // leaves along with its last live edit.
 
 import { SenderError } from "spacetimedb/server";
-import { ScheduleAt, type Timestamp } from "spacetimedb";
+import type { Timestamp } from "spacetimedb";
 import spacetimedb, { sweep_timer, type TxCtx } from "./schema";
 import { MINUTE, compare, minus } from "./time";
+import { ensureInterval } from "./timers";
 
 // How long an edit stays live after it's made.
 const LIVE_FOR = 30n * MINUTE;
@@ -20,14 +21,8 @@ export function isLive(tx: TxCtx, edited_at: Timestamp): boolean {
   return compare(edited_at, minus(tx.timestamp, LIVE_FOR)) >= 0;
 }
 
-// init never runs again when a module is republished, so this is also called
-// by the poller, to start sweeping databases created before the sweep existed.
-export function ensureSweepTimer(tx: TxCtx) {
-  if (tx.db.sweep_timer.count() > 0n) return;
-  tx.db.sweep_timer.insert({
-    scheduled_id: 0n,
-    scheduled_at: ScheduleAt.interval(SWEEP_INTERVAL),
-  });
+export function ensureSweeping(tx: TxCtx) {
+  ensureInterval(tx.db.sweep_timer, SWEEP_INTERVAL);
 }
 
 // Takes edits older than LIVE_FOR out of the live set. Subscribed clients

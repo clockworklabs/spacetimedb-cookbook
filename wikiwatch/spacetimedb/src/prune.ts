@@ -2,21 +2,18 @@
 // previews of articles that have no edits left.
 
 import { Range, SenderError } from "spacetimedb/server";
-import { ScheduleAt } from "spacetimedb";
 import spacetimedb, { prune_timer, type TxCtx } from "./schema";
 import { hasEdits } from "./previews";
 import { HOUR, minus } from "./time";
+import { ensureInterval } from "./timers";
 
 const PRUNE_INTERVAL = HOUR;
 
 // How much history to keep.
 const RETENTION = 24n * HOUR;
 
-export function startPruning(tx: TxCtx) {
-  tx.db.prune_timer.insert({
-    scheduled_id: 0n,
-    scheduled_at: ScheduleAt.interval(PRUNE_INTERVAL),
-  });
+export function ensurePruning(tx: TxCtx) {
+  ensureInterval(tx.db.prune_timer, PRUNE_INTERVAL);
 }
 
 export const pruneOldData = spacetimedb.reducer(
