@@ -109,11 +109,11 @@ New edits are inserted live. Every five minutes, the scheduled reducer `sweepLiv
 edits more than 30 minutes old (`spacetimedb/src/live.ts`):
 
 ```ts
-const aged = [...tx.db.edit.live.filter(true)].filter(
-  (edit) => !isLive(tx, edit.edited_at),
+const aged = [...ctx.db.edit.live.filter(true)].filter(
+  (edit) => !isLive(ctx, edit.edited_at),
 );
 for (const edit of aged) {
-  tx.db.edit.rc_id.update({ ...edit, live: false });
+  ctx.db.edit.rc_id.update({ ...edit, live: false });
 }
 ```
 
@@ -185,16 +185,18 @@ private, so clients can't subscribe to it, and only the database owner can read 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                            |
-| -------------- | --------------------------------------------------------------------------------------- |
-| `index.ts`     | The entry: `init`, and the scheduled `pollWikipedia`, `sweepLiveSet` and `pruneOldData` |
-| `schema.ts`    | The tables                                                                              |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
-| `edits.ts`     | Ingests recent changes into the `edit` table                                            |
-| `previews.ts`  | Queues, fetches and stores article previews                                             |
-| `live.ts`      | Ages edits out of the live set that clients subscribe to                                |
-| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`          |
-| `time.ts`      | Timestamp arithmetic                                                                    |
+| File           | What it does                                                                     |
+| -------------- | -------------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                       |
+| `schema.ts`    | The tables, and the types stored in them                                         |
+| `poll.ts`      | `pollWikipedia`, which fetches recent changes and then previews every 15 seconds |
+| `edits.ts`     | Ingests recent changes into the `edit` table                                     |
+| `previews.ts`  | Queues, fetches and stores article previews                                      |
+| `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to   |
+| `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                |
+| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`   |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                      |
+| `time.ts`      | Timestamp arithmetic                                                             |
 
 | Table                                      | Visibility   | Holds                                                    |
 | ------------------------------------------ | ------------ | -------------------------------------------------------- |

@@ -60,9 +60,15 @@ spacetime publish --server local wikiwatch-dev    # add --delete-data=on-conflic
 - **`init` does not run again on republish.** `ensureSweepTimer` is also called from the poller so
   that databases created before the sweep existed still get a timer. A new timer table needs the
   same treatment.
-- `index.ts` holds only registered exports (lifecycle hooks, reducers, procedures). The logic lives in
-  `edits.ts`, `previews.ts`, `live.ts` and `status.ts`. `wikipedia.ts` is the MediaWiki API client.
-  `time.ts` does timestamp arithmetic in bigint microseconds.
+- `schema.ts` holds every table, the types stored in them (`Edit`, `Thumbnail`, `FetchActivity`), the
+  singleton ids and the `TxCtx`/`ProcCtx` context types. Define new tables and database types there.
+- There's one file per process, and each holds its scheduled export, its timer setup and its logic:
+  `poll.ts` (`pollWikipedia`, which runs `edits.ts` then `previews.ts`), `live.ts` (`sweepLiveSet`)
+  and `prune.ts` (`pruneOldData`). `status.ts` is the poller's reporting. `wikipedia.ts` is the
+  MediaWiki API client. `time.ts` does timestamp arithmetic in bigint microseconds.
+- `index.ts` is the entry. It holds `init` and re-exports each scheduled export. SpacetimeDB registers
+  every named export of the entry and throws on anything that isn't a hook, reducer or procedure, so
+  re-export only those, by name, never with `export *`.
 
 ### The live set (spans server and client)
 
@@ -88,7 +94,7 @@ spacetime publish --server local wikiwatch-dev    # add --delete-data=on-conflic
 ### Constants that must change together
 
 - `LIVE_FOR` (`spacetimedb/src/live.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
-- `RETENTION` (`spacetimedb/src/index.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
+- `RETENTION` (`spacetimedb/src/prune.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
 - `POLL_INTERVAL` (15s) is also written into the UI text: the `App.tsx` footer, the `FrontPage.tsx`
   empty-state message and `StatusLine.tsx`
 

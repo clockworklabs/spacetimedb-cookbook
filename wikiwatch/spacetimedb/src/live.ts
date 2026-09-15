@@ -4,8 +4,9 @@
 // resubscribing. Clients join previews to the live edits, so a page's preview
 // leaves along with its last live edit.
 
+import { SenderError } from "spacetimedb/server";
 import { ScheduleAt, type Timestamp } from "spacetimedb";
-import type { TxCtx } from "./schema";
+import spacetimedb, { sweep_timer, type TxCtx } from "./schema";
 import { MINUTE, compare, minus } from "./time";
 
 // How long an edit stays live after it's made.
@@ -31,13 +32,20 @@ export function ensureSweepTimer(tx: TxCtx) {
 
 // Takes edits older than LIVE_FOR out of the live set. Subscribed clients
 // receive each as a delete.
-export function ageLiveSet(tx: TxCtx) {
-  const aged = [...tx.db.edit.live.filter(true)].filter(
-    (edit) => !isLive(tx, edit.edited_at),
-  );
-  for (const edit of aged) {
-    tx.db.edit.rc_id.update({ ...edit, live: false });
-  }
+export const sweepLiveSet = spacetimedb.reducer(
+  { onSchedule: sweep_timer },
+  { timer: sweep_timer.rowType },
+  (ctx) => {
+    if (!ctx.sender.equals(ctx.databaseIdentity)) {
+      throw new SenderError("sweepLiveSet may only be run by the scheduler");
+    }
+    const aged = [...ctx.db.edit.live.filter(true)].filter(
+      (edit) => !isLive(ctx, edit.edited_at),
+    );
+    for (const edit of aged) {
+      ctx.db.edit.rc_id.update({ ...edit, live: false });
+    }
 
-  console.info(`Aged ${aged.length} edits out of the live set`);
-}
+    console.info(`Aged ${aged.length} edits out of the live set`);
+  },
+);
