@@ -1,7 +1,11 @@
+// Every table in the module, the types stored in them, and the context types
+// that code reads and writes them through.
+
 import {
   schema,
   table,
   t,
+  type Infer,
   type InferSchema,
   type ProcedureCtx,
   type ReducerCtx,
@@ -37,12 +41,14 @@ export const edit = table(
     live: t.bool().default(false).index("btree"),
   },
 );
+export type Edit = Infer<typeof edit.rowType>;
 
 const Thumbnail = t.object("Thumbnail", {
   url: t.string(),
   width: t.u32(),
   height: t.u32(),
 });
+export type Thumbnail = Infer<typeof Thumbnail>;
 
 // The hover-card data for an article. Keyed by page id, which survives
 // renames where titles don't. Clients subscribe to the previews of the live
@@ -73,7 +79,7 @@ export const preview_queue = table(
   },
 );
 
-// Singleton (id = 0) describing the health of the Wikipedia poller.
+// Singleton (id = STATUS_ID) describing the health of the Wikipedia poller.
 export const poller_status = table(
   { name: "poller_status", public: true },
   {
@@ -87,9 +93,11 @@ export const poller_status = table(
     edits_ingested: t.u64(),
   },
 );
+export const STATUS_ID = 0;
 
-// Operator settings (one row, id = 0). Private, so only the database owner
-// can read or change them, with `spacetime sql`; see scripts/set-contact.sh.
+// Operator settings (one row, id = SETTINGS_ID). Private, so only the database
+// owner can read or change them, with `spacetime sql`; see
+// scripts/set-contact.sh.
 export const settings = table(
   { name: "settings" },
   {
@@ -99,6 +107,7 @@ export const settings = table(
     wikipedia_contact: t.string(),
   },
 );
+export const SETTINGS_ID = 0;
 
 // A page a preview fetch asks for. Carries the id as well as the title, so
 // clients can link to the page they're told about.
@@ -125,6 +134,7 @@ const FetchActivity = t.enum("FetchActivity", {
   }),
   previews_failed: t.string(),
 });
+export type FetchActivity = Infer<typeof FetchActivity>;
 
 // Live fetcher activity for clients to display. An event table: rows are
 // broadcast to subscribers when their transaction commits, and never stored.
@@ -137,6 +147,8 @@ export const fetch_log = table(
   },
 );
 
+// The schedules. pollWikipedia (poll.ts), sweepLiveSet (live.ts) and
+// pruneOldData (prune.ts) each name their timer with `onSchedule`.
 export const poll_timer = table(
   { name: "poll_timer" },
   {
@@ -145,16 +157,16 @@ export const poll_timer = table(
   },
 );
 
-export const prune_timer = table(
-  { name: "prune_timer" },
+export const sweep_timer = table(
+  { name: "sweep_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
   },
 );
 
-export const sweep_timer = table(
-  { name: "sweep_timer" },
+export const prune_timer = table(
+  { name: "prune_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),

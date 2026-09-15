@@ -3,7 +3,7 @@
 // https://www.mediawiki.org/wiki/API:Query (prop=extracts|pageimages|description)
 
 import { TimeDuration, Timestamp } from "spacetimedb";
-import type { ProcedureCtx } from "spacetimedb/server";
+import type { Edit, ProcCtx, Thumbnail } from "./schema";
 
 const API_URL = "https://en.wikipedia.org/w/api.php";
 
@@ -29,27 +29,11 @@ const RC_PAGE_SIZE = "500";
 
 export const PREVIEW_BATCH_SIZE = 20; // `extracts` caps at 20 pages per request
 
-type Http = ProcedureCtx<any>["http"];
+type Http = ProcCtx["http"];
 type Params = Record<string, string>;
 
-export type RecentChange = {
-  rc_id: bigint;
-  page_id: bigint;
-  rev_id: bigint;
-  old_rev_id: bigint;
-  title: string;
-  user_name: string;
-  is_bot: boolean;
-  is_minor: boolean;
-  is_new: boolean;
-  is_temp: boolean;
-  is_redirect: boolean;
-  old_len: number;
-  new_len: number;
-  comment: string;
-  tags: string[];
-  edited_at: Timestamp;
-};
+// An edit row, less the live flag, which depends on when it's ingested.
+export type RecentChange = Omit<Edit, "live">;
 
 export type PagePreview =
   | { page_id: bigint; missing: true }
@@ -59,7 +43,7 @@ export type PagePreview =
       title: string;
       description: string | undefined;
       summary: string;
-      thumbnail: { url: string; width: number; height: number } | undefined;
+      thumbnail: Thumbnail | undefined;
     };
 
 // The wire shapes, as returned with formatversion=2. Hidden or suppressed

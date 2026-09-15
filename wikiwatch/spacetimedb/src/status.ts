@@ -1,18 +1,12 @@
 // How the poller reports on itself: its health in poller_status, and what
 // it's doing right now in the fetch_log event table.
 
-import type { Infer } from "spacetimedb/server";
 import type { Uuid } from "spacetimedb";
-import { fetch_log, type TxCtx } from "./schema";
+import { STATUS_ID, type FetchActivity, type TxCtx } from "./schema";
 
-export const STATUS_ID = 0;
 const MAX_ERROR_LENGTH = 500;
 
-export function logFetch(
-  tx: TxCtx,
-  fetch_id: Uuid,
-  activity: Infer<typeof fetch_log.rowType>["activity"],
-) {
+export function logFetch(tx: TxCtx, fetch_id: Uuid, activity: FetchActivity) {
   tx.db.fetch_log.insert({ fetch_id, activity });
 }
 

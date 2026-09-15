@@ -1,9 +1,10 @@
-// Pulling Wikipedia's recent changes into the edit table.
+// Pulling Wikipedia's recent changes into the edit table: the first half of
+// each poll.
 
-import type { ProcCtx } from "./schema";
+import { STATUS_ID, type ProcCtx } from "./schema";
 import { isLive } from "./live";
 import { enqueuePreview } from "./previews";
-import { STATUS_ID, errorMessage, logFetch, recordError } from "./status";
+import { errorMessage, logFetch, recordError } from "./status";
 import { HOUR, MINUTE, later, minus } from "./time";
 import { fetchRecentChanges } from "./wikipedia";
 

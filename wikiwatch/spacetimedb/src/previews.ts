@@ -1,7 +1,7 @@
-// Article previews: queueing pages that need one, fetching them in batches,
-// and pruning them once their pages have no edits left. Clients get the
-// previews that go with the live set by joining them to the live edits, so
-// nothing here tracks which previews are live.
+// Article previews: queueing pages that need one, and fetching them in batches
+// in the second half of each poll. Clients get the previews that go with the
+// live set by joining them to the live edits, so nothing here tracks which
+// previews are live.
 
 import type { ProcCtx, TxCtx } from "./schema";
 import { errorMessage, logFetch, recordError } from "./status";
@@ -82,20 +82,14 @@ export function ingestPreviews(ctx: ProcCtx, agent: string) {
   }
 }
 
-// Deletes the previews of whichever of `page_ids` have no edits left. Returns
-// how many it deleted.
-export function prunePreviews(tx: TxCtx, page_ids: Iterable<bigint>): number {
-  let pruned = 0;
-  for (const page_id of page_ids) {
-    if (hasEdits(tx, page_id)) continue;
-    if (tx.db.article_preview.page_id.delete(page_id)) pruned++;
-  }
-  return pruned;
+// Whether any of a page's edits are still kept. Pruning may have deleted them.
+export function hasEdits(tx: TxCtx, page_id: bigint): boolean {
+  return [...tx.db.edit.page_id.filter(page_id)].length > 0;
 }
 
 // Returns how many previews were stored. The rest were missing pages, or pages
-// whose edits were all pruned while they waited in the queue: prunePreviews
-// only looks at pages as their edits go, so it would never find those.
+// whose edits were all pruned while they waited in the queue: pruning only
+// looks at pages as their edits go, so it would never find those.
 function storePreviews(
   tx: TxCtx,
   requested: bigint[],
@@ -128,10 +122,6 @@ function storePreviews(
     .filter((id) => !answered.has(id))
     .forEach((id) => recordPreviewAttempt(tx, id));
   return stored;
-}
-
-function hasEdits(tx: TxCtx, page_id: bigint): boolean {
-  return [...tx.db.edit.page_id.filter(page_id)].length > 0;
 }
 
 function recordPreviewAttempt(tx: TxCtx, page_id: bigint) {
