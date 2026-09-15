@@ -20,6 +20,24 @@ static host can serve `dist/` as it is.
 When a release changes the module, publish it before deploying the client, so a new client never connects
 to an old module.
 
+Publishing doesn't touch the timer tables. When a release changes an interval in
+`spacetimedb/src/schedules.ts`, or adds a scheduled process, bring the database's timers in line after
+publishing:
+
+```bash
+spacetime call --no-config --server maincloud <database name> update_schedulers
+```
+
+Without `--no-config`, the CLI takes the database name from its config and reads `<database name>` as the
+reducer's name. The call is refused unless your identity is in the database's private `admin` table.
+`init` adds whoever published the database, but a database created before that table existed has nobody
+in it, so add yourself once:
+
+```bash
+spacetime sql --no-config --server maincloud <database name> \
+  "INSERT INTO admin (identity) VALUES (0x$(spacetime login show | awk '{print $NF}'))"
+```
+
 The Wikipedia contact is stored per database, so a new database needs it set too:
 
 ```bash
