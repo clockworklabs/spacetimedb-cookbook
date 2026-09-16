@@ -26,7 +26,7 @@ export function Masthead({ home = false, children, ...statusProps }: Props) {
             <a href={FRONT_PAGE_HREF}>wikiwatch</a>
           </p>
         )}
-        <p className="tagline">English Wikipedia, as it’s being edited</p>
+        <p className="tagline">Wikipedia, as it’s being edited</p>
       </div>
       <div className="masthead-controls">
         <StatusLine {...statusProps} />
