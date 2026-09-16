@@ -10,11 +10,6 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const Admin = __t.object("Admin", {
-  identity: __t.identity(),
-});
-export type Admin = __Infer<typeof Admin>;
-
 export const ArticlePreview = __t.object("ArticlePreview", {
   pageId: __t.u64(),
   title: __t.string(),
@@ -161,3 +156,9 @@ export const Thumbnail = __t.object("Thumbnail", {
   height: __t.u32(),
 });
 export type Thumbnail = __Infer<typeof Thumbnail>;
+
+export const User = __t.object("User", {
+  identity: __t.identity(),
+  admin: __t.bool(),
+});
+export type User = __Infer<typeof User>;

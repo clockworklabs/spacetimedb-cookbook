@@ -29,13 +29,13 @@ spacetime call --no-config --server maincloud <database name> update_schedulers
 ```
 
 Without `--no-config`, the CLI takes the database name from its config and reads `<database name>` as the
-reducer's name. The call is refused unless your identity is in the database's private `admin` table.
+reducer's name. The call is refused unless your identity is an admin in the database's private `user` table.
 `init` adds whoever published the database, but a database created before that table existed has nobody
 in it, so add yourself once:
 
 ```bash
 spacetime sql --no-config --server maincloud <database name> \
-  "INSERT INTO admin (identity) VALUES (0x$(spacetime login show | awk '{print $NF}'))"
+  "INSERT INTO user (identity, admin) VALUES (0x$(spacetime login show | awk '{print $NF}'), true)"
 ```
 
 The Wikipedia contact is stored per database, so a new database needs it set too:
