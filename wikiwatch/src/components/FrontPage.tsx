@@ -8,13 +8,21 @@ import {
   type ReplayEdit,
 } from "../live/derive";
 import { useArticleOrder, type LiveSet } from "../live/hooks";
-import { ArticleCard } from "./ArticleCard";
+import { ArticleCard, type CardSize } from "./ArticleCard";
 import { Masthead } from "./Masthead";
 import { PulseRibbon } from "./PulseRibbon";
 import { Ticker } from "./Ticker";
 
 const RERANK_EVERY_MS = 10_000;
-const CARD_COUNT = 21;
+// The ranking is shown in tiers of shrinking cards, so articles visibly climb
+// from the crowd of minis at the bottom towards the lead.
+const TIERS: { size: CardSize; count: number }[] = [
+  { size: "lead", count: 1 },
+  { size: "medium", count: 4 },
+  { size: "standard", count: 20 },
+  { size: "mini", count: 48 },
+];
+const CARD_COUNT = TIERS.reduce((total, tier) => total + tier.count, 0);
 const TICKER_LENGTH = 80;
 const WINDOW_MINUTES = WINDOW_MS / 60_000;
 
@@ -56,6 +64,13 @@ export function FrontPage({
     })
     .filter((card) => card.edits.length > 0);
   const hottest = Math.max(0, ...cards.map((card) => card.heat));
+
+  let tierStart = 0;
+  const tiers = TIERS.map(({ size, count }) => {
+    const start = tierStart;
+    tierStart += count;
+    return { size, start, cards: cards.slice(start, start + count) };
+  }).filter((tier) => tier.cards.length > 0);
 
   const latest: ReplayEdit[] = [];
   for (let i = revealed - 1; i >= 0 && latest.length < TICKER_LENGTH; i--) {
@@ -104,20 +119,29 @@ export function FrontPage({
           {cards.length === 0 ? (
             <p className="empty">{emptyMessage}</p>
           ) : (
-            <ol className="cards">
-              {cards.map((card, i) => (
-                <ArticleCard
-                  key={card.key}
-                  pageKey={card.key}
-                  edits={card.edits}
-                  preview={live.previews.get(card.key)}
-                  featured={i === 0}
-                  heatShare={hottest > 0 ? card.heat / hottest : 0}
-                  clock={clock}
-                  now={now}
-                />
+            <div className="tiers">
+              {tiers.map((tier) => (
+                <ol
+                  key={tier.size}
+                  className={`cards ${tier.size}-tier`}
+                  start={tier.start + 1}
+                >
+                  {tier.cards.map((card, i) => (
+                    <ArticleCard
+                      key={card.key}
+                      pageKey={card.key}
+                      rank={tier.start + i + 1}
+                      edits={card.edits}
+                      preview={live.previews.get(card.key)}
+                      size={tier.size}
+                      heatShare={hottest > 0 ? card.heat / hottest : 0}
+                      clock={clock}
+                      now={now}
+                    />
+                  ))}
+                </ol>
               ))}
-            </ol>
+            </div>
           )}
         </section>
 
