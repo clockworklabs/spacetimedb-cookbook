@@ -1050,6 +1050,27 @@ a.entry-user:hover {
   color: var(--muted);
 }
 
+.colophon-links {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.source-link {
+  display: block;
+  opacity: 0.75;
+  transition: opacity 150ms;
+}
+
+.source-link:hover {
+  opacity: 1;
+}
+
+.source-link img {
+  display: block;
+}
+
 .made-with {
   display: inline-flex;
   flex-shrink: 0;
