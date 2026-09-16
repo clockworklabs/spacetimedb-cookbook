@@ -151,15 +151,18 @@ export function ArticleCard({
     );
   }
 
-  // Standard cards line their trails up across a row, so the image slot
-  // holds the article's opening lines when there's no image.
+  // Standard cards pin their trails to the bottom, so trails line up across a
+  // row. Without an image, the article's opening lines fill the space instead,
+  // beneath the title.
   return (
     <li className="card standard" style={style}>
       {heartbeat}
       {rankRow}
-      {image ??
-        (preview?.summary && <p className="card-summary">{preview.summary}</p>)}
+      {image}
       {heading}
+      {!image && preview?.summary && (
+        <p className="card-summary">{preview.summary}</p>
+      )}
       <div className="card-foot">
         <EditTrail edits={edits} clock={clock} />
         {meta}

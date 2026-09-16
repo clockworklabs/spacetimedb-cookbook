@@ -574,7 +574,7 @@ input:focus-visible {
   height: 36px;
 }
 
-/* Without an image, the opening lines take the image's place. */
+/* Without an image, the opening lines fill the space under the title. */
 .standard .card-summary {
   -webkit-line-clamp: 6;
 }
