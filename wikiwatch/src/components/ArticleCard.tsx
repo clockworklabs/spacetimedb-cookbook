@@ -5,12 +5,22 @@ import { ago, plural } from "../live/format";
 import { articleHref } from "../route";
 import { EditTrail } from "./EditTrail";
 
+// How prominently a card is shown, from the hottest article down.
+export type CardSize = "lead" | "medium" | "standard" | "mini";
+
+// How long a card keeps its heartbeat after the display reaches one of its
+// edits. The animation in styles.css takes 500ms; the extra second stops the
+// clock's coarse ticks from unmounting it part-way through.
+const HEARTBEAT_MS = 1500;
+
 type Props = {
   pageKey: string;
+  // 1 for the hottest article.
+  rank: number;
   // This page's edits within the window that the display has reached.
   edits: ReplayEdit[];
   preview: ArticlePreview | undefined;
-  featured: boolean;
+  size: CardSize;
   // This card's heat relative to the hottest card, 0 to 1.
   heatShare: number;
   clock: number;
@@ -20,26 +30,39 @@ type Props = {
 export function ArticleCard({
   pageKey,
   edits,
+  rank,
   preview,
-  featured,
+  size,
   heatShare,
   clock,
   now,
 }: Props) {
-  const latest = edits[edits.length - 1].edit;
+  const newest = edits[edits.length - 1];
+  const latest = newest.edit;
   const title = preview?.title ?? latest.title;
   const editors = new Set(edits.map(({ edit }) => edit.userName)).size;
+  const mini = size === "mini";
   // Without an image, the opening sentences fill the card instead.
-  const showSummary = preview?.summary && (featured || !preview.thumbnail);
+  const showSummary =
+    !mini &&
+    preview?.summary &&
+    (size === "lead" || size === "medium" || !preview.thumbnail);
   const style = { viewTransitionName: `card-${pageKey}` } as CSSProperties;
   const href = articleHref(latest.pageId);
 
   return (
-    <li className={featured ? "card featured" : "card"} style={style}>
-      <div className="heat" aria-hidden="true">
-        <span style={{ width: `${Math.max(4, heatShare * 100)}%` }} />
+    <li className={`card ${size}`} style={style}>
+      {clock - newest.revealAt < HEARTBEAT_MS && (
+        // Keyed on the edit, so a second edit restarts the animation.
+        <span key={newest.key} className="heartbeat" aria-hidden="true" />
+      )}
+      <div className="card-rank" aria-hidden="true">
+        <span className="rank">{rank}</span>
+        <div className="heat">
+          <span style={{ width: `${Math.max(4, heatShare * 100)}%` }} />
+        </div>
       </div>
-      {preview?.thumbnail && (
+      {!mini && preview?.thumbnail && (
         // A second way to the same place as the title, so it's left out of
         // the tab order and hidden from screen readers.
         <a
@@ -62,21 +85,27 @@ export function ArticleCard({
         <h3>
           <a href={href}>{title}</a>
         </h3>
-        {preview?.description && (
+        {!mini && preview?.description && (
           <p className="card-description">{preview.description}</p>
         )}
         {showSummary && <p className="card-summary">{preview.summary}</p>}
         <EditTrail edits={edits} clock={clock} />
-        <p className="card-meta">
-          <span>
-            {plural(edits.length, "edit")} by{" "}
-            {plural(editors, "person", "people")}
-          </span>
-          <span>
-            Latest by {latest.userName || "a hidden user"},{" "}
-            {ago(now - edits[edits.length - 1].at)}
-          </span>
-        </p>
+        {mini ? (
+          <p className="card-meta">
+            {plural(edits.length, "edit")}, {ago(now - newest.at)}
+          </p>
+        ) : (
+          <p className="card-meta">
+            <span>
+              {plural(edits.length, "edit")} by{" "}
+              {plural(editors, "person", "people")}
+            </span>
+            <span>
+              Latest by {latest.userName || "a hidden user"},{" "}
+              {ago(now - newest.at)}
+            </span>
+          </p>
+        )}
       </div>
     </li>
   );
