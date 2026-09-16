@@ -1,6 +1,6 @@
 const BAR = 4;
 const GAP = 2;
-const HEIGHT = 40;
+const HEIGHT = 28;
 
 // Edits per minute, one bar for each entry in `counts`. `counts` ends with the
 // minute in progress, which is drawn in the highlight colour.
@@ -34,7 +34,9 @@ export function PulseRibbon({ counts }: { counts: number[] }) {
           );
         })}
       </svg>
-      <figcaption>About {rate} edits a minute</figcaption>
+      <figcaption>
+        <strong>{rate}</strong> edits/min
+      </figcaption>
     </figure>
   );
 }

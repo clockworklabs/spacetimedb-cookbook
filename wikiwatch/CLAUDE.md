@@ -111,8 +111,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 
 - `LIVE_FOR` (`spacetimedb/src/live.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
 - `RETENTION` (`spacetimedb/src/prune.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
-- `POLL_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) is also written into the UI text: the `App.tsx` footer, the `FrontPage.tsx`
-  empty-state message and `StatusLine.tsx`
+- `POLL_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
+  must stay several polls long
 
 ### Gotchas seen in this codebase
 
