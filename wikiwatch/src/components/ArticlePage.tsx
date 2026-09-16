@@ -6,15 +6,10 @@ import {
   revealedCount,
   WINDOW_MS,
   type ReplayEdit,
-} from "../live/derive";
-import {
-  articleUrl,
-  deltaClass,
-  formatDelta,
-  formatNumber,
-  historyUrl,
-} from "../live/format";
-import { useArticle, type LiveSet } from "../live/hooks";
+} from "../replay";
+import { deltaClass, formatDelta, formatNumber } from "../format";
+import { articleUrl, historyUrl } from "../wikipedia";
+import { useArticle, type LiveSet } from "../subscriptions";
 import { FRONT_PAGE_HREF } from "../route";
 import { EditHistory } from "./EditHistory";
 import { EditTrail } from "./EditTrail";

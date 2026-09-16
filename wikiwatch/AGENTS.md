@@ -90,7 +90,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   `expireOldEdits` clears the flag once an edit is more than `LIVE_FOR` (30 min) old. Clients subscribe to
   `edit WHERE live = true`, so aged edits arrive as deletes and nobody ever resubscribes.
 - Previews reach clients through a `rightSemijoin` of live edits onto `article_preview`
-  (`src/live/hooks.ts`). The module never tracks which previews are live.
+  (`src/subscriptions.ts`). The module never tracks which previews are live.
 - Nothing queues preview fetches. Each run, `fetchArticlePreviews` works out which pages with live
   edits have no fresh preview and fetches a batch, newest edits first. `edits.ts` knows nothing about
   previews. Only failures are stored (`preview_failure`), because they can't be derived.
@@ -104,7 +104,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   edits. Subscriptions share one client cache: `useTable` filters rows by its query, but it can't
   filter by a join.
 - The front page replays edits `REPLAY_DELAY_MS` (30s) behind real time, spreading edits that share a
-  timestamp second evenly across it (`src/live/derive.ts`, pure functions). Article pages show edits
+  timestamp second evenly across it (`src/replay.ts`, pure functions). Article pages show edits
   as soon as they arrive.
 - Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
 - `#/edits` (`EditStream.tsx`) is a deliberately unlinked page: the latest 100 live edits, shown as
@@ -112,7 +112,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 
 ### Constants that must change together
 
-- `LIVE_FOR` (`spacetimedb/src/edits.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
+- `LIVE_FOR` (`spacetimedb/src/edits.ts`) ↔ `WINDOW_MS` (`src/replay.ts`)
 - `RETENTION` (`spacetimedb/src/history.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
 - `RECENT_EDITS_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
   must stay several fetches long

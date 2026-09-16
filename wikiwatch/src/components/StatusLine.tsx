@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { FetchStatus } from "../module_bindings/types";
-import { REPLAY_DELAY_MS, toMillis } from "../live/derive";
-import { formatClock } from "../live/format";
+import { REPLAY_DELAY_MS, toMillis } from "../replay";
+import { formatClock } from "../format";
 
 // The server fetches edits every 15 seconds; this long without success means trouble.
 const STALE_AFTER_MS = 2 * 60_000;

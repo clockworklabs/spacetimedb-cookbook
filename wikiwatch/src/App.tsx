@@ -8,7 +8,8 @@ import { EditStream } from "./components/EditStream";
 import { FrontPage } from "./components/FrontPage";
 import { MadeWith } from "./components/MadeWith";
 import { SourceLink } from "./components/SourceLink";
-import { useFetchActivity, useLiveSet, useNow } from "./live/hooks";
+import { useFetchActivity, useLiveSet } from "./subscriptions";
+import { useNow } from "./useNow";
 import { useRoute } from "./route";
 
 const TICK_MS = 250;

@@ -1,15 +1,14 @@
 import { memo, useState } from "react";
-import { byteDelta, type ReplayEdit } from "../live/derive";
+import { byteDelta, type ReplayEdit } from "../replay";
 import {
   ago,
-  contributionsUrl,
   deltaClass,
-  diffUrl,
   displayTags,
   formatClock,
   formatDelta,
   parseComment,
-} from "../live/format";
+} from "../format";
+import { contributionsUrl, diffUrl } from "../wikipedia";
 
 type Props = {
   // Oldest first.

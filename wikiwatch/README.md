@@ -149,7 +149,7 @@ filters it by each query, so the front page never sees those older edits.
 ### Previews through a subscription join
 
 Each card on the front page needs its article's preview. Rather than subscribe to a day's worth of
-previews, the client joins the live edits onto `article_preview` (`src/live/hooks.ts`):
+previews, the client joins the live edits onto `article_preview` (`src/subscriptions.ts`):
 
 ```ts
 const livePreviews = tables.edit
@@ -231,9 +231,11 @@ private, so clients can't subscribe to it, and only the database owner can read 
 ### The client (`src`)
 
 - `main.tsx` connects to SpacetimeDB, and `App.tsx` picks a page from the route in `route.ts`.
-- `live/derive.ts` schedules the replay and works out rankings, heat and per-minute counts.
-- `live/hooks.ts` gives React the live set (the live edits and their articles' previews), each article's
-  full history, and the fetch toasts.
+- `subscriptions.ts` holds every subscription. It gives React the live set (the live edits and their
+  articles' previews), each article's full history, and the fetch toasts.
+- `replay.ts` schedules the replay and works out rankings, heat and per-minute counts.
+- `fetchToasts.ts` turns fetch events into toasts.
+- `format.ts` formats numbers, times and edit summaries, and `wikipedia.ts` builds links to Wikipedia.
 - `components/` renders it all.
 
 ## Development

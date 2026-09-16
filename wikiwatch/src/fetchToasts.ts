@@ -1,5 +1,5 @@
-import type { FetchEvent, PreviewPage } from "../module_bindings/types";
-import { toMillis } from "./derive";
+import type { FetchEvent, PreviewPage } from "./module_bindings/types";
+import { toMillis } from "./replay";
 import { formatClock, plural } from "./format";
 
 // Finished fetches stay up briefly; failures longer, so the error can be read.

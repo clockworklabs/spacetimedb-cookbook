@@ -1,11 +1,6 @@
-import { byteDelta, type ReplayEdit } from "../live/derive";
-import {
-  deltaClass,
-  diffUrl,
-  formatClock,
-  formatDelta,
-  parseComment,
-} from "../live/format";
+import { byteDelta, type ReplayEdit } from "../replay";
+import { deltaClass, formatClock, formatDelta, parseComment } from "../format";
+import { diffUrl } from "../wikipedia";
 import { articleHref } from "../route";
 
 // How long a newly revealed edit stays highlighted.
