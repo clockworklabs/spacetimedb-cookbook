@@ -78,22 +78,25 @@ const inserted = ctx.withTx((tx) => {
   for (const change of changes) {
     if (tx.db.edit.rc_id.find(change.rc_id)) continue;
     tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
-    enqueuePreview(tx, change.page_id, change.title);
   }
   // ...advance the cursor
 });
 ```
 
 Nothing carries over from one transaction to the next unless it's in a table, so that's where the
-fetchers keep their progress, and how one hands work to the other:
+fetchers keep what they need from one run to the next:
 
 - **The cursor** lives in `poller_status`. Each poll re-reads a minute before it, because changes can
   reach the API slightly after their timestamps, and keying `edit` on Wikipedia's `rcid` makes the
   overlap harmless. After downtime the cursor skips ahead rather than back-filling more than an hour.
-- **Articles that need a preview** go into the private `preview_queue` table, in the same transaction as
-  their edits. Each run of `fetchArticlePreviews` fetches the oldest twenty. A page whose fetch fails
-  stays queued for the next run, until it has failed three times. A preview more than a day
-  old is fetched again the next time its article is edited.
+- **The previews still to fetch** aren't stored at all, because the tables already say what they are:
+  the pages with live edits and no preview from the last day. Each run of `fetchArticlePreviews` works
+  that out and fetches up to twenty, most recently edited first. So `pollRecentChanges` never hands
+  over any work, and doesn't need to know previews exist. A page whose edits leave the live set stops
+  needing a preview without anyone removing it from a list.
+- **Pages Wikipedia didn't answer** are the one thing the tables can't show, so the private
+  `preview_failure` table counts them. A page gets three attempts, and a page Wikipedia says is
+  missing gets one.
 
 `init` runs only when a database is created, not when a module is republished, so a changed interval or a
 new scheduled process never reaches a running database on its own. Every interval lives in
@@ -205,7 +208,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                              |
 | `schema.ts`    | The tables, and the types stored in them                                                |
 | `edits.ts`     | `pollRecentChanges`, which fetches recent changes into `edit` every 15 seconds          |
-| `previews.ts`  | `fetchArticlePreviews`, which fetches queued article previews every 5 seconds           |
+| `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds      |
 | `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to          |
 | `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                       |
 | `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them |
@@ -219,7 +222,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `article_preview`                | public       | Each article's title, description, summary and thumbnail |
 | `poller_status`                  | public       | The poll cursor, and the poller's health                 |
 | `fetch_log`                      | public event | The start and end of each fetch, for the toasts          |
-| `preview_queue`                  | private      | Articles waiting for a preview fetch                     |
+| `preview_failure`                | private      | Articles Wikipedia didn't return a preview for           |
 | `settings`                       | private      | The contact sent to Wikipedia                            |
 | `admin`                          | private      | The identities allowed to call `updateSchedulers`        |
 | `poll_timer`, `preview_timer`, … | private      | The schedules                                            |

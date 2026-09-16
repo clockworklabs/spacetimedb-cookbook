@@ -13,7 +13,7 @@ import { HOUR, MINUTE, SECOND } from "./time";
 const POLL_INTERVAL = 15n * SECOND;
 
 // fetchArticlePreviews (previews.ts). Each run fetches one batch of
-// PREVIEW_BATCH_SIZE (wikipedia.ts), so this sets how fast the queue drains.
+// PREVIEW_BATCH_SIZE (wikipedia.ts), so this sets how fast previews arrive.
 const PREVIEW_INTERVAL = 5n * SECOND;
 
 // sweepLiveSet (live.ts). Aged edits stay live until the next sweep, so a live

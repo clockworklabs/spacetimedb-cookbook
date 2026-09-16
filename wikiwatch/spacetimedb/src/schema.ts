@@ -67,16 +67,15 @@ export const article_preview = table(
   },
 );
 
-// Pages waiting for a preview fetch. Polling for edits adds to it and the
-// preview fetcher takes from it, so neither process waits on the other, and a
-// failed fetch is retried on the fetcher's next run.
-export const preview_queue = table(
-  { name: "preview_queue" },
+// Pages that Wikipedia hasn't given a preview for. The preview fetcher works
+// out which pages need a preview from the edits and previews already stored,
+// but it can't work out which ones it has failed at, so those are kept here to
+// stop it asking again forever.
+export const preview_failure = table(
+  { name: "preview_failure" },
   {
     page_id: t.u64().primaryKey(),
-    title: t.string(),
     attempts: t.u8(),
-    enqueued_at: t.timestamp(),
   },
 );
 
@@ -126,6 +125,7 @@ const PreviewPage = t.object("PreviewPage", {
   page_id: t.u64(),
   title: t.string(),
 });
+export type PreviewPage = Infer<typeof PreviewPage>;
 
 // What a fetcher is doing. Each fetch sends a `fetching_*` row when it starts
 // and a `fetched_*` or `*_failed` row when it ends.
@@ -197,7 +197,7 @@ export const prune_timer = table(
 const spacetimedb = schema({
   edit,
   article_preview,
-  preview_queue,
+  preview_failure,
   poller_status,
   settings,
   admin,

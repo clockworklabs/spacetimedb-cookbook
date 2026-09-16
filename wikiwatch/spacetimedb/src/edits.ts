@@ -1,6 +1,5 @@
 // Polling for edits: every POLL_INTERVAL (schedules.ts), fetch Wikipedia's
-// recent changes into the edit table, and queue their articles for a preview
-// (previews.ts).
+// recent changes into the edit table.
 
 import type { Timestamp } from "spacetimedb";
 import { SenderError, t } from "spacetimedb/server";
@@ -11,7 +10,6 @@ import spacetimedb, {
   type TxCtx,
 } from "./schema";
 import { isLive } from "./live";
-import { enqueuePreview } from "./previews";
 import { errorMessage, logFetch, recordError } from "./status";
 import { HOUR, MINUTE, later, minus } from "./time";
 import { fetchRecentChanges, userAgent } from "./wikipedia";
@@ -76,7 +74,6 @@ function ingestRecentChanges(ctx: ProcCtx) {
       if (tx.db.edit.rc_id.find(change.rc_id)) continue;
       // Back-filled edits can arrive already too old to be live.
       tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
-      enqueuePreview(tx, change.page_id, change.title);
       count++;
     }
 
