@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ArticlePreview } from "../module_bindings/types";
-import type { ReplayEdit } from "../live/derive";
-import { ago, formatNumber, plural } from "../live/format";
+import type { ReplayEdit } from "../replay";
+import { ago, formatNumber, plural } from "../format";
 import { articleHref } from "../route";
 import { EditTrail } from "./EditTrail";
 

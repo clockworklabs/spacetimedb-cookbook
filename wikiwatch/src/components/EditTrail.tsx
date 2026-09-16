@@ -1,5 +1,5 @@
-import { byteDelta, WINDOW_MS, type ReplayEdit } from "../live/derive";
-import { deltaClass } from "../live/format";
+import { byteDelta, WINDOW_MS, type ReplayEdit } from "../replay";
+import { deltaClass } from "../format";
 
 const WIDTH = 600;
 const HEIGHT = 40;

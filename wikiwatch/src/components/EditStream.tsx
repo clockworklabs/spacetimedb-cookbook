@@ -5,16 +5,10 @@ import {
   revealedCount,
   WINDOW_MS,
   type ReplayEdit,
-} from "../live/derive";
-import {
-  contributionsUrl,
-  deltaClass,
-  diffUrl,
-  formatClock,
-  formatDelta,
-  parseComment,
-} from "../live/format";
-import type { LiveSet } from "../live/hooks";
+} from "../replay";
+import { deltaClass, formatClock, formatDelta, parseComment } from "../format";
+import { contributionsUrl, diffUrl } from "../wikipedia";
+import type { LiveSet } from "../subscriptions";
 import { articleHref } from "../route";
 import { HideBotsToggle } from "./HideBotsToggle";
 import { Masthead } from "./Masthead";

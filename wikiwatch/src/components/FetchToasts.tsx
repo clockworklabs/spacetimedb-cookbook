@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import type { FetchToast } from "../live/fetchActivity";
+import type { FetchToast } from "../fetchToasts";
 import type { PreviewPage } from "../module_bindings/types";
 import { articleHref } from "../route";
 

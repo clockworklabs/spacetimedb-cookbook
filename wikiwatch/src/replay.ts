@@ -1,5 +1,5 @@
 import type { Timestamp } from "spacetimedb";
-import type { Edit } from "../module_bindings/types";
+import type { Edit } from "./module_bindings/types";
 
 // The server fetches edits from Wikipedia every 15 seconds, and Wikipedia's API trails its
 // own edits by a few more. Replaying this far behind real time turns those
