@@ -2,7 +2,10 @@ import { useSyncExternalStore } from "react";
 
 // Routes live in the URL's fragment, so any static host can serve the app
 // without rewriting unknown paths to index.html.
-export type Route = { page: "front" } | { page: "article"; pageId: bigint };
+export type Route =
+  | { page: "front" }
+  | { page: "edits" }
+  | { page: "article"; pageId: bigint };
 
 export const FRONT_PAGE_HREF = "#/";
 
@@ -11,6 +14,8 @@ export function articleHref(pageId: bigint): string {
 }
 
 function parseRoute(hash: string): Route {
+  // Not linked from anywhere: you have to know it's there.
+  if (hash === "#/edits") return { page: "edits" };
   const match = hash.match(/^#\/article\/(\d+)$/);
   return match
     ? { page: "article", pageId: BigInt(match[1]) }
