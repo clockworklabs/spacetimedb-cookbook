@@ -9,26 +9,26 @@ import { ScheduleAt } from "spacetimedb";
 import spacetimedb, { type TxCtx } from "./schema";
 import { HOUR, MINUTE, SECOND } from "./time";
 
-// pollRecentChanges (edits.ts).
-const POLL_INTERVAL = 15n * SECOND;
+// fetchRecentEdits (edits.ts).
+const RECENT_EDITS_INTERVAL = 15n * SECOND;
 
 // fetchArticlePreviews (previews.ts). Each run fetches one batch of
 // PREVIEW_BATCH_SIZE (wikipedia.ts), so this sets how fast previews arrive.
 const PREVIEW_INTERVAL = 5n * SECOND;
 
-// sweepLiveSet (live.ts). Aged edits stay live until the next sweep, so a live
-// edit can be up to LIVE_FOR + SWEEP_INTERVAL old.
-const SWEEP_INTERVAL = 5n * MINUTE;
+// expireOldEdits (edits.ts). Aged edits stay live until the next expiry run,
+// so a live edit can be up to LIVE_FOR + EXPIRE_INTERVAL old.
+const EXPIRE_INTERVAL = 5n * MINUTE;
 
-// pruneOldData (prune.ts).
-const PRUNE_INTERVAL = HOUR;
+// deleteOldHistory (history.ts).
+const DELETE_INTERVAL = HOUR;
 
 export function applySchedulers(tx: TxCtx) {
   const written = [
-    ensureInterval(tx.db.poll_timer, POLL_INTERVAL),
+    ensureInterval(tx.db.recent_edits_timer, RECENT_EDITS_INTERVAL),
     ensureInterval(tx.db.preview_timer, PREVIEW_INTERVAL),
-    ensureInterval(tx.db.sweep_timer, SWEEP_INTERVAL),
-    ensureInterval(tx.db.prune_timer, PRUNE_INTERVAL),
+    ensureInterval(tx.db.expire_timer, EXPIRE_INTERVAL),
+    ensureInterval(tx.db.delete_timer, DELETE_INTERVAL),
   ];
   console.info(
     `Wrote ${written.filter(Boolean).length} of ${written.length} scheduler timers`,

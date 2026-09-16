@@ -1,16 +1,16 @@
 import { useEffect, useRef } from "react";
-import type { PollerStatus } from "../module_bindings/types";
+import type { FetchStatus } from "../module_bindings/types";
 import { REPLAY_DELAY_MS, toMillis } from "../live/derive";
 import { formatClock } from "../live/format";
 
-// The server polls every 15 seconds; this long without success means trouble.
+// The server fetches edits every 15 seconds; this long without success means trouble.
 const STALE_AFTER_MS = 2 * 60_000;
 const LIVE = "Live";
 
 type Props = {
   isActive: boolean;
   loaded: boolean;
-  status: PollerStatus | undefined;
+  status: FetchStatus | undefined;
   now: number;
   // Whether the page replays edits behind real time.
   delayed: boolean;

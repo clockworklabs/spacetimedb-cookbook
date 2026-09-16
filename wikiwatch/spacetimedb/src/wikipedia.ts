@@ -86,10 +86,10 @@ type RawResponse = {
   query?: { recentchanges?: RawRecentChange[]; pages?: RawPage[] };
 };
 
-// Fetches article edits and page creations made at or after `start`, oldest
+// Queries article edits and page creations made at or after `start`, oldest
 // first, following continuation for at most `maxPages` requests. When the cap
 // is hit the caller simply resumes from the newest change it received.
-export function fetchRecentChanges(
+export function queryRecentChanges(
   http: Http,
   agent: string,
   start: Timestamp,
@@ -118,8 +118,8 @@ export function fetchRecentChanges(
   return changes;
 }
 
-// Fetches hover-card data for up to PREVIEW_BATCH_SIZE pages in one request.
-export function fetchPreviews(
+// Queries hover-card data for up to PREVIEW_BATCH_SIZE pages in one request.
+export function queryPreviews(
   http: Http,
   agent: string,
   pageIds: bigint[],

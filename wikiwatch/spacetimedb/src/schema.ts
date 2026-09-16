@@ -37,7 +37,7 @@ export const edit = table(
     tags: t.array(t.string()),
     edited_at: t.timestamp().index("btree"),
     // Whether the edit is in the live set that clients subscribe to: made
-    // within LIVE_FOR, give or take a sweep (see live.ts).
+    // within LIVE_FOR, give or take an expiry run (see edits.ts).
     live: t.bool().default(false).index("btree"),
   },
 );
@@ -79,12 +79,12 @@ export const preview_failure = table(
   },
 );
 
-// Singleton (id = STATUS_ID) describing the health of the Wikipedia poller.
-export const poller_status = table(
-  { name: "poller_status", public: true },
+// Singleton (id = STATUS_ID) describing the health of the Wikipedia fetchers.
+export const fetch_status = table(
+  { name: "fetch_status", public: true },
   {
     id: t.u8().primaryKey(),
-    // Newest edited_at seen; the next poll starts a little before this.
+    // Newest edited_at seen; the next fetch of recent changes starts a little before this.
     cursor: t.timestamp(),
     last_success_at: t.option(t.timestamp()),
     last_error: t.option(t.string()),
@@ -158,12 +158,12 @@ export const fetch_log = table(
   },
 );
 
-// The schedules. pollRecentChanges (edits.ts), fetchArticlePreviews
-// (previews.ts), sweepLiveSet (live.ts) and pruneOldData (prune.ts) each name
+// The schedules. fetchRecentEdits and expireOldEdits (edits.ts),
+// fetchArticlePreviews (previews.ts) and deleteOldHistory (history.ts) each name
 // their timer with `onSchedule`. The rows, and the intervals they repeat at,
 // are written by schedules.ts.
-export const poll_timer = table(
-  { name: "poll_timer" },
+export const recent_edits_timer = table(
+  { name: "recent_edits_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -178,16 +178,16 @@ export const preview_timer = table(
   },
 );
 
-export const sweep_timer = table(
-  { name: "sweep_timer" },
+export const expire_timer = table(
+  { name: "expire_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
   },
 );
 
-export const prune_timer = table(
-  { name: "prune_timer" },
+export const delete_timer = table(
+  { name: "delete_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -198,14 +198,14 @@ const spacetimedb = schema({
   edit,
   article_preview,
   preview_failure,
-  poller_status,
+  fetch_status,
   settings,
   admin,
   fetch_log,
-  poll_timer,
+  recent_edits_timer,
   preview_timer,
-  prune_timer,
-  sweep_timer,
+  expire_timer,
+  delete_timer,
 });
 export default spacetimedb;
 

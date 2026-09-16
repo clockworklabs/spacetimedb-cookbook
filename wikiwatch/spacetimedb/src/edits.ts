@@ -1,22 +1,34 @@
-// Polling for edits: every POLL_INTERVAL (schedules.ts), fetch Wikipedia's
-// recent changes into the edit table.
+// Edits: every RECENT_EDITS_INTERVAL (schedules.ts), fetch Wikipedia's
+// recent changes into the edit table, and every EXPIRE_INTERVAL take aged edits
+// out of the live set.
+//
+// The live set is the recent edits that clients subscribe to. Edits carry a
+// `live` flag rather than clients filtering on time, so a single subscription
+// stays LIVE_FOR deep, and rows leave client caches as they age without anyone
+// resubscribing. Clients join previews to the live edits, so a page's preview
+// leaves along with its last live edit.
 
 import type { Timestamp } from "spacetimedb";
 import { SenderError, t } from "spacetimedb/server";
 import spacetimedb, {
   STATUS_ID,
-  poll_timer,
+  expire_timer,
+  recent_edits_timer,
   type ProcCtx,
   type TxCtx,
 } from "./schema";
-import { isLive } from "./live";
 import { errorMessage, logFetch, recordError } from "./status";
-import { HOUR, MINUTE, later, minus } from "./time";
-import { fetchRecentChanges, userAgent } from "./wikipedia";
+import { HOUR, MINUTE, compare, later, minus } from "./time";
+import { queryRecentChanges, userAgent } from "./wikipedia";
+
+// How long an edit stays live after it's made. Aged edits leave at the next
+// expiry run, so a live edit can be up to LIVE_FOR + EXPIRE_INTERVAL
+// (schedules.ts) old.
+const LIVE_FOR = 30n * MINUTE;
 
 // Recent changes can appear in the API slightly after their timestamp, so
-// each poll re-reads this much before the cursor. rc_id dedupes the overlap.
-const POLL_OVERLAP = MINUTE;
+// each fetch re-reads this much before the cursor. rc_id dedupes the overlap.
+const FETCH_OVERLAP = MINUTE;
 // After downtime, skip ahead rather than back-filling indefinitely.
 const MAX_BACKFILL = HOUR;
 // A fresh database starts with an hour of history for its article pages.
@@ -25,34 +37,34 @@ const MAX_RC_PAGES = 5;
 
 // Procedures and reducers can be called by any client. This one makes
 // outbound HTTP requests, so only the scheduler may run it.
-export const pollRecentChanges = spacetimedb.procedure(
-  { onSchedule: poll_timer },
-  { timer: poll_timer.rowType },
+export const fetchRecentEdits = spacetimedb.procedure(
+  { onSchedule: recent_edits_timer },
+  { timer: recent_edits_timer.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError(
-        "pollRecentChanges may only be run by the scheduler",
+        "fetchRecentEdits may only be run by the scheduler",
       );
     }
-    ingestRecentChanges(ctx);
+    ingestRecentEdits(ctx);
     return {};
   },
 );
 
-function ingestRecentChanges(ctx: ProcCtx) {
+function ingestRecentEdits(ctx: ProcCtx) {
   const agent = userAgent(ctx);
   const fetch_id = ctx.newUuidV7();
   const start = ctx.withTx((tx) => {
     const earliest = minus(tx.timestamp, MAX_BACKFILL);
-    const since = later(minus(cursor(tx), POLL_OVERLAP), earliest);
+    const since = later(minus(cursor(tx), FETCH_OVERLAP), earliest);
     logFetch(tx, fetch_id, { tag: "fetching_edits", value: { since } });
     return since;
   });
 
   let changes;
   try {
-    changes = fetchRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
+    changes = queryRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
   } catch (e) {
     const message = `recentchanges: ${errorMessage(e)}`;
     console.error(message);
@@ -64,7 +76,7 @@ function ingestRecentChanges(ctx: ProcCtx) {
   }
 
   const inserted = ctx.withTx((tx) => {
-    const status = tx.db.poller_status.id.find(STATUS_ID);
+    const status = tx.db.fetch_status.id.find(STATUS_ID);
     if (!status) return 0;
 
     let newest = status.cursor;
@@ -77,7 +89,7 @@ function ingestRecentChanges(ctx: ProcCtx) {
       count++;
     }
 
-    tx.db.poller_status.id.update({
+    tx.db.fetch_status.id.update({
       ...status,
       cursor: newest,
       last_success_at: tx.timestamp,
@@ -96,14 +108,14 @@ function ingestRecentChanges(ctx: ProcCtx) {
   }
 }
 
-// The poll cursor, from the poller_status row. A new database has no row until
-// its first poll creates one, starting INITIAL_BACKFILL back.
+// The edits cursor, from the fetch_status row. A new database has no
+// row until its first fetch creates one, starting INITIAL_BACKFILL back.
 function cursor(tx: TxCtx): Timestamp {
-  const status = tx.db.poller_status.id.find(STATUS_ID);
+  const status = tx.db.fetch_status.id.find(STATUS_ID);
   if (status) return status.cursor;
 
   const initial = minus(tx.timestamp, INITIAL_BACKFILL);
-  tx.db.poller_status.insert({
+  tx.db.fetch_status.insert({
     id: STATUS_ID,
     cursor: initial,
     last_success_at: undefined,
@@ -113,4 +125,28 @@ function cursor(tx: TxCtx): Timestamp {
     edits_ingested: 0n,
   });
   return initial;
+}
+
+// Takes edits older than LIVE_FOR out of the live set. Subscribed clients
+// receive each as a delete.
+export const expireOldEdits = spacetimedb.reducer(
+  { onSchedule: expire_timer },
+  { timer: expire_timer.rowType },
+  (ctx) => {
+    if (!ctx.sender.equals(ctx.databaseIdentity)) {
+      throw new SenderError("expireOldEdits may only be run by the scheduler");
+    }
+    const aged = [...ctx.db.edit.live.filter(true)].filter(
+      (edit) => !isLive(ctx, edit.edited_at),
+    );
+    for (const edit of aged) {
+      ctx.db.edit.rc_id.update({ ...edit, live: false });
+    }
+
+    console.info(`Expired ${aged.length} edits from the live set`);
+  },
+);
+
+function isLive(tx: TxCtx, edited_at: Timestamp): boolean {
+  return compare(edited_at, minus(tx.timestamp, LIVE_FOR)) >= 0;
 }

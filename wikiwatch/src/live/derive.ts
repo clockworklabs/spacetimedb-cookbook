@@ -1,7 +1,7 @@
 import type { Timestamp } from "spacetimedb";
 import type { Edit } from "../module_bindings/types";
 
-// The server polls Wikipedia every 15 seconds, and Wikipedia's API trails its
+// The server fetches edits from Wikipedia every 15 seconds, and Wikipedia's API trails its
 // own edits by a few more. Replaying this far behind real time turns those
 // bursts back into a steady stream, with each edit at its real moment.
 export const REPLAY_DELAY_MS = 30_000;

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # wikiwatch
 
-A live view of English Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) polls
+A live view of English Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) fetches from
 Wikipedia and keeps 24 hours of article edits and previews. A React + Vite client (`src`) subscribes
 to them. `README.md` explains the SpacetimeDB patterns it demonstrates and covers local development,
 setup and configuration. `docs/deploying.md` covers deployment.
@@ -63,10 +63,10 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 ### Module
 
 - **The Wikipedia fetchers are scheduled *procedures*, not reducers**, because they make HTTP
-  requests. `pollRecentChanges` runs every 15s and `fetchArticlePreviews` every 5s. HTTP happens
+  requests. `fetchRecentEdits` runs every 15s and `fetchArticlePreviews` every 5s. HTTP happens
   outside `ctx.withTx`, and each `withTx` block is its own transaction. State that has to survive
-  between those transactions lives in a table (`poller_status`, `preview_failure`). The module runs procedures one at a time, so the fetchers never
-  send Wikipedia concurrent requests. `sweepLiveSet` (every 5 min) and `pruneOldData` (hourly) are
+  between those transactions lives in a table (`fetch_status`, `preview_failure`). The module runs procedures one at a time, so the fetchers never
+  send Wikipedia concurrent requests. `expireOldEdits` (every 5 min) and `deleteOldHistory` (hourly) are
   scheduled reducers.
 - Every scheduled export rejects callers other than the scheduler with
   `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
@@ -80,8 +80,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - `schema.ts` holds every table, the types stored in them (`Edit`, `Thumbnail`, `FetchActivity`), the
   singleton ids and the `TxCtx`/`ProcCtx` context types. Define new tables and database types there.
 - There's one file per process, and each holds its scheduled export and its logic: `edits.ts`
-  (`pollRecentChanges`), `previews.ts` (`fetchArticlePreviews`), `live.ts` (`sweepLiveSet`) and
-  `prune.ts` (`pruneOldData`). `status.ts` is the poller's reporting. `wikipedia.ts` is the
+  (`fetchRecentEdits` and `expireOldEdits`), `previews.ts` (`fetchArticlePreviews`) and
+  `history.ts` (`deleteOldHistory`). `status.ts` is the fetchers' reporting. `wikipedia.ts` is the
   MediaWiki API client. `time.ts` does timestamp arithmetic in bigint microseconds.
 - `index.ts` is the entry. It holds `init` and re-exports each reducer and procedure. SpacetimeDB registers
   every named export of the entry and throws on anything that isn't a hook, reducer or procedure, so
@@ -89,8 +89,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 
 ### The live set (spans server and client)
 
-- Clients don't filter on time. Each `edit` row carries a `live` flag. New edits are live, and the
-  sweep clears the flag once an edit is more than `LIVE_FOR` (30 min) old. Clients subscribe to
+- Clients don't filter on time. Each `edit` row carries a `live` flag. New edits are live, and
+  `expireOldEdits` clears the flag once an edit is more than `LIVE_FOR` (30 min) old. Clients subscribe to
   `edit WHERE live = true`, so aged edits arrive as deletes and nobody ever resubscribes.
 - Previews reach clients through a `rightSemijoin` of live edits onto `article_preview`
   (`src/live/hooks.ts`). The module never tracks which previews are live.
@@ -113,10 +113,10 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 
 ### Constants that must change together
 
-- `LIVE_FOR` (`spacetimedb/src/live.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
-- `RETENTION` (`spacetimedb/src/prune.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
-- `POLL_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
-  must stay several polls long
+- `LIVE_FOR` (`spacetimedb/src/edits.ts`) ↔ `WINDOW_MS` (`src/live/derive.ts`)
+- `RETENTION` (`spacetimedb/src/history.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
+- `RECENT_EDITS_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
+  must stay several fetches long
 
 ### Gotchas seen in this codebase
 

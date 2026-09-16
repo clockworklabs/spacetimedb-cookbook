@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { PollerStatus } from "../module_bindings/types";
+import type { FetchStatus } from "../module_bindings/types";
 import { FRONT_PAGE_HREF } from "../route";
 import { StatusLine } from "./StatusLine";
 
@@ -9,7 +9,7 @@ type Props = {
   home?: boolean;
   isActive: boolean;
   loaded: boolean;
-  status: PollerStatus | undefined;
+  status: FetchStatus | undefined;
   now: number;
   delayed: boolean;
   children?: ReactNode;

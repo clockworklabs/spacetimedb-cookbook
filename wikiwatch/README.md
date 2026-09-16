@@ -2,7 +2,7 @@
 
 A live view of what's being edited on English Wikipedia right now, built on SpacetimeDB.
 
-A TypeScript module polls Wikipedia's recent changes every 15 seconds, and keeps the last 24 hours of
+A TypeScript module fetches Wikipedia's recent changes every 15 seconds, and keeps the last 24 hours of
 article edits along with a preview of each article. A React client subscribes to them, and shows which
 articles are busiest.
 
@@ -16,7 +16,7 @@ It shows:
   caches without anyone resubscribing
 - [A subscription join](#previews-through-a-subscription-join) that sends each article's preview along
   with its live edits
-- [An event table](#progress-through-an-event-table) that reports what the poller is doing, without
+- [An event table](#progress-through-an-event-table) that reports what the fetchers are doing, without
   storing it
 - [A private table](#personal-data-in-a-private-table) for configuration that mustn't go in the source
 
@@ -26,7 +26,7 @@ It shows:
   most. Each article has a trail of its edits across those minutes: additions rise above the line,
   removals drop below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest
   edits, and a toggle to hide bot edits. The page replays edits 30 seconds behind real time, which turns
-  the poller's 15-second bursts back into a steady stream.
+  the fetchers' 15-second bursts back into a steady stream.
 - **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, and every edit to
   it that the server still holds, as soon as each one arrives.
 - **Toasts** report what the server's Wikipedia fetchers are doing, and when they fail.
@@ -36,22 +36,22 @@ It shows:
 ### HTTP requests from a scheduled procedure
 
 Reducers can't make network requests, so the two processes that fetch from Wikipedia are procedures.
-Procedures can be scheduled like reducers. `init` inserts a row into `poll_timer` that runs
-`pollRecentChanges` every 15 seconds, and one into `preview_timer` that runs `fetchArticlePreviews` every
-5 seconds.
+Procedures can be scheduled like reducers. `init` inserts a row into `recent_edits_timer` that
+runs `fetchRecentEdits` every 15 seconds, and one into `preview_timer` that runs
+`fetchArticlePreviews` every 5 seconds.
 
 ```ts
-export const pollRecentChanges = spacetimedb.procedure(
-  { onSchedule: poll_timer },
-  { timer: poll_timer.rowType },
+export const fetchRecentEdits = spacetimedb.procedure(
+  { onSchedule: recent_edits_timer },
+  { timer: recent_edits_timer.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError(
-        "pollRecentChanges may only be run by the scheduler",
+        "fetchRecentEdits may only be run by the scheduler",
       );
     }
-    ingestRecentChanges(ctx);
+    ingestRecentEdits(ctx);
     return {};
   },
 );
@@ -68,11 +68,11 @@ steps (`spacetimedb/src/edits.ts`):
 ```ts
 const start = ctx.withTx((tx) => {
   const earliest = minus(tx.timestamp, MAX_BACKFILL);
-  const since = later(minus(cursor(tx), POLL_OVERLAP), earliest);
+  const since = later(minus(cursor(tx), FETCH_OVERLAP), earliest);
   // ...
 });
 
-changes = fetchRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
+changes = queryRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
 
 const inserted = ctx.withTx((tx) => {
   for (const change of changes) {
@@ -86,12 +86,12 @@ const inserted = ctx.withTx((tx) => {
 Nothing carries over from one transaction to the next unless it's in a table, so that's where the
 fetchers keep what they need from one run to the next:
 
-- **The cursor** lives in `poller_status`. Each poll re-reads a minute before it, because changes can
+- **The cursor** lives in `fetch_status`. Each fetch re-reads a minute before it, because changes can
   reach the API slightly after their timestamps, and keying `edit` on Wikipedia's `rcid` makes the
   overlap harmless. After downtime the cursor skips ahead rather than back-filling more than an hour.
 - **The previews still to fetch** aren't stored at all, because the tables already say what they are:
   the pages with live edits and no preview from the last day. Each run of `fetchArticlePreviews` works
-  that out and fetches up to twenty, most recently edited first. So `pollRecentChanges` never hands
+  that out and fetches up to twenty, most recently edited first. So `fetchRecentEdits` never hands
   over any work, and doesn't need to know previews exist. A page whose edits leave the live set stops
   needing a preview without anyone removing it from a list.
 - **Pages Wikipedia didn't answer** are the one thing the tables can't show, so the private
@@ -123,8 +123,8 @@ Instead, each `edit` row carries a `live` flag, and clients subscribe to the liv
 useTable(tables.edit.where((row) => row.live.eq(true)));
 ```
 
-New edits are inserted live. Every five minutes, the scheduled reducer `sweepLiveSet` clears the flag on
-edits more than 30 minutes old (`spacetimedb/src/live.ts`):
+New edits are inserted live. Every five minutes, the scheduled reducer `expireOldEdits` clears the flag
+on edits more than 30 minutes old (`spacetimedb/src/edits.ts`):
 
 ```ts
 const aged = [...ctx.db.edit.live.filter(true)].filter(
@@ -137,10 +137,10 @@ for (const edit of aged) {
 
 A row that stops matching a subscription reaches its subscribers as a delete. Each client's cache stays
 about half an hour deep, without the client resubscribing or knowing how long anything is kept. Between
-sweeps a live edit can be up to 35 minutes old, so the front page ignores anything older than 30 minutes
+expiry runs a live edit can be up to 35 minutes old, so the front page ignores anything older than 30 minutes
 when it draws.
 
-The server keeps 24 hours of edits, and `pruneOldData` deletes older ones every hour. Article pages
+The server keeps 24 hours of edits, and `deleteOldHistory` deletes older ones every hour. Article pages
 subscribe to all of an article's edits, live or not. Subscriptions share one client cache, but `useTable`
 filters it by each query, so the front page never sees those older edits.
 
@@ -167,7 +167,7 @@ article has live edits. That's harmless here, because previews are looked up by 
 
 ### Progress through an event table
 
-The toasts report what the poller is doing. They come from `fetch_log`, an event table:
+The toasts report what the fetchers are doing. They come from `fetch_log`, an event table:
 
 ```ts
 export const fetch_log = table(
@@ -183,7 +183,7 @@ server or in the client's cache. The client sees them only through `onInsert`:
 useTable(tables.fetchLog, { onInsert });
 ```
 
-Each `withTx` commits as soon as it returns, so the poller logs a fetch's start before making the request,
+Each `withTx` commits as soon as it returns, so each fetcher logs a fetch's start before making the request,
 and clients see it while the request is still in flight. The start and end rows share a `fetch_id`, so the
 client can pair them.
 
@@ -203,29 +203,28 @@ private, so clients can't subscribe to it, and only the database owner can read 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                            |
-| -------------- | --------------------------------------------------------------------------------------- |
-| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                              |
-| `schema.ts`    | The tables, and the types stored in them                                                |
-| `edits.ts`     | `pollRecentChanges`, which fetches recent changes into `edit` every 15 seconds          |
-| `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds      |
-| `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to          |
-| `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                       |
-| `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them |
-| `status.ts`    | Records the poller's health in `poller_status` and its activity in `fetch_log`          |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
-| `time.ts`      | Timestamp arithmetic                                                                    |
+| File           | What it does                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                                     |
+| `schema.ts`    | The tables, and the types stored in them                                                       |
+| `edits.ts`     | `fetchRecentEdits` and `expireOldEdits`, which bring edits in and age them out of the live set |
+| `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds             |
+| `history.ts`   | `deleteOldHistory`, which deletes edits and previews older than a day                          |
+| `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them        |
+| `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_log`               |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                                    |
+| `time.ts`      | Timestamp arithmetic                                                                           |
 
-| Table                            | Visibility   | Holds                                                    |
-| -------------------------------- | ------------ | -------------------------------------------------------- |
-| `edit`                           | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
-| `article_preview`                | public       | Each article's title, description, summary and thumbnail |
-| `poller_status`                  | public       | The poll cursor, and the poller's health                 |
-| `fetch_log`                      | public event | The start and end of each fetch, for the toasts          |
-| `preview_failure`                | private      | Articles Wikipedia didn't return a preview for           |
-| `settings`                       | private      | The contact sent to Wikipedia                            |
-| `admin`                          | private      | The identities allowed to call `updateSchedulers`        |
-| `poll_timer`, `preview_timer`, … | private      | The schedules                                            |
+| Table                                    | Visibility   | Holds                                                    |
+| ---------------------------------------- | ------------ | -------------------------------------------------------- |
+| `edit`                                   | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
+| `article_preview`                        | public       | Each article's title, description, summary and thumbnail |
+| `fetch_status`                           | public       | The edits cursor, and the fetchers' health               |
+| `fetch_log`                              | public event | The start and end of each fetch, for the toasts          |
+| `preview_failure`                        | private      | Articles Wikipedia didn't return a preview for           |
+| `settings`                               | private      | The contact sent to Wikipedia                            |
+| `admin`                                  | private      | The identities allowed to call `updateSchedulers`        |
+| `recent_edits_timer`, `preview_timer`, … | private      | The schedules                                            |
 
 ### The client (`src`)
 
@@ -259,8 +258,8 @@ pnpm dev
 Run `spacetime` commands from this directory. `spacetime.json` points them at the module in
 `spacetimedb/`, and at Maincloud unless you pass `--server`, so pass `--server local` while developing.
 
-Publishing starts the poller, and a fresh database back-fills the last hour, so the front page fills up
-after the first poll. To follow the module's logs:
+Publishing starts the fetchers, and a fresh database back-fills the last hour, so the front page fills up
+after the first fetch. To follow the module's logs:
 
 ```bash
 spacetime logs --server local wikiwatch-dev -f
