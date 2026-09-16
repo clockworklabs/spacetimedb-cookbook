@@ -686,7 +686,8 @@ input:focus-visible {
 }
 
 .ticker li.fresh,
-.history li.fresh {
+.history li.fresh,
+.stream li.fresh {
   animation: arrive 2.5s ease-out;
 }
 
@@ -751,7 +752,8 @@ a.delta:hover {
   text-decoration: underline;
 }
 
-.ticker time {
+.ticker time,
+.stream time {
   flex-shrink: 0;
   font-size: 0.75rem;
   color: var(--muted);
@@ -765,18 +767,21 @@ a.delta:hover {
   color: var(--muted);
 }
 
-/* One line per edit in the ticker: the comment gives way first. */
-.ticker .entry-meta {
+/* One line per edit in the ticker and the stream: the comment gives way first. */
+.ticker .entry-meta,
+.stream .entry-meta {
   flex-wrap: nowrap;
   white-space: nowrap;
   overflow: hidden;
 }
 
-.ticker .entry-meta > span {
+.ticker .entry-meta > *,
+.stream .entry-meta > * {
   flex-shrink: 0;
 }
 
-.ticker .entry-meta > .entry-comment {
+.ticker .entry-meta > .entry-comment,
+.stream .entry-meta > .entry-comment {
   flex-shrink: 1;
   min-width: 0;
   overflow: hidden;
@@ -797,6 +802,61 @@ a.entry-user:hover {
 
 .entry-flag {
   font-style: italic;
+}
+
+/* Edit stream page */
+
+.stream-page {
+  padding-block: 28px 48px;
+}
+
+.stream-page .section-head {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.stream {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stream li {
+  display: grid;
+  grid-template-columns: 4.8em 4.2em minmax(0, 22em) minmax(0, 1fr);
+  grid-template-areas: "time delta title meta";
+  column-gap: 18px;
+  align-items: baseline;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.stream time {
+  grid-area: time;
+}
+
+.stream .delta {
+  grid-area: delta;
+}
+
+.stream .entry-title {
+  grid-area: title;
+}
+
+.stream .entry-meta {
+  grid-area: meta;
+}
+
+@media (max-width: 720px) {
+  .stream li {
+    grid-template-columns: 4.2em minmax(0, 1fr) auto;
+    grid-template-areas:
+      "delta title time"
+      "delta meta meta";
+    column-gap: 12px;
+  }
 }
 
 /* Article page */
@@ -1227,6 +1287,7 @@ a.entry-user:hover {
 @media (prefers-reduced-motion: reduce) {
   .ticker li.fresh,
   .history li.fresh,
+  .stream li.fresh,
   .live-dot,
   .heartbeat,
   .toast,

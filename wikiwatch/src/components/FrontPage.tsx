@@ -9,6 +9,7 @@ import {
 } from "../live/derive";
 import { useArticleOrder, type LiveSet } from "../live/hooks";
 import { ArticleCard, type CardSize } from "./ArticleCard";
+import { HideBotsToggle } from "./HideBotsToggle";
 import { Masthead } from "./Masthead";
 import { PulseRibbon } from "./PulseRibbon";
 import { TrailLegend } from "./TrailLegend";
@@ -97,14 +98,7 @@ export function FrontPage({
             counts={editsPerMinute(edits, revealed, clock, WINDOW_MINUTES)}
           />
         )}
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={hideBots}
-            onChange={(event) => onHideBotsChange(event.target.checked)}
-          />
-          Hide bot edits
-        </label>
+        <HideBotsToggle hideBots={hideBots} onChange={onHideBotsChange} />
       </Masthead>
 
       <main className="layout">

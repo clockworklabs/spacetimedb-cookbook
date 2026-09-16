@@ -4,6 +4,7 @@ import { ArticlePage } from "./components/ArticlePage";
 import { DebugPanel } from "./components/DebugPanel";
 import { FetchToasts } from "./components/FetchToasts";
 import { DEBUG } from "./debug/enabled";
+import { EditStream } from "./components/EditStream";
 import { FrontPage } from "./components/FrontPage";
 import { MadeWith } from "./components/MadeWith";
 import { useFetchActivity, useLiveSet, useNow } from "./live/hooks";
@@ -19,7 +20,7 @@ function App() {
   const { isActive } = useSpacetimeDB();
   const now = useNow(TICK_MS);
   const route = useRoute();
-  // Kept here rather than on the front page, so it survives visiting an article.
+  // Kept here rather than on one page, so it survives moving between them.
   const [hideBots, setHideBots] = useState(false);
 
   return (
@@ -31,6 +32,14 @@ function App() {
           live={live}
           isActive={isActive}
           now={now}
+        />
+      ) : route.page === "edits" ? (
+        <EditStream
+          live={live}
+          isActive={isActive}
+          now={now}
+          hideBots={hideBots}
+          onHideBotsChange={setHideBots}
         />
       ) : (
         <FrontPage
