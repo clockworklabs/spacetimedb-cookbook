@@ -3,15 +3,15 @@
 // edits left.
 
 import { Range, SenderError } from "spacetimedb/server";
-import spacetimedb, { delete_timer, type TxCtx } from "./schema";
+import spacetimedb, { schedule_delete_old_history, type TxCtx } from "./schema";
 import { HOUR, minus } from "./time";
 
 // How much history to keep.
 const RETENTION = 24n * HOUR;
 
 export const deleteOldHistory = spacetimedb.reducer(
-  { onSchedule: delete_timer },
-  { timer: delete_timer.rowType },
+  { onSchedule: schedule_delete_old_history },
+  { timer: schedule_delete_old_history.rowType },
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError(

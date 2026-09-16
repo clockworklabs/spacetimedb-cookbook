@@ -1,4 +1,4 @@
-import type { FetchLog, PreviewPage } from "../module_bindings/types";
+import type { FetchEvent, PreviewPage } from "../module_bindings/types";
 import { toMillis } from "./derive";
 import { formatClock, plural } from "./format";
 
@@ -26,11 +26,11 @@ export type FetchToast = {
   expiresAt: number;
 };
 
-// Folds one fetch_log event into the toasts, dropping any that have expired.
+// Folds one fetch_event event into the toasts, dropping any that have expired.
 // A fetch's end event updates its start's toast in place.
-export function applyFetchLog(
+export function applyFetchEvent(
   toasts: FetchToast[],
-  row: FetchLog,
+  row: FetchEvent,
   now: number,
 ): FetchToast[] {
   const live = toasts.filter((toast) => toast.expiresAt > now);
@@ -44,7 +44,7 @@ export function applyFetchLog(
 
 function toToast(
   id: string,
-  activity: FetchLog["activity"],
+  activity: FetchEvent["activity"],
   started: FetchToast | undefined,
   now: number,
 ): FetchToast {

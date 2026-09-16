@@ -87,8 +87,6 @@ export const fetch_status = table(
     // Newest edited_at seen; the next fetch of recent changes starts a little before this.
     cursor: t.timestamp(),
     last_success_at: t.option(t.timestamp()),
-    last_error: t.option(t.string()),
-    last_error_at: t.option(t.timestamp()),
     consecutive_failures: t.u32(),
     edits_ingested: t.u64(),
   },
@@ -149,8 +147,8 @@ export type FetchActivity = Infer<typeof FetchActivity>;
 
 // Live fetcher activity for clients to display. An event table: rows are
 // broadcast to subscribers when their transaction commits, and never stored.
-export const fetch_log = table(
-  { name: "fetch_log", public: true, event: true },
+export const fetch_event = table(
+  { name: "fetch_event", public: true, event: true },
   {
     // Shared by a fetch's start and end rows, so clients can pair them.
     fetch_id: t.uuid(),
@@ -162,32 +160,32 @@ export const fetch_log = table(
 // fetchArticlePreviews (previews.ts) and deleteOldHistory (history.ts) each name
 // their timer with `onSchedule`. The rows, and the intervals they repeat at,
 // are written by schedules.ts.
-export const recent_edits_timer = table(
-  { name: "recent_edits_timer" },
+export const schedule_fetch_recent_edits = table(
+  { name: "schedule_fetch_recent_edits" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
   },
 );
 
-export const preview_timer = table(
-  { name: "preview_timer" },
+export const schedule_fetch_article_previews = table(
+  { name: "schedule_fetch_article_previews" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
   },
 );
 
-export const expire_timer = table(
-  { name: "expire_timer" },
+export const schedule_expire_old_edits = table(
+  { name: "schedule_expire_old_edits" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
   },
 );
 
-export const delete_timer = table(
-  { name: "delete_timer" },
+export const schedule_delete_old_history = table(
+  { name: "schedule_delete_old_history" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -201,11 +199,11 @@ const spacetimedb = schema({
   fetch_status,
   settings,
   admin,
-  fetch_log,
-  recent_edits_timer,
-  preview_timer,
-  expire_timer,
-  delete_timer,
+  fetch_event,
+  schedule_fetch_recent_edits,
+  schedule_fetch_article_previews,
+  schedule_expire_old_edits,
+  schedule_delete_old_history,
 });
 export default spacetimedb;
 

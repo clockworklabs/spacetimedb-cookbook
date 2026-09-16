@@ -14,8 +14,6 @@ export default __t.row({
   id: __t.u8().primaryKey(),
   cursor: __t.timestamp(),
   lastSuccessAt: __t.option(__t.timestamp()).name("last_success_at"),
-  lastError: __t.option(__t.string()).name("last_error"),
-  lastErrorAt: __t.option(__t.timestamp()).name("last_error_at"),
   consecutiveFailures: __t.u32().name("consecutive_failures"),
   editsIngested: __t.u64().name("edits_ingested"),
 });
