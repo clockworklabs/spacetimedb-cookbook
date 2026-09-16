@@ -21,7 +21,7 @@ const TIERS: { size: CardSize; count: number }[] = [
   { size: "lead", count: 1 },
   { size: "medium", count: 4 },
   { size: "standard", count: 20 },
-  { size: "mini", count: 48 },
+  { size: "mini", count: 75 },
 ];
 const CARD_COUNT = TIERS.reduce((total, tier) => total + tier.count, 0);
 const TICKER_LENGTH = 80;
