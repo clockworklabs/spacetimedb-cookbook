@@ -5,6 +5,7 @@ import { DebugPanel } from "./components/DebugPanel";
 import { FetchToasts } from "./components/FetchToasts";
 import { DEBUG } from "./debug/enabled";
 import { FrontPage } from "./components/FrontPage";
+import { MadeWith } from "./components/MadeWith";
 import { useFetchActivity, useLiveSet, useNow } from "./live/hooks";
 import { useRoute } from "./route";
 
@@ -41,12 +42,21 @@ function App() {
         />
       )}
 
+      {/* Fixed to the bottom of the window, so the badge is always in view. */}
       <footer className="colophon">
-        Article summaries and images come from{" "}
-        <a href="https://en.wikipedia.org/" target="_blank" rel="noreferrer">
-          Wikipedia
-        </a>
-        . The edits are collected by a SpacetimeDB module every 15 seconds.
+        <div className="colophon-inner">
+          <p>
+            Summaries and images from{" "}
+            <a
+              href="https://en.wikipedia.org/"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Wikipedia
+            </a>
+          </p>
+          <MadeWith />
+        </div>
       </footer>
 
       <FetchToasts toasts={fetches} now={now} />

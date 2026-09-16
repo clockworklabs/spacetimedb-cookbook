@@ -1,18 +1,25 @@
 import { useEffect } from "react";
-import { byteDelta, type ReplayEdit } from "../live/derive";
+import {
+  byteDelta,
+  editsPerMinute,
+  REPLAY_DELAY_MS,
+  revealedCount,
+  WINDOW_MS,
+  type ReplayEdit,
+} from "../live/derive";
 import {
   articleUrl,
   deltaClass,
   formatDelta,
   formatNumber,
   historyUrl,
-  plural,
 } from "../live/format";
 import { useArticle, type LiveSet } from "../live/hooks";
 import { FRONT_PAGE_HREF } from "../route";
 import { EditHistory } from "./EditHistory";
 import { EditTrail } from "./EditTrail";
 import { Masthead } from "./Masthead";
+import { PulseRibbon } from "./PulseRibbon";
 
 // How much history the server keeps (RETENTION in the module).
 const HISTORY_MS = 24 * 60 * 60_000;
@@ -53,10 +60,12 @@ export function ArticlePage({ pageId, live, isActive, now }: Props) {
         status={live.status}
         now={now}
         delayed={false}
-      />
+      >
+        {live.isLoaded && <LivePulse live={live} now={now} />}
+      </Masthead>
       <main className="article">
         <p className="back">
-          <a href={FRONT_PAGE_HREF}>← Most active articles</a>
+          <a href={FRONT_PAGE_HREF}>← Most active</a>
         </p>
 
         {!isReady ? (
@@ -72,44 +81,59 @@ export function ArticlePage({ pageId, live, isActive, now }: Props) {
         ) : (
           <div className="article-layout">
             <section className="article-lead" aria-labelledby="article-title">
-              {preview?.thumbnail && (
-                <img
-                  className="article-image"
-                  src={preview.thumbnail.url}
-                  width={preview.thumbnail.width}
-                  height={preview.thumbnail.height}
-                  alt=""
-                />
-              )}
-              <h1 id="article-title" className="article-title">
-                {title}
-              </h1>
-              {preview?.description && (
-                <p className="article-description">{preview.description}</p>
-              )}
-              {preview?.summary && (
-                <p className="article-summary">{preview.summary}</p>
-              )}
-              <p className="article-links">
-                <a href={articleUrl(pageId)} target="_blank" rel="noreferrer">
-                  Read on Wikipedia
-                </a>
-                <a href={historyUrl(pageId)} target="_blank" rel="noreferrer">
-                  Full revision history
-                </a>
-              </p>
+              <div className="article-heading">
+                <h1 id="article-title" className="article-title">
+                  {title}
+                </h1>
+                {preview?.description && (
+                  <p className="article-description">{preview.description}</p>
+                )}
+              </div>
               {edits.length > 0 && (
                 <>
                   <ArticleStats edits={edits} />
                   <figure className="article-trail">
                     <EditTrail edits={edits} clock={now} spanMs={HISTORY_MS} />
-                    <figcaption>
+                    <figcaption aria-hidden="true">
                       <span>24 hours ago</span>
-                      <span>Now</span>
+                      <span>12 hours</span>
+                      <span>now</span>
                     </figcaption>
                   </figure>
                 </>
               )}
+              <div className="article-about">
+                {preview?.thumbnail && (
+                  <img
+                    className="article-image"
+                    src={preview.thumbnail.url}
+                    width={preview.thumbnail.width}
+                    height={preview.thumbnail.height}
+                    alt=""
+                  />
+                )}
+                <div className="article-text">
+                  {preview?.summary && (
+                    <p className="article-summary">{preview.summary}</p>
+                  )}
+                  <p className="article-links">
+                    <a
+                      href={articleUrl(pageId)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Read on Wikipedia ↗
+                    </a>
+                    <a
+                      href={historyUrl(pageId)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Revision history ↗
+                    </a>
+                  </p>
+                </div>
+              </div>
             </section>
 
             <section
@@ -118,10 +142,7 @@ export function ArticlePage({ pageId, live, isActive, now }: Props) {
             >
               <div className="section-head">
                 <h2 id="history-heading">Edit history</h2>
-                <p>
-                  Every edit in the last 24 hours, newest first. Sizes open the
-                  diff.
-                </p>
+                <p>last 24 hours</p>
               </div>
               {edits.length === 0 ? (
                 <p className="empty">No edits in the last 24 hours.</p>
@@ -149,25 +170,37 @@ function ArticleStats({ edits }: { edits: ReplayEdit[] }) {
   return (
     <dl className="stats">
       <div>
-        <dt>Edits</dt>
+        <dt>{edits.length === 1 ? "edit" : "edits"}</dt>
         <dd>{formatNumber(edits.length)}</dd>
       </div>
       <div>
-        <dt>Editors</dt>
+        <dt>{editors === 1 ? "editor" : "editors"}</dt>
         <dd>{formatNumber(editors)}</dd>
       </div>
       <div>
-        <dt>By bots</dt>
+        <dt>by bots</dt>
         <dd>{formatNumber(bots)}</dd>
       </div>
       <div>
-        <dt>Net change</dt>
+        <dt>net change</dt>
         <dd className={deltaClass(net)}>{formatDelta(net)}</dd>
       </div>
       <div>
-        <dt>Size now</dt>
-        <dd>{plural(latest.newLen, "byte")}</dd>
+        <dt>bytes now</dt>
+        <dd>{formatNumber(latest.newLen)}</dd>
       </div>
     </dl>
+  );
+}
+
+// The same edits-per-minute pulse as the front page, bots included.
+function LivePulse({ live, now }: { live: LiveSet; now: number }) {
+  const clock = now - REPLAY_DELAY_MS;
+  const edits = live.replay.all;
+  const revealed = revealedCount(edits, clock);
+  return (
+    <PulseRibbon
+      counts={editsPerMinute(edits, revealed, clock, WINDOW_MS / 60_000)}
+    />
   );
 }

@@ -34,7 +34,6 @@ export function Ticker({
             key={key}
             className={clock - revealAt < FRESH_MS ? "fresh" : undefined}
           >
-            <time dateTime={new Date(at).toISOString()}>{formatClock(at)}</time>
             <a
               className={`delta ${deltaClass(bytes)}`}
               href={diffUrl(edit)}
@@ -44,9 +43,14 @@ export function Ticker({
               {formatDelta(bytes)}
             </a>
             <div className="entry">
-              <a className="entry-title" href={articleHref(edit.pageId)}>
-                {edit.title}
-              </a>
+              <p className="entry-head">
+                <a className="entry-title" href={articleHref(edit.pageId)}>
+                  {edit.title}
+                </a>
+                <time dateTime={new Date(at).toISOString()}>
+                  {formatClock(at)}
+                </time>
+              </p>
               <p className="entry-meta">
                 <span className="entry-user">
                   {edit.userName || "Hidden user"}

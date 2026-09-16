@@ -11,6 +11,7 @@ import { useArticleOrder, type LiveSet } from "../live/hooks";
 import { ArticleCard, type CardSize } from "./ArticleCard";
 import { Masthead } from "./Masthead";
 import { PulseRibbon } from "./PulseRibbon";
+import { TrailLegend } from "./TrailLegend";
 import { Ticker } from "./Ticker";
 
 const RERANK_EVERY_MS = 10_000;
@@ -78,7 +79,7 @@ export function FrontPage({
   }
 
   const emptyMessage = live.isLoaded
-    ? `No article edits in the last ${WINDOW_MINUTES} minutes yet. The server checks Wikipedia every 15 seconds, so they’ll start appearing shortly.`
+    ? `No edits in the last ${WINDOW_MINUTES} minutes yet. They’ll appear shortly.`
     : "Loading the latest edits…";
 
   return (
@@ -109,12 +110,9 @@ export function FrontPage({
       <main className="layout">
         <section aria-labelledby="articles-heading">
           <div className="section-head">
-            <h2 id="articles-heading">Most active articles</h2>
-            <p>
-              Ranked by edits in the last {WINDOW_MINUTES} minutes, with recent
-              ones counting most. Each trail spans those minutes: ticks above
-              the line added text, and ticks below removed it.
-            </p>
+            <h2 id="articles-heading">Most active</h2>
+            <p>last {WINDOW_MINUTES} minutes</p>
+            <TrailLegend />
           </div>
           {cards.length === 0 ? (
             <p className="empty">{emptyMessage}</p>
@@ -148,7 +146,6 @@ export function FrontPage({
         <aside className="rail" aria-labelledby="latest-heading">
           <div className="section-head">
             <h2 id="latest-heading">Latest edits</h2>
-            <p>Titles open the article’s edits; sizes open the diff</p>
           </div>
           {latest.length === 0 ? (
             <p className="empty">{emptyMessage}</p>

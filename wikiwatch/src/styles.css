@@ -1,10 +1,10 @@
 /*
  * Palette from Wikimedia's own design tokens: the cool paper and ink of the
  * article page, the green and red of a diff's byte counts, and the warning
- * yellow as the one warm accent, reserved for heat.
+ * yellow as the one warm accent, reserved for heat. Light only.
  */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --paper: #f8f9fa;
   --ink: #202122;
@@ -18,25 +18,12 @@
   --fresh: #fef6e7;
   --shadow: rgb(0 0 0 / 0.12);
 
+  /* The fixed colophon's height; the page and the toasts keep clear of it. */
+  --footer-height: 56px;
+
   --serif:
     "Libertinus Serif", "Linux Libertine", Georgia, "Times New Roman", serif;
   --sans: "Libertinus Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #101418;
-    --ink: #eaecf0;
-    --muted: #a2a9b1;
-    --rule: #54595d;
-    --rule-soft: #27292d;
-    --link: #88a3e8;
-    --added: #4fbf9a;
-    --removed: #fd7865;
-    --heat: #ffcc33;
-    --fresh: #3a300f;
-    --shadow: rgb(0 0 0 / 0.5);
-  }
 }
 
 *,
@@ -53,6 +40,7 @@ body {
   font-size: 1rem;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  padding-bottom: var(--footer-height);
 }
 
 h1,
@@ -97,15 +85,22 @@ input:focus-visible {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 20px 48px;
-  padding-block: 32px 20px;
+  gap: 16px 32px;
+  padding-block: 28px 18px;
   border-bottom: 1px solid var(--rule);
+}
+
+.masthead-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
 }
 
 .wordmark {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 2.75rem;
+  font-size: 2.5rem;
   line-height: 1;
   letter-spacing: -0.01em;
 }
@@ -115,42 +110,65 @@ input:focus-visible {
 }
 
 .tagline {
-  margin-top: 6px;
   font-family: var(--serif);
   font-style: italic;
-  font-size: 1.2rem;
+  font-size: 1.125rem;
   color: var(--muted);
 }
 
-.status {
-  margin-top: 14px;
-  max-width: 60ch;
+.masthead-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
   font-size: 0.9rem;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  max-width: 48ch;
 }
 
 .status.problem {
   color: var(--removed);
 }
 
-.masthead-controls {
+.status.live {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--added);
+  animation: live 2s ease-out infinite;
+}
+
+@keyframes live {
+  0% {
+    box-shadow: 0 0 0 0 rgb(20 134 109 / 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px rgb(20 134 109 / 0);
+  }
 }
 
 .pulse {
   display: flex;
-  flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 10px;
 }
 
 .pulse svg {
   display: block;
-  width: min(360px, calc(100vw - 32px));
-  height: 40px;
+  width: 178px;
+  height: 28px;
 }
 
 .pulse .bar {
@@ -161,19 +179,50 @@ input:focus-visible {
   fill: var(--heat);
 }
 
-.pulse figcaption,
-.toggle {
-  font-size: 0.9rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+.pulse strong {
+  color: var(--ink);
 }
 
 .toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding-left: 20px;
+  border-left: 1px solid var(--rule);
   cursor: pointer;
-  accent-color: var(--link);
+}
+
+/* The checkbox, drawn as a switch. */
+.toggle input {
+  appearance: none;
+  position: relative;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--rule);
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.toggle input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms;
+}
+
+.toggle input:checked {
+  background: var(--link);
+}
+
+.toggle input:checked::before {
+  transform: translateX(12px);
 }
 
 /* Layout */
@@ -196,13 +245,27 @@ input:focus-visible {
 .section-head h2 {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
 }
 
 .section-head p {
   max-width: 72ch;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .empty {
@@ -219,7 +282,7 @@ input:focus-visible {
   container-type: inline-size;
   display: flex;
   flex-direction: column;
-  gap: 36px;
+  gap: 32px;
 }
 
 .cards {
@@ -227,38 +290,53 @@ input:focus-visible {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 32px 24px;
+  gap: 36px 24px;
 }
 
 .lead-tier {
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Four in a row, or two by two: never three with one left over. */
+/* The next four sit beneath the lead as smaller, sideways cards. */
 .medium-tier {
   grid-template-columns: minmax(0, 1fr);
-  gap: 32px;
+  gap: 28px 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule-soft);
 }
 
-@container (min-width: 540px) {
+@container (min-width: 640px) {
   .medium-tier {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@container (min-width: 1000px) {
-  .medium-tier {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+.standard-tier {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  padding-top: 28px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+@container (max-width: 560px) {
+  .standard-tier {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
   }
 }
 
-/* The crowd at the bottom of the ranking, set off by a rule. */
+/* The long tail of the ranking, as a list set off by a rule. */
 .mini-tier {
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px 18px;
-  padding-top: 28px;
+  display: block;
+  columns: 2;
+  column-gap: 48px;
+  padding-top: 20px;
   border-top: 1px solid var(--rule);
+}
+
+@container (max-width: 560px) {
+  .mini-tier {
+    columns: 1;
+  }
 }
 
 .card {
@@ -283,7 +361,7 @@ input:focus-visible {
 }
 
 .mini .heartbeat {
-  inset: -5px;
+  inset: 0 -6px;
 }
 
 @keyframes heartbeat {
@@ -310,19 +388,21 @@ input:focus-visible {
 .card-rank {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .rank {
-  min-width: 1.4em;
-  font-size: 0.8rem;
+  min-width: 0.6em;
+  font-family: var(--serif);
   font-weight: 600;
-  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
+/* A short gauge, so it never reads as a rule across the card. */
 .heat {
-  flex: 1;
+  width: 64px;
   height: 3px;
   background: var(--rule-soft);
 }
@@ -353,125 +433,191 @@ input:focus-visible {
 .card h3 {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
-.card h3 a {
+.card h3 a,
+.mini-title {
   text-decoration: none;
 }
 
-.card h3 a:hover {
+.card h3 a:hover,
+.mini-title:hover {
   text-decoration: underline;
 }
 
 .card-description {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 
 .card-summary {
   max-width: 65ch;
   font-family: var(--serif);
-  font-size: 0.98rem;
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.45;
   display: -webkit-box;
   -webkit-line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.card-meta {
+/* Pinned to the bottom, so trails line up across a row. */
+.card-foot {
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.card-meta {
   font-size: 0.85rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-/* The hottest article leads, across the full width of the grid. */
-.lead h3 {
-  font-size: clamp(1.9rem, 3.2vw, 3rem);
-  line-height: 1.05;
-}
-
-.lead .card-summary {
-  font-size: 1.15rem;
-  line-height: 1.55;
-  -webkit-line-clamp: 7;
-}
-
-.lead .trail {
-  height: 56px;
-}
-
-.lead .rank {
-  font-size: 1rem;
+.card-meta strong {
   color: var(--ink);
 }
 
-/* The next four share a row beneath it. */
-.medium h3 {
-  font-size: 1.6rem;
-  line-height: 1.1;
-}
-
-.medium .card-summary {
-  -webkit-line-clamp: 3;
-}
-
-.medium .trail {
-  height: 44px;
-}
-
-/* Minis: a title, its heat and a trail, and nothing more. */
-.card.mini {
-  gap: 4px;
-}
-
-.mini .card-body {
-  gap: 4px;
-}
-
-.mini h3 {
-  font-size: 1rem;
-  line-height: 1.2;
+.medium h3,
+.standard h3 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.mini .rank {
+.medium .card-description,
+.standard .card-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The hottest article leads, with the biggest image on the page. */
+.lead .rank {
+  font-size: 1.75rem;
+}
+
+.lead h3 {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  line-height: 1.02;
+}
+
+.lead .card-description {
+  font-size: 0.95rem;
+}
+
+.lead .card-summary {
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.lead .trail {
+  height: 56px;
+}
+
+.lead .card-meta {
+  font-size: 0.95rem;
+}
+
+.card-trail figcaption {
+  display: flex;
+  justify-content: space-between;
   font-size: 0.75rem;
-}
-
-.mini .trail {
-  height: 22px;
-  margin-top: 0;
-}
-
-.mini .card-meta {
-  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 @media (min-width: 720px) {
   .card.lead {
     display: grid;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
     align-items: start;
-    gap: 12px 32px;
+    gap: 32px;
   }
 
-  .lead .card-rank {
-    grid-column: 1 / -1;
+  .card.lead:not(:has(> .card-image-link)) {
+    grid-template-columns: minmax(0, 1fr);
   }
+}
 
-  /* With no image, the body takes the image's place too. */
-  .lead > .card-body:nth-child(2) {
-    grid-column: 1 / -1;
-  }
+.card.medium {
+  flex-direction: row;
+  gap: 18px;
+}
+
+.medium .card-image-link {
+  flex-shrink: 0;
+}
+
+.medium .card-image {
+  width: 132px;
+  height: 132px;
+  aspect-ratio: 1;
+}
+
+.medium .card-body {
+  flex-grow: 1;
+  gap: 6px;
+}
+
+.medium h3 {
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+.medium .trail {
+  height: 36px;
+}
+
+/* Without an image, the opening lines take the image's place. */
+.standard .card-summary {
+  -webkit-line-clamp: 6;
+}
+
+.standard .trail {
+  height: 28px;
+}
+
+.card.mini {
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr) 96px 1.4em;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--rule-soft);
+  break-inside: avoid;
+}
+
+.mini .rank {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.mini-title {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini .trail {
+  height: 18px;
+  margin: 0;
+}
+
+.mini-count {
+  font-size: 0.8rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Edit trail */
@@ -526,11 +672,17 @@ input:focus-visible {
 .ticker li,
 .history li {
   display: grid;
-  grid-template-columns: auto 3.8em minmax(0, 1fr);
-  column-gap: 10px;
-  padding: 8px 6px;
+  grid-template-columns: 3.6em minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 9px 6px;
   border-bottom: 1px solid var(--rule-soft);
   font-variant-numeric: tabular-nums;
+}
+
+.history li {
+  grid-template-columns: 4.8em 3.2em minmax(0, 1fr);
+  column-gap: 14px;
+  padding-block: 11px;
 }
 
 .ticker li.fresh,
@@ -547,19 +699,10 @@ input:focus-visible {
   }
 }
 
-.ticker time,
-.history time,
 .delta {
-  padding-top: 0.2em;
+  padding-top: 0.15em;
   font-size: 0.85rem;
-}
-
-.ticker time,
-.history time {
-  color: var(--muted);
-}
-
-.delta {
+  font-weight: 700;
   text-align: right;
   text-decoration: none;
 }
@@ -580,23 +723,64 @@ a.delta:hover {
   color: var(--muted);
 }
 
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .entry-title {
+  min-width: 0;
   font-family: var(--serif);
-  font-size: 1.05rem;
+  font-size: 1rem;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .entry-title:hover {
   text-decoration: underline;
 }
 
+.ticker time {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .entry-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* One line per edit in the ticker: the comment gives way first. */
+.ticker .entry-meta {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ticker .entry-meta > span {
+  flex-shrink: 0;
+}
+
+.ticker .entry-meta > .entry-comment {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .entry-user {
@@ -615,10 +799,6 @@ a.entry-user:hover {
   font-style: italic;
 }
 
-.entry-comment {
-  overflow-wrap: anywhere;
-}
-
 /* Article page */
 
 .article {
@@ -626,7 +806,7 @@ a.entry-user:hover {
 }
 
 .back {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   font-size: 0.9rem;
 }
 
@@ -645,33 +825,27 @@ a.entry-user:hover {
   display: grid;
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   align-items: start;
-  gap: 48px;
+  gap: 64px;
 }
 
 .article-lead {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
   min-width: 0;
 }
 
-/* Wikipedia sends 320px thumbnails, so never stretch them past that. */
-.article-image {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: min(100%, 320px);
-  max-height: 360px;
-  margin-bottom: 8px;
-  border-radius: 2px;
-  background: var(--rule-soft);
+.article-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .article-title {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: clamp(2rem, 3.6vw, 3.2rem);
-  line-height: 1.05;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.02;
   overflow-wrap: anywhere;
 }
 
@@ -679,27 +853,14 @@ a.entry-user:hover {
   color: var(--muted);
 }
 
-.article-summary {
-  max-width: 65ch;
-  font-family: var(--serif);
-  font-size: 1.15rem;
-  line-height: 1.55;
-}
-
-.article-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 20px;
-  font-size: 0.9rem;
-}
-
 .stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 32px;
-  margin: 12px 0 0;
-  padding-top: 16px;
+  gap: 12px 36px;
+  margin: 0;
+  padding-block: 16px;
   border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule-soft);
 }
 
 /* The figure reads above its label, while the label stays first for dl. */
@@ -709,15 +870,15 @@ a.entry-user:hover {
 }
 
 .stats dt {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--muted);
 }
 
 .stats dd {
   margin: 0;
   font-family: var(--serif);
-  font-size: 1.6rem;
-  line-height: 1.1;
+  font-size: 1.875rem;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
 
@@ -736,36 +897,129 @@ a.entry-user:hover {
 .article-trail figcaption {
   display: flex;
   justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.article-about {
+  display: flex;
+  align-items: start;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+/* Wikipedia sends 320px thumbnails, so never stretch them past that. */
+.article-image {
+  display: block;
+  flex-shrink: 0;
+  width: 220px;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 2px;
+  background: var(--rule-soft);
+}
+
+.article-text {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.article-summary {
+  max-width: 65ch;
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+
+.article-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 0.95rem;
+}
+
+.history time {
+  padding-top: 0.2em;
   font-size: 0.8rem;
   color: var(--muted);
 }
 
-.history .delta {
-  padding-top: 0.25em;
-}
-
 .history-comment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
   font-family: var(--serif);
   font-size: 1.05rem;
   overflow-wrap: anywhere;
 }
 
 .history-comment .entry-section {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
-.tag {
-  padding-inline: 5px;
-  border: 1px solid var(--rule);
-  border-radius: 2px;
-  font-size: 0.78rem;
-}
+/* Colophon, fixed to the bottom of the window */
 
 .colophon {
-  padding-block: 16px 32px;
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 5;
+  background: var(--paper);
   border-top: 1px solid var(--rule);
-  font-size: 0.85rem;
+}
+
+.colophon-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  max-width: 1680px;
+  min-height: var(--footer-height);
+  margin-inline: auto;
+  padding: 8px clamp(16px, 3vw, 48px);
+  font-size: 0.8rem;
   color: var(--muted);
+}
+
+.made-with {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 150ms;
+}
+
+.made-with:hover {
+  border-color: var(--muted);
+}
+
+.made-with span {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.made-with img {
+  display: block;
+  width: auto;
+  height: 26px;
 }
 
 /* Fetch activity toasts */
@@ -773,7 +1027,7 @@ a.entry-user:hover {
 .toasts {
   position: fixed;
   inset-inline-end: clamp(16px, 3vw, 48px);
-  inset-block-end: 16px;
+  inset-block-end: calc(var(--footer-height) + 12px);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -924,7 +1178,7 @@ a.entry-user:hover {
     position: sticky;
     top: 16px;
     align-self: start;
-    max-height: calc(100vh - 32px);
+    max-height: calc(100vh - 32px - var(--footer-height));
     overflow-y: auto;
   }
 }
@@ -942,15 +1196,38 @@ a.entry-user:hover {
     display: none;
   }
 
-  .masthead-controls,
-  .pulse {
+  .masthead {
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .card.medium {
+    gap: 14px;
+  }
+
+  .medium .card-image {
+    width: 84px;
+    height: 84px;
+  }
+
+  .medium h3 {
+    font-size: 1.25rem;
+  }
+
+  .pulse svg {
+    display: none;
+  }
+
+  .article-about {
+    flex-direction: column;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ticker li.fresh,
   .history li.fresh,
+  .live-dot,
   .heartbeat,
   .toast,
   .toast.running {

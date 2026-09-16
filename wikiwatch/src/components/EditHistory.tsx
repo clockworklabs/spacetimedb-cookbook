@@ -5,10 +5,10 @@ import {
   contributionsUrl,
   deltaClass,
   diffUrl,
+  displayTags,
   formatClock,
   formatDelta,
   parseComment,
-  plural,
 } from "../live/format";
 
 type Props = {
@@ -43,7 +43,9 @@ export const EditHistory = memo(function EditHistory({
 
         return (
           <li key={key} className={initial.has(key) ? undefined : "fresh"}>
-            <time dateTime={new Date(at).toISOString()}>{formatClock(at)}</time>
+            <time dateTime={new Date(at).toISOString()} title={formatClock(at)}>
+              {ago(now - at)}
+            </time>
             <a
               className={`delta ${deltaClass(bytes)}`}
               href={diffUrl(edit)}
@@ -53,6 +55,12 @@ export const EditHistory = memo(function EditHistory({
               {formatDelta(bytes)}
             </a>
             <div className="entry">
+              {(section || text) && (
+                <p className="history-comment">
+                  {section && <span className="entry-section">{section}</span>}
+                  {text && <span>{text}</span>}
+                </p>
+              )}
               <p className="entry-meta">
                 {edit.userName ? (
                   <a
@@ -71,24 +79,9 @@ export const EditHistory = memo(function EditHistory({
                     {flag}
                   </span>
                 ))}
-              </p>
-              {(section || text) && (
-                <p className="history-comment">
-                  {section && (
-                    <span className="entry-section">§ {section}</span>
-                  )}
-                  {section && text && " "}
-                  {text}
-                </p>
-              )}
-              <p className="entry-meta">
-                <span>{ago(now - at)}</span>
-                <span>{plural(edit.newLen, "byte")} after</span>
                 {edit.title !== title && <span>as “{edit.title}”</span>}
-                {edit.tags.map((tag) => (
-                  <span key={tag} className="tag">
-                    {tag}
-                  </span>
+                {displayTags(edit.tags).map((tag) => (
+                  <span key={tag}>{tag}</span>
                 ))}
               </p>
             </div>

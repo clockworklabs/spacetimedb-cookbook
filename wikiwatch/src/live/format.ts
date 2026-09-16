@@ -46,13 +46,20 @@ export function formatClock(ms: number): string {
   return clockTime.format(ms);
 }
 
-const relative = new Intl.RelativeTimeFormat("en-GB", { numeric: "auto" });
-
+// Short enough to sit in a narrow column: "just now", "4 min ago", "2 hr ago".
 export function ago(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
-  if (minutes < 1) return "under a minute ago";
-  if (minutes < 60) return relative.format(-minutes, "minute");
-  return relative.format(-Math.floor(minutes / 60), "hour");
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.floor(minutes / 60)} hr ago`;
+}
+
+// Wikipedia tags a phone edit up to three times over ("mobile edit", "mobile
+// web edit", "advanced mobile edit"). Those all say one thing: "mobile".
+export function displayTags(tags: readonly string[]): string[] {
+  return [
+    ...new Set(tags.map((tag) => (/mobile/i.test(tag) ? "mobile" : tag))),
+  ];
 }
 
 export function plural(

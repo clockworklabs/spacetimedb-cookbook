@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { ArticlePreview } from "../module_bindings/types";
 import type { ReplayEdit } from "../live/derive";
-import { ago, plural } from "../live/format";
+import { ago, formatNumber, plural } from "../live/format";
 import { articleHref } from "../route";
 import { EditTrail } from "./EditTrail";
 
@@ -40,72 +40,129 @@ export function ArticleCard({
   const newest = edits[edits.length - 1];
   const latest = newest.edit;
   const title = preview?.title ?? latest.title;
-  const editors = new Set(edits.map(({ edit }) => edit.userName)).size;
-  const mini = size === "mini";
-  // Without an image, the opening sentences fill the card instead.
-  const showSummary =
-    !mini &&
-    preview?.summary &&
-    (size === "lead" || size === "medium" || !preview.thumbnail);
   const style = { viewTransitionName: `card-${pageKey}` } as CSSProperties;
   const href = articleHref(latest.pageId);
 
-  return (
-    <li className={`card ${size}`} style={style}>
-      {clock - newest.revealAt < HEARTBEAT_MS && (
-        // Keyed on the edit, so a second edit restarts the animation.
-        <span key={newest.key} className="heartbeat" aria-hidden="true" />
-      )}
-      <div className="card-rank" aria-hidden="true">
-        <span className="rank">{rank}</span>
-        <div className="heat">
-          <span style={{ width: `${Math.max(4, heatShare * 100)}%` }} />
-        </div>
-      </div>
-      {!mini && preview?.thumbnail && (
-        // A second way to the same place as the title, so it's left out of
-        // the tab order and hidden from screen readers.
-        <a
-          className="card-image-link"
-          href={href}
-          tabIndex={-1}
-          aria-hidden="true"
-        >
-          <img
-            className="card-image"
-            src={preview.thumbnail.url}
-            width={preview.thumbnail.width}
-            height={preview.thumbnail.height}
-            alt=""
-            loading="lazy"
-          />
+  const heartbeat = clock - newest.revealAt < HEARTBEAT_MS && (
+    // Keyed on the edit, so a second edit restarts the animation.
+    <span key={newest.key} className="heartbeat" aria-hidden="true" />
+  );
+
+  // The long tail of the ranking: one row each.
+  if (size === "mini") {
+    return (
+      <li className="card mini" style={style}>
+        {heartbeat}
+        <span className="rank" aria-hidden="true">
+          {rank}
+        </span>
+        <a className="mini-title" href={href}>
+          {title}
         </a>
-      )}
-      <div className="card-body">
-        <h3>
-          <a href={href}>{title}</a>
-        </h3>
-        {!mini && preview?.description && (
-          <p className="card-description">{preview.description}</p>
-        )}
-        {showSummary && <p className="card-summary">{preview.summary}</p>}
         <EditTrail edits={edits} clock={clock} />
-        {mini ? (
-          <p className="card-meta">
-            {plural(edits.length, "edit")}, {ago(now - newest.at)}
-          </p>
-        ) : (
-          <p className="card-meta">
-            <span>
-              {plural(edits.length, "edit")} by{" "}
-              {plural(editors, "person", "people")}
-            </span>
-            <span>
-              Latest by {latest.userName || "a hidden user"},{" "}
-              {ago(now - newest.at)}
-            </span>
-          </p>
-        )}
+        <span className="mini-count" title={plural(edits.length, "edit")}>
+          {formatNumber(edits.length)}
+        </span>
+      </li>
+    );
+  }
+
+  const editors = new Set(edits.map(({ edit }) => edit.userName)).size;
+  const image = preview?.thumbnail && (
+    // A second way to the same place as the title, so it's left out of the
+    // tab order and hidden from screen readers.
+    <a className="card-image-link" href={href} tabIndex={-1} aria-hidden="true">
+      <img
+        className="card-image"
+        src={preview.thumbnail.url}
+        width={preview.thumbnail.width}
+        height={preview.thumbnail.height}
+        alt=""
+        loading="lazy"
+      />
+    </a>
+  );
+  const rankRow = (
+    <div className="card-rank" aria-hidden="true">
+      <span className="rank">{rank}</span>
+      <div className="heat">
+        <span style={{ width: `${Math.max(4, heatShare * 100)}%` }} />
+      </div>
+    </div>
+  );
+  const heading = (
+    <>
+      <h3>
+        <a href={href}>{title}</a>
+      </h3>
+      {preview?.description && (
+        <p className="card-description">{preview.description}</p>
+      )}
+    </>
+  );
+  const meta = (
+    <p className="card-meta">
+      <strong>{formatNumber(edits.length)}</strong>{" "}
+      {edits.length === 1 ? "edit" : "edits"}
+      {size !== "standard" && ` · ${plural(editors, "editor")}`}
+      {` · ${ago(now - newest.at)}`}
+      {size === "lead" && ` by ${latest.userName || "a hidden user"}`}
+    </p>
+  );
+
+  if (size === "lead") {
+    return (
+      <li className="card lead" style={style}>
+        {heartbeat}
+        {image}
+        <div className="card-body">
+          {rankRow}
+          {heading}
+          {preview?.summary && (
+            <p className="card-summary">{preview.summary}</p>
+          )}
+          <figure className="card-trail">
+            <EditTrail edits={edits} clock={clock} />
+            <figcaption aria-hidden="true">
+              <span>30 min ago</span>
+              <span>now</span>
+            </figcaption>
+          </figure>
+          {meta}
+        </div>
+      </li>
+    );
+  }
+
+  if (size === "medium") {
+    return (
+      <li className="card medium" style={style}>
+        {heartbeat}
+        {image}
+        <div className="card-body">
+          {rankRow}
+          {heading}
+          <div className="card-foot">
+            <EditTrail edits={edits} clock={clock} />
+            {meta}
+          </div>
+        </div>
+      </li>
+    );
+  }
+
+  // Standard cards line their trails up across a row, so the image slot
+  // holds the article's opening lines when there's no image.
+  return (
+    <li className="card standard" style={style}>
+      {heartbeat}
+      {rankRow}
+      {image ??
+        (preview?.summary && <p className="card-summary">{preview.summary}</p>)}
+      {heading}
+      <div className="card-foot">
+        <EditTrail edits={edits} clock={clock} />
+        {meta}
       </div>
     </li>
   );

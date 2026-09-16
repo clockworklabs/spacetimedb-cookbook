@@ -27,9 +27,11 @@ export function Masthead({ home = false, children, ...statusProps }: Props) {
           </p>
         )}
         <p className="tagline">English Wikipedia, as it’s being edited</p>
-        <StatusLine {...statusProps} />
       </div>
-      {children && <div className="masthead-controls">{children}</div>}
+      <div className="masthead-controls">
+        <StatusLine {...statusProps} />
+        {children}
+      </div>
     </header>
   );
 }
