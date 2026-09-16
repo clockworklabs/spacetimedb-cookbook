@@ -1,6 +1,6 @@
 # wikiwatch
 
-A live view of what's being edited on English Wikipedia right now, built on SpacetimeDB.
+A live view of what's being edited on Wikipedia right now, built on SpacetimeDB.
 
 A TypeScript module fetches Wikipedia's recent changes every 15 seconds, and keeps the last 24 hours of
 article edits along with a preview of each article. A React client subscribes to them, and shows which

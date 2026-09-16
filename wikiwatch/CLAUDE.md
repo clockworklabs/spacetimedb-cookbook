@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # wikiwatch
 
-A live view of English Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) fetches from
+A live view of Wikipedia edits. A TypeScript SpacetimeDB module (`spacetimedb/src`) fetches from
 Wikipedia and keeps 24 hours of article edits and previews. A React + Vite client (`src`) subscribes
 to them. `README.md` explains the SpacetimeDB patterns it demonstrates and covers local development,
 setup and configuration. `docs/deploying.md` covers deployment.
