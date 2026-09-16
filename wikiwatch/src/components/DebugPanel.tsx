@@ -11,7 +11,7 @@ import FetchStatusRow from "../module_bindings/fetch_status_table";
 
 const REFRESH_MS = 1000;
 
-// fetch_log is an event table, so it never holds rows in the cache.
+// fetch_event is an event table, so it never holds rows in the cache.
 const TABLES = [
   { name: "edit", row: EditRow, rows: (db: Db) => db.edit.iter() },
   {

@@ -12,12 +12,12 @@ import type { Timestamp } from "spacetimedb";
 import { SenderError, t } from "spacetimedb/server";
 import spacetimedb, {
   STATUS_ID,
-  expire_timer,
-  recent_edits_timer,
+  schedule_expire_old_edits,
+  schedule_fetch_recent_edits,
   type ProcCtx,
   type TxCtx,
 } from "./schema";
-import { errorMessage, logFetch, recordError } from "./status";
+import { countEditsFailure, errorMessage, sendFetchEvent } from "./status";
 import { HOUR, MINUTE, compare, later, minus } from "./time";
 import { queryRecentChanges, userAgent } from "./wikipedia";
 
@@ -38,8 +38,8 @@ const MAX_RC_PAGES = 5;
 // Procedures and reducers can be called by any client. This one makes
 // outbound HTTP requests, so only the scheduler may run it.
 export const fetchRecentEdits = spacetimedb.procedure(
-  { onSchedule: recent_edits_timer },
-  { timer: recent_edits_timer.rowType },
+  { onSchedule: schedule_fetch_recent_edits },
+  { timer: schedule_fetch_recent_edits.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
@@ -58,7 +58,7 @@ function ingestRecentEdits(ctx: ProcCtx) {
   const start = ctx.withTx((tx) => {
     const earliest = minus(tx.timestamp, MAX_BACKFILL);
     const since = later(minus(cursor(tx), FETCH_OVERLAP), earliest);
-    logFetch(tx, fetch_id, { tag: "fetching_edits", value: { since } });
+    sendFetchEvent(tx, fetch_id, { tag: "fetching_edits", value: { since } });
     return since;
   });
 
@@ -69,8 +69,8 @@ function ingestRecentEdits(ctx: ProcCtx) {
     const message = `recentchanges: ${errorMessage(e)}`;
     console.error(message);
     ctx.withTx((tx) => {
-      recordError(tx, message, true);
-      logFetch(tx, fetch_id, { tag: "edits_failed", value: message });
+      countEditsFailure(tx);
+      sendFetchEvent(tx, fetch_id, { tag: "edits_failed", value: message });
     });
     return;
   }
@@ -96,7 +96,7 @@ function ingestRecentEdits(ctx: ProcCtx) {
       consecutive_failures: 0,
       edits_ingested: status.edits_ingested + BigInt(count),
     });
-    logFetch(tx, fetch_id, {
+    sendFetchEvent(tx, fetch_id, {
       tag: "fetched_edits",
       value: { received: changes.length, added: count },
     });
@@ -119,8 +119,6 @@ function cursor(tx: TxCtx): Timestamp {
     id: STATUS_ID,
     cursor: initial,
     last_success_at: undefined,
-    last_error: undefined,
-    last_error_at: undefined,
     consecutive_failures: 0,
     edits_ingested: 0n,
   });
@@ -130,8 +128,8 @@ function cursor(tx: TxCtx): Timestamp {
 // Takes edits older than LIVE_FOR out of the live set. Subscribed clients
 // receive each as a delete.
 export const expireOldEdits = spacetimedb.reducer(
-  { onSchedule: expire_timer },
-  { timer: expire_timer.rowType },
+  { onSchedule: schedule_expire_old_edits },
+  { timer: schedule_expire_old_edits.rowType },
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
       throw new SenderError("expireOldEdits may only be run by the scheduler");

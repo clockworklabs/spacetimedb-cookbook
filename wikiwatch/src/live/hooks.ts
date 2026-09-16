@@ -4,7 +4,7 @@ import { useTable } from "spacetimedb/react";
 import { tables } from "../module_bindings";
 import type {
   ArticlePreview,
-  FetchLog,
+  FetchEvent,
   FetchStatus,
 } from "../module_bindings/types";
 import {
@@ -14,7 +14,7 @@ import {
   type Replay,
   type ReplayEdit,
 } from "./derive";
-import { applyFetchLog, type FetchToast } from "./fetchActivity";
+import { applyFetchEvent, type FetchToast } from "./fetchActivity";
 
 export type LiveSet = {
   replay: Replay;
@@ -87,18 +87,18 @@ export function useArticle(pageId: bigint): Article {
   return { edits, preview: previews[0], isReady: editsReady && previewReady };
 }
 
-// Toasts describing what the server's Wikipedia fetchers are doing. fetch_log
+// Toasts describing what the server's Wikipedia fetchers are doing. fetch_event
 // is an event table, so its rows never stay in the cache: they only arrive
 // through onInsert.
 export function useFetchActivity(): FetchToast[] {
   const [toasts, setToasts] = useState<FetchToast[]>([]);
   // Stable, so useTable doesn't re-register its row callbacks every render.
   const onInsert = useCallback(
-    (row: FetchLog) =>
-      setToasts((current) => applyFetchLog(current, row, Date.now())),
+    (row: FetchEvent) =>
+      setToasts((current) => applyFetchEvent(current, row, Date.now())),
     [],
   );
-  useTable(tables.fetchLog, { onInsert });
+  useTable(tables.fetchEvent, { onInsert });
   return toasts;
 }
 

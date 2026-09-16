@@ -7,12 +7,12 @@
 
 import { SenderError, t } from "spacetimedb/server";
 import spacetimedb, {
-  preview_timer,
+  schedule_fetch_article_previews,
   type PreviewPage,
   type ProcCtx,
   type TxCtx,
 } from "./schema";
-import { errorMessage, logFetch, recordError } from "./status";
+import { errorMessage, sendFetchEvent } from "./status";
 import { HOUR, compare, minus } from "./time";
 import {
   PREVIEW_BATCH_SIZE,
@@ -29,8 +29,8 @@ const MAX_PREVIEW_ATTEMPTS = 3;
 // Procedures and reducers can be called by any client. This one makes
 // outbound HTTP requests, so only the scheduler may run it.
 export const fetchArticlePreviews = spacetimedb.procedure(
-  { onSchedule: preview_timer },
-  { timer: preview_timer.rowType },
+  { onSchedule: schedule_fetch_article_previews },
+  { timer: schedule_fetch_article_previews.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
@@ -51,7 +51,10 @@ function ingestPreviews(ctx: ProcCtx) {
   const fetch_id = ctx.newUuidV7();
   const pageIds = pages.map((page) => page.page_id);
   ctx.withTx((tx) =>
-    logFetch(tx, fetch_id, { tag: "fetching_previews", value: { pages } }),
+    sendFetchEvent(tx, fetch_id, {
+      tag: "fetching_previews",
+      value: { pages },
+    }),
   );
 
   let previews;
@@ -63,14 +66,13 @@ function ingestPreviews(ctx: ProcCtx) {
     console.error(message);
     ctx.withTx((tx) => {
       pageIds.forEach((id) => recordFailure(tx, id));
-      recordError(tx, message, false);
-      logFetch(tx, fetch_id, { tag: "previews_failed", value: message });
+      sendFetchEvent(tx, fetch_id, { tag: "previews_failed", value: message });
     });
     return;
   }
   ctx.withTx((tx) => {
     const stored = storePreviews(tx, pageIds, previews);
-    logFetch(tx, fetch_id, {
+    sendFetchEvent(tx, fetch_id, {
       tag: "fetched_previews",
       value: { stored, missing: previews.length - stored },
     });

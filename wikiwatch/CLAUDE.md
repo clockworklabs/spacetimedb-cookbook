@@ -97,7 +97,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - Nothing queues preview fetches. Each run, `fetchArticlePreviews` works out which pages with live
   edits have no fresh preview and fetches a batch, newest edits first. `edits.ts` knows nothing about
   previews. Only failures are stored (`preview_failure`), because they can't be derived.
-- `fetch_log` is an **event table**. The client sees its rows only through `onInsert`, never in the
+- `fetch_event` is an **event table**. The client sees its rows only through `onInsert`, never in the
   cache. Each fetch's start and end rows share a `fetch_id`.
 
 ### Client

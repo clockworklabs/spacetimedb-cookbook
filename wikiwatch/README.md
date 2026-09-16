@@ -38,14 +38,14 @@ It shows:
 ### HTTP requests from a scheduled procedure
 
 Reducers can't make network requests, so the two processes that fetch from Wikipedia are procedures.
-Procedures can be scheduled like reducers. `init` inserts a row into `recent_edits_timer` that
-runs `fetchRecentEdits` every 15 seconds, and one into `preview_timer` that runs
+Procedures can be scheduled like reducers. `init` inserts a row into `schedule_fetch_recent_edits` that
+runs `fetchRecentEdits` every 15 seconds, and one into `schedule_fetch_article_previews` that runs
 `fetchArticlePreviews` every 5 seconds.
 
 ```ts
 export const fetchRecentEdits = spacetimedb.procedure(
-  { onSchedule: recent_edits_timer },
-  { timer: recent_edits_timer.rowType },
+  { onSchedule: schedule_fetch_recent_edits },
+  { timer: schedule_fetch_recent_edits.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
@@ -169,11 +169,11 @@ article has live edits. That's harmless here, because previews are looked up by 
 
 ### Progress through an event table
 
-The toasts report what the fetchers are doing. They come from `fetch_log`, an event table:
+The toasts report what the fetchers are doing. They come from `fetch_event`, an event table:
 
 ```ts
-export const fetch_log = table(
-  { name: "fetch_log", public: true, event: true },
+export const fetch_event = table(
+  { name: "fetch_event", public: true, event: true },
   { fetch_id: t.uuid(), activity: FetchActivity },
 );
 ```
@@ -182,12 +182,12 @@ An event table's rows go to subscribers when their transaction commits, and are 
 server or in the client's cache. The client sees them only through `onInsert`:
 
 ```ts
-useTable(tables.fetchLog, { onInsert });
+useTable(tables.fetchEvent, { onInsert });
 ```
 
-Each `withTx` commits as soon as it returns, so each fetcher logs a fetch's start before making the request,
-and clients see it while the request is still in flight. The start and end rows share a `fetch_id`, so the
-client can pair them.
+Each `withTx` commits as soon as it returns, so each fetcher sends a fetch's start event before making the
+request, and clients see it while the request is still in flight. The start and end rows share a `fetch_id`,
+so the client can pair them.
 
 `activity` is a sum type. The generated bindings turn its snake_case variants into PascalCase tags, so the
 server's `fetching_edits` is `case "FetchingEdits"` on the client.
@@ -213,7 +213,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds             |
 | `history.ts`   | `deleteOldHistory`, which deletes edits and previews older than a day                          |
 | `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them        |
-| `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_log`               |
+| `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_event`             |
 | `wikipedia.ts` | A small client for the MediaWiki Action API                                                    |
 | `time.ts`      | Timestamp arithmetic                                                                           |
 
@@ -222,11 +222,11 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `edit`                                   | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
 | `article_preview`                        | public       | Each article's title, description, summary and thumbnail |
 | `fetch_status`                           | public       | The edits cursor, and the fetchers' health               |
-| `fetch_log`                              | public event | The start and end of each fetch, for the toasts          |
+| `fetch_event`                            | public event | The start and end of each fetch, for the toasts          |
 | `preview_failure`                        | private      | Articles Wikipedia didn't return a preview for           |
 | `settings`                               | private      | The contact sent to Wikipedia                            |
 | `admin`                                  | private      | The identities allowed to call `updateSchedulers`        |
-| `recent_edits_timer`, `preview_timer`, … | private      | The schedules                                            |
+| `schedule_*`                             | private      | The schedules                                            |
 
 ### The client (`src`)
 

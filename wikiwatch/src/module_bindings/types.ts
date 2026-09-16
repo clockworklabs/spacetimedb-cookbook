@@ -27,12 +27,6 @@ export const ArticlePreview = __t.object("ArticlePreview", {
 });
 export type ArticlePreview = __Infer<typeof ArticlePreview>;
 
-export const DeleteTimer = __t.object("DeleteTimer", {
-  scheduledId: __t.u64(),
-  scheduledAt: __t.scheduleAt(),
-});
-export type DeleteTimer = __Infer<typeof DeleteTimer>;
-
 export const Edit = __t.object("Edit", {
   rcId: __t.u64(),
   pageId: __t.u64(),
@@ -54,12 +48,6 @@ export const Edit = __t.object("Edit", {
 });
 export type Edit = __Infer<typeof Edit>;
 
-export const ExpireTimer = __t.object("ExpireTimer", {
-  scheduledId: __t.u64(),
-  scheduledAt: __t.scheduleAt(),
-});
-export type ExpireTimer = __Infer<typeof ExpireTimer>;
-
 // The tagged union or sum type for the algebraic type `FetchActivity`.
 export const FetchActivity = __t.enum("FetchActivity", {
   get FetchingEdits() {
@@ -79,20 +67,18 @@ export const FetchActivity = __t.enum("FetchActivity", {
 });
 export type FetchActivity = __Infer<typeof FetchActivity>;
 
-export const FetchLog = __t.object("FetchLog", {
+export const FetchEvent = __t.object("FetchEvent", {
   fetchId: __t.uuid(),
   get activity() {
     return FetchActivity;
   },
 });
-export type FetchLog = __Infer<typeof FetchLog>;
+export type FetchEvent = __Infer<typeof FetchEvent>;
 
 export const FetchStatus = __t.object("FetchStatus", {
   id: __t.u8(),
   cursor: __t.timestamp(),
   lastSuccessAt: __t.option(__t.timestamp()),
-  lastError: __t.option(__t.string()),
-  lastErrorAt: __t.option(__t.timestamp()),
   consecutiveFailures: __t.u32(),
   editsIngested: __t.u64(),
 });
@@ -134,17 +120,34 @@ export const PreviewPage = __t.object("PreviewPage", {
 });
 export type PreviewPage = __Infer<typeof PreviewPage>;
 
-export const PreviewTimer = __t.object("PreviewTimer", {
+export const ScheduleDeleteOldHistory = __t.object("ScheduleDeleteOldHistory", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
 });
-export type PreviewTimer = __Infer<typeof PreviewTimer>;
+export type ScheduleDeleteOldHistory = __Infer<typeof ScheduleDeleteOldHistory>;
 
-export const RecentEditsTimer = __t.object("RecentEditsTimer", {
+export const ScheduleExpireOldEdits = __t.object("ScheduleExpireOldEdits", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
 });
-export type RecentEditsTimer = __Infer<typeof RecentEditsTimer>;
+export type ScheduleExpireOldEdits = __Infer<typeof ScheduleExpireOldEdits>;
+
+export const ScheduleFetchArticlePreviews = __t.object(
+  "ScheduleFetchArticlePreviews",
+  {
+    scheduledId: __t.u64(),
+    scheduledAt: __t.scheduleAt(),
+  },
+);
+export type ScheduleFetchArticlePreviews = __Infer<
+  typeof ScheduleFetchArticlePreviews
+>;
+
+export const ScheduleFetchRecentEdits = __t.object("ScheduleFetchRecentEdits", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type ScheduleFetchRecentEdits = __Infer<typeof ScheduleFetchRecentEdits>;
 
 export const Settings = __t.object("Settings", {
   id: __t.u8(),

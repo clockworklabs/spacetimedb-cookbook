@@ -25,10 +25,10 @@ const DELETE_INTERVAL = HOUR;
 
 export function applySchedulers(tx: TxCtx) {
   const written = [
-    ensureInterval(tx.db.recent_edits_timer, RECENT_EDITS_INTERVAL),
-    ensureInterval(tx.db.preview_timer, PREVIEW_INTERVAL),
-    ensureInterval(tx.db.expire_timer, EXPIRE_INTERVAL),
-    ensureInterval(tx.db.delete_timer, DELETE_INTERVAL),
+    ensureInterval(tx.db.schedule_fetch_recent_edits, RECENT_EDITS_INTERVAL),
+    ensureInterval(tx.db.schedule_fetch_article_previews, PREVIEW_INTERVAL),
+    ensureInterval(tx.db.schedule_expire_old_edits, EXPIRE_INTERVAL),
+    ensureInterval(tx.db.schedule_delete_old_history, DELETE_INTERVAL),
   ];
   console.info(
     `Wrote ${written.filter(Boolean).length} of ${written.length} scheduler timers`,
@@ -45,7 +45,7 @@ export const updateSchedulers = spacetimedb.reducer((ctx) => {
 
 type TimerRow = { scheduled_id: bigint; scheduled_at: ScheduleAt };
 
-// The parts of a timer table's accessor (tx.db.*_timer) that this needs.
+// The parts of a timer table's accessor (tx.db.schedule_*) that this needs.
 type TimerTable = {
   iter(): Iterable<TimerRow>;
   insert(row: TimerRow): TimerRow;
