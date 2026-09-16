@@ -1,6 +1,6 @@
 // Article previews: every PREVIEW_INTERVAL (schedules.ts), fetch a batch of
 // the previews that the live edits are missing. Nothing hands this process its
-// work: it works it out from the edit and article_preview tables, so polling
+// work: it works it out from the edit and article_preview tables, so fetching
 // for edits (edits.ts) needn't know that previews exist. Clients get the
 // previews that go with the live set by joining them to the live edits, so
 // nothing here tracks which previews are live either.
@@ -16,7 +16,7 @@ import { errorMessage, logFetch, recordError } from "./status";
 import { HOUR, compare, minus } from "./time";
 import {
   PREVIEW_BATCH_SIZE,
-  fetchPreviews,
+  queryPreviews,
   userAgent,
   type PagePreview,
 } from "./wikipedia";
@@ -56,7 +56,7 @@ function ingestPreviews(ctx: ProcCtx) {
 
   let previews;
   try {
-    previews = fetchPreviews(ctx.http, agent, pageIds);
+    previews = queryPreviews(ctx.http, agent, pageIds);
   } catch (e) {
     // Wikipedia is struggling; count the attempt and try again next time.
     const message = `previews: ${errorMessage(e)}`;

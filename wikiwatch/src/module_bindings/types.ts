@@ -27,6 +27,12 @@ export const ArticlePreview = __t.object("ArticlePreview", {
 });
 export type ArticlePreview = __Infer<typeof ArticlePreview>;
 
+export const DeleteTimer = __t.object("DeleteTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type DeleteTimer = __Infer<typeof DeleteTimer>;
+
 export const Edit = __t.object("Edit", {
   rcId: __t.u64(),
   pageId: __t.u64(),
@@ -47,6 +53,12 @@ export const Edit = __t.object("Edit", {
   live: __t.bool(),
 });
 export type Edit = __Infer<typeof Edit>;
+
+export const ExpireTimer = __t.object("ExpireTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type ExpireTimer = __Infer<typeof ExpireTimer>;
 
 // The tagged union or sum type for the algebraic type `FetchActivity`.
 export const FetchActivity = __t.enum("FetchActivity", {
@@ -75,6 +87,17 @@ export const FetchLog = __t.object("FetchLog", {
 });
 export type FetchLog = __Infer<typeof FetchLog>;
 
+export const FetchStatus = __t.object("FetchStatus", {
+  id: __t.u8(),
+  cursor: __t.timestamp(),
+  lastSuccessAt: __t.option(__t.timestamp()),
+  lastError: __t.option(__t.string()),
+  lastErrorAt: __t.option(__t.timestamp()),
+  consecutiveFailures: __t.u32(),
+  editsIngested: __t.u64(),
+});
+export type FetchStatus = __Infer<typeof FetchStatus>;
+
 export const FetchedEdits = __t.object("FetchedEdits", {
   received: __t.u32(),
   added: __t.u32(),
@@ -99,23 +122,6 @@ export const FetchingPreviews = __t.object("FetchingPreviews", {
 });
 export type FetchingPreviews = __Infer<typeof FetchingPreviews>;
 
-export const PollTimer = __t.object("PollTimer", {
-  scheduledId: __t.u64(),
-  scheduledAt: __t.scheduleAt(),
-});
-export type PollTimer = __Infer<typeof PollTimer>;
-
-export const PollerStatus = __t.object("PollerStatus", {
-  id: __t.u8(),
-  cursor: __t.timestamp(),
-  lastSuccessAt: __t.option(__t.timestamp()),
-  lastError: __t.option(__t.string()),
-  lastErrorAt: __t.option(__t.timestamp()),
-  consecutiveFailures: __t.u32(),
-  editsIngested: __t.u64(),
-});
-export type PollerStatus = __Infer<typeof PollerStatus>;
-
 export const PreviewFailure = __t.object("PreviewFailure", {
   pageId: __t.u64(),
   attempts: __t.u8(),
@@ -134,23 +140,17 @@ export const PreviewTimer = __t.object("PreviewTimer", {
 });
 export type PreviewTimer = __Infer<typeof PreviewTimer>;
 
-export const PruneTimer = __t.object("PruneTimer", {
+export const RecentEditsTimer = __t.object("RecentEditsTimer", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
 });
-export type PruneTimer = __Infer<typeof PruneTimer>;
+export type RecentEditsTimer = __Infer<typeof RecentEditsTimer>;
 
 export const Settings = __t.object("Settings", {
   id: __t.u8(),
   wikipediaContact: __t.string(),
 });
 export type Settings = __Infer<typeof Settings>;
-
-export const SweepTimer = __t.object("SweepTimer", {
-  scheduledId: __t.u64(),
-  scheduledAt: __t.scheduleAt(),
-});
-export type SweepTimer = __Infer<typeof SweepTimer>;
 
 export const Thumbnail = __t.object("Thumbnail", {
   url: __t.string(),

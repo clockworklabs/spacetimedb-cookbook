@@ -7,7 +7,7 @@ import { useNow } from "../live/hooks";
 import type { DbConnection } from "../module_bindings";
 import ArticlePreviewRow from "../module_bindings/article_preview_table";
 import EditRow from "../module_bindings/edit_table";
-import PollerStatusRow from "../module_bindings/poller_status_table";
+import FetchStatusRow from "../module_bindings/fetch_status_table";
 
 const REFRESH_MS = 1000;
 
@@ -20,9 +20,9 @@ const TABLES = [
     rows: (db: Db) => db.articlePreview.iter(),
   },
   {
-    name: "poller_status",
-    row: PollerStatusRow,
-    rows: (db: Db) => db.pollerStatus.iter(),
+    name: "fetch_status",
+    row: FetchStatusRow,
+    rows: (db: Db) => db.fetchStatus.iter(),
   },
 ].map((table) => ({
   ...table,

@@ -5,7 +5,7 @@ import { tables } from "../module_bindings";
 import type {
   ArticlePreview,
   FetchLog,
-  PollerStatus,
+  FetchStatus,
 } from "../module_bindings/types";
 import {
   rankArticles,
@@ -20,7 +20,7 @@ export type LiveSet = {
   replay: Replay;
   // Keyed by page id.
   previews: ReadonlyMap<string, ArticlePreview>;
-  status: PollerStatus | undefined;
+  status: FetchStatus | undefined;
   isLoaded: boolean;
 };
 
@@ -34,7 +34,7 @@ const livePreviews = tables.edit
   );
 
 // The server's live set (its recent edits, and the previews of the pages they
-// belong to) and the poller's status. The server takes edits out of the live
+// belong to) and the fetchers' status. The server takes edits out of the live
 // set as they age, so these subscriptions never need replacing. useTable
 // filters the shared client cache by each query, which keeps out the non-live
 // edits that article pages subscribe to. It can't filter by a join, so
@@ -46,7 +46,7 @@ export function useLiveSet(): LiveSet {
     tables.edit.where((row) => row.live.eq(true)),
   );
   const [previews, previewsReady] = useTable(livePreviews);
-  const [statuses, statusReady] = useTable(tables.pollerStatus);
+  const [statuses, statusReady] = useTable(tables.fetchStatus);
 
   const replay = useMemo(() => scheduleReplay(edits), [edits]);
   const previewsByPage = useMemo(

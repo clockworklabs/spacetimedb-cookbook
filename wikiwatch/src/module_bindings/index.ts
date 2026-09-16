@@ -42,7 +42,7 @@ import UpdateSchedulersReducer from "./update_schedulers_reducer";
 import ArticlePreviewRow from "./article_preview_table";
 import EditRow from "./edit_table";
 import FetchLogRow from "./fetch_log_table";
-import PollerStatusRow from "./poller_status_table";
+import FetchStatusRow from "./fetch_status_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -113,22 +113,22 @@ const tablesSchema = __schema({
     },
     FetchLogRow,
   ),
-  pollerStatus: __table(
+  fetchStatus: __table(
     {
-      name: "poller_status",
+      name: "fetch_status",
       indexes: [
         {
           accessor: "id",
-          name: "poller_status_id_idx_btree",
+          name: "fetch_status_id_idx_btree",
           algorithm: "btree",
           columns: ["id"],
         },
       ],
       constraints: [
-        { name: "poller_status_id_key", constraint: "unique", columns: ["id"] },
+        { name: "fetch_status_id_key", constraint: "unique", columns: ["id"] },
       ],
     },
-    PollerStatusRow,
+    FetchStatusRow,
   ),
 });
 
@@ -155,11 +155,11 @@ type __SchemaWithTableAccessorAliases = Omit<
       (typeof tablesSchema.schemaType.tables)["fetchLog"],
       "accessorName"
     > & { readonly accessorName: "fetch_log" };
-    /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
-    readonly poller_status: Omit<
-      (typeof tablesSchema.schemaType.tables)["pollerStatus"],
+    /** @deprecated Use `fetchStatus` instead. This alias will be removed in the next major version. */
+    readonly fetch_status: Omit<
+      (typeof tablesSchema.schemaType.tables)["fetchStatus"],
       "accessorName"
-    > & { readonly accessorName: "poller_status" };
+    > & { readonly accessorName: "fetch_status" };
   };
 };
 
@@ -181,7 +181,7 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   article_preview: "articlePreview",
   fetch_log: "fetchLog",
-  poller_status: "pollerStatus",
+  fetch_status: "fetchStatus",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(
@@ -212,8 +212,8 @@ export type DbView = __DbViewBase & {
   readonly article_preview: __DbViewBase["articlePreview"];
   /** @deprecated Use `fetchLog` instead. This alias will be removed in the next major version. */
   readonly fetch_log: __DbViewBase["fetchLog"];
-  /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
-  readonly poller_status: __DbViewBase["pollerStatus"];
+  /** @deprecated Use `fetchStatus` instead. This alias will be removed in the next major version. */
+  readonly fetch_status: __DbViewBase["fetchStatus"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
@@ -222,8 +222,8 @@ export type Tables = __TablesBase & {
   readonly article_preview: __TablesBase["articlePreview"];
   /** @deprecated Use `fetchLog` instead. This alias will be removed in the next major version. */
   readonly fetch_log: __TablesBase["fetchLog"];
-  /** @deprecated Use `pollerStatus` instead. This alias will be removed in the next major version. */
-  readonly poller_status: __TablesBase["pollerStatus"];
+  /** @deprecated Use `fetchStatus` instead. This alias will be removed in the next major version. */
+  readonly fetch_status: __TablesBase["fetchStatus"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

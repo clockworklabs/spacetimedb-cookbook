@@ -8,10 +8,9 @@ import { applySchedulers } from "./schedules";
 
 export default spacetimedb;
 
-export { pollRecentChanges } from "./edits";
+export { expireOldEdits, fetchRecentEdits } from "./edits";
 export { fetchArticlePreviews } from "./previews";
-export { sweepLiveSet } from "./live";
-export { pruneOldData } from "./prune";
+export { deleteOldHistory } from "./history";
 export { updateSchedulers } from "./schedules";
 
 // Runs once, when the database is created, with whoever published it as the
