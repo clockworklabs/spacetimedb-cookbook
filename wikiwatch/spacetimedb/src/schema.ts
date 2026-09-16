@@ -15,7 +15,7 @@ import {
 // only). Keyed by Wikipedia's own rcid, so re-fetching an overlapping window
 // is harmless.
 export const edit = table(
-  { name: "edit", public: true },
+  { public: true },
   {
     rc_id: t.u64().primaryKey(),
     page_id: t.u64().index("btree"),
@@ -54,7 +54,7 @@ export type Thumbnail = Infer<typeof Thumbnail>;
 // renames where titles don't. Clients subscribe to the previews of the live
 // set by joining this to the live edits on page_id.
 export const article_preview = table(
-  { name: "article_preview", public: true },
+  { public: true },
   {
     page_id: t.u64().primaryKey(),
     title: t.string(),
@@ -72,7 +72,7 @@ export const article_preview = table(
 // but it can't work out which ones it has failed at, so those are kept here to
 // stop it asking again forever.
 export const preview_failure = table(
-  { name: "preview_failure" },
+  {},
   {
     page_id: t.u64().primaryKey(),
     attempts: t.u8(),
@@ -81,7 +81,7 @@ export const preview_failure = table(
 
 // Singleton (id = STATUS_ID) describing the health of the Wikipedia fetchers.
 export const fetch_status = table(
-  { name: "fetch_status", public: true },
+  { public: true },
   {
     id: t.u8().primaryKey(),
     // Newest edited_at seen; the next fetch of recent changes starts a little before this.
@@ -97,7 +97,7 @@ export const STATUS_ID = 0;
 // owner can read or change them, with `spacetime sql`; see
 // scripts/set-contact.sh.
 export const settings = table(
-  { name: "settings" },
+  {},
   {
     id: t.u8().primaryKey(),
     // An email address or URL for Wikipedia's User-Agent policy. Kept in the
@@ -111,7 +111,7 @@ export const SETTINGS_ID = 0;
 // as updateSchedulers. init adds whoever published the database, as an admin.
 // Private, so only the database owner can add more, with `spacetime sql`.
 export const user = table(
-  { name: "user" },
+  {},
   {
     identity: t.identity().primaryKey(),
     admin: t.bool(),
@@ -149,7 +149,7 @@ export type FetchActivity = Infer<typeof FetchActivity>;
 // Live fetcher activity for clients to display. An event table: rows are
 // broadcast to subscribers when their transaction commits, and never stored.
 export const fetch_event = table(
-  { name: "fetch_event", public: true, event: true },
+  { public: true, event: true },
   {
     // Shared by a fetch's start and end rows, so clients can pair them.
     fetch_id: t.uuid(),
@@ -162,7 +162,7 @@ export const fetch_event = table(
 // their timer with `onSchedule`. The rows, and the intervals they repeat at,
 // are written by schedules.ts.
 export const schedule_fetch_recent_edits = table(
-  { name: "schedule_fetch_recent_edits" },
+  {},
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -170,7 +170,7 @@ export const schedule_fetch_recent_edits = table(
 );
 
 export const schedule_fetch_article_previews = table(
-  { name: "schedule_fetch_article_previews" },
+  {},
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -178,7 +178,7 @@ export const schedule_fetch_article_previews = table(
 );
 
 export const schedule_expire_old_edits = table(
-  { name: "schedule_expire_old_edits" },
+  {},
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -186,7 +186,7 @@ export const schedule_expire_old_edits = table(
 );
 
 export const schedule_delete_old_history = table(
-  { name: "schedule_delete_old_history" },
+  {},
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
