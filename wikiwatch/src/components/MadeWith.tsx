@@ -9,7 +9,7 @@ export function MadeWith() {
       rel="noreferrer"
     >
       <span>made with</span>
-      <img src={spacetimedb} width={121} height={26} alt="SpacetimeDB" />
+      <img src={spacetimedb} width={103} height={26} alt="Spacetime" />
     </a>
   );
 }
