@@ -5,6 +5,7 @@ import { useSyncExternalStore } from "react";
 export type Route =
   | { page: "front" }
   | { page: "edits" }
+  | { page: "arguments" }
   | { page: "article"; pageId: bigint };
 
 export const FRONT_PAGE_HREF = "#/";
@@ -14,8 +15,9 @@ export function articleHref(pageId: bigint): string {
 }
 
 function parseRoute(hash: string): Route {
-  // Not linked from anywhere: you have to know it's there.
+  // Neither is linked from anywhere: you have to know they're there.
   if (hash === "#/edits") return { page: "edits" };
+  if (hash === "#/arguments") return { page: "arguments" };
   const match = hash.match(/^#\/article\/(\d+)$/);
   return match
     ? { page: "article", pageId: BigInt(match[1]) }

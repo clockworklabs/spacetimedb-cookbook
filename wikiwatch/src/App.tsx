@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useSpacetimeDB } from "spacetimedb/react";
+import { ArgumentPage } from "./components/ArgumentPage";
 import { ArticlePage } from "./components/ArticlePage";
 import { DebugPanel } from "./components/DebugPanel";
 import { FetchToasts } from "./components/FetchToasts";
@@ -35,6 +36,8 @@ function App() {
           isActive={isActive}
           now={now}
         />
+      ) : route.page === "arguments" ? (
+        <ArgumentPage live={live} isActive={isActive} now={now} />
       ) : route.page === "edits" ? (
         <EditStream
           live={live}

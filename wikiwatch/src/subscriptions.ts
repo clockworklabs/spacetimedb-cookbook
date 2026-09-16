@@ -8,6 +8,7 @@ import type {
 } from "./module_bindings/types";
 import { scheduleReplay, type Replay, type ReplayEdit } from "./replay";
 import { applyFetchEvent, type FetchToast } from "./fetchToasts";
+import { findArguments, type Argument } from "./arguments";
 
 export type LiveSet = {
   replay: Replay;
@@ -76,6 +77,15 @@ export function useArticle(pageId: bigint): Article {
   );
   const edits = useMemo(() => scheduleReplay(editRows).all, [editRows]);
   return { edits, preview: previews[0], isReady: editsReady && previewReady };
+}
+
+// Pages being argued over, from every edit the server still holds. That's a
+// day of edits, far more than the live set, so only subscribe while the
+// arguments page is open.
+export function useArguments(): { arguments: Argument[]; isReady: boolean } {
+  const [edits, isReady] = useTable(tables.edit);
+  const found = useMemo(() => findArguments(edits), [edits]);
+  return { arguments: found, isReady };
 }
 
 // Toasts describing what the server's Wikipedia fetchers are doing. fetch_event
