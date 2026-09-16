@@ -859,6 +859,221 @@ a.entry-user:hover {
   }
 }
 
+/* Arguments page: each argument is a rally, reverts volleying between the
+   two editors' lanes, in the blue and red of opposite corners. */
+
+.arguments-page {
+  --side-a: #3366cc;
+  --side-b: #d73333;
+  --side-net: #a2a9b1;
+
+  max-width: 68rem;
+  padding-block: 32px 64px;
+}
+
+.arguments-intro {
+  max-width: 44rem;
+  margin-bottom: 36px;
+}
+
+.arguments-intro h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.arguments-intro p {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.arguments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.argument {
+  padding-block: 24px 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.argument-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 24px;
+  margin-bottom: 14px;
+}
+
+.argument-head h2 {
+  min-width: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.15;
+}
+
+.argument-head h2 a {
+  text-decoration: none;
+}
+
+.argument-head h2 a:hover {
+  text-decoration: underline;
+}
+
+.argument-last {
+  font-family: var(--serif);
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: var(--muted);
+}
+
+.argument-last span {
+  font-weight: 700;
+}
+
+.side-a {
+  color: var(--side-a);
+}
+
+.side-b {
+  color: var(--side-b);
+}
+
+.side-net {
+  color: var(--muted);
+}
+
+.rally {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rally-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rally-side a {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.rally-side.side-a a {
+  color: var(--side-a);
+}
+
+.rally-side.side-b a {
+  color: var(--side-b);
+}
+
+.rally-side a:hover {
+  text-decoration: underline;
+}
+
+.rally-court {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.rally-net {
+  stroke: var(--rule);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+.rally-path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: rally-draw 1.2s ease-in-out both;
+}
+
+.rally-shot {
+  animation: rally-land 0.3s ease-out both;
+}
+
+.rally-shot.side-a {
+  fill: var(--side-a);
+}
+
+.rally-shot.side-b {
+  fill: var(--side-b);
+}
+
+.rally-shot.side-net {
+  fill: var(--side-net);
+}
+
+.rally-latest {
+  fill: none;
+  stroke: var(--heat);
+  stroke-width: 3;
+}
+
+@keyframes rally-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rally-land {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.argument-log {
+  margin-top: 14px;
+}
+
+.argument-log summary {
+  width: fit-content;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.argument-log summary:hover {
+  color: var(--ink);
+}
+
+.argument-log .history {
+  max-width: 48rem;
+  margin-top: 8px;
+}
+
+.argument-log .entry-user {
+  font-weight: 700;
+}
+
+.argument-comment {
+  font-family: var(--serif);
+  overflow-wrap: anywhere;
+}
+
 /* Article page */
 
 .article {
@@ -1306,6 +1521,8 @@ a.entry-user:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .rally-path,
+  .rally-shot,
   .ticker li.fresh,
   .history li.fresh,
   .stream li.fresh,
