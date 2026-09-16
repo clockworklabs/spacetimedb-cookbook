@@ -110,8 +110,8 @@ call it by hand ([Deploying](docs/deploying.md) has the details):
 spacetime call --no-config --server maincloud <database name> update_schedulers
 ```
 
-Any client can call a reducer, so this one refuses callers who aren't in the private `admin` table. `init`
-adds whoever published the database.
+Any client can call a reducer, so this one refuses callers who aren't admins in the private `user` table.
+`init` adds whoever published the database, as an admin.
 
 ### A live set that ages on the server
 
@@ -225,7 +225,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `fetch_event`                            | public event | The start and end of each fetch, for the toasts          |
 | `preview_failure`                        | private      | Articles Wikipedia didn't return a preview for           |
 | `settings`                               | private      | The contact sent to Wikipedia                            |
-| `admin`                                  | private      | The identities allowed to call `updateSchedulers`        |
+| `user`                                   | private      | Who may call `updateSchedulers`, by their `admin` flag   |
 | `schedule_*`                             | private      | The schedules                                            |
 
 ### The client (`src`)

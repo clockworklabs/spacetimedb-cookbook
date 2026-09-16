@@ -16,6 +16,6 @@ export { updateSchedulers } from "./schedules";
 // Runs once, when the database is created, with whoever published it as the
 // sender.
 export const init = spacetimedb.init((ctx) => {
-  ctx.db.admin.insert({ identity: ctx.sender });
+  ctx.db.user.insert({ identity: ctx.sender, admin: true });
   applySchedulers(ctx);
 });

@@ -107,13 +107,14 @@ export const settings = table(
 );
 export const SETTINGS_ID = 0;
 
-// The identities allowed to call admin reducers, such as updateSchedulers.
-// init adds whoever published the database. Private, so only the database
-// owner can add more, with `spacetime sql`.
-export const admin = table(
-  { name: "admin" },
+// The identities the module knows about. Admins may call admin reducers, such
+// as updateSchedulers. init adds whoever published the database, as an admin.
+// Private, so only the database owner can add more, with `spacetime sql`.
+export const user = table(
+  { name: "user" },
   {
     identity: t.identity().primaryKey(),
+    admin: t.bool(),
   },
 );
 
@@ -198,7 +199,7 @@ const spacetimedb = schema({
   preview_failure,
   fetch_status,
   settings,
-  admin,
+  user,
   fetch_event,
   schedule_fetch_recent_edits,
   schedule_fetch_article_previews,

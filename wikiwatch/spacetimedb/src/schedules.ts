@@ -37,7 +37,7 @@ export function applySchedulers(tx: TxCtx) {
 
 // Reducers can be called by any client, so this one checks for an admin.
 export const updateSchedulers = spacetimedb.reducer((ctx) => {
-  if (!ctx.db.admin.identity.find(ctx.sender)) {
+  if (!ctx.db.user.identity.find(ctx.sender)?.admin) {
     throw new SenderError("updateSchedulers may only be called by an admin");
   }
   applySchedulers(ctx);

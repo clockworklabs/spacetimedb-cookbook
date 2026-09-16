@@ -44,7 +44,7 @@ spacetime publish --server local wikiwatch-dev    # add --delete-data=on-conflic
 
 A republish doesn't rewrite the timer tables. After changing an interval in
 `spacetimedb/src/schedules.ts`, or adding a scheduled process, update them by hand. The caller must be
-in the private `admin` table. Pass `--no-config`, or the CLI takes the database name from its config
+an admin in the private `user` table. Pass `--no-config`, or the CLI takes the database name from its config
 and reads `wikiwatch-dev` as the reducer's name:
 
 ```bash
@@ -67,7 +67,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - Every scheduled export rejects callers other than the scheduler with
   `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
   scheduled exports need the same guard. Admin reducers (`updateSchedulers`) check `ctx.sender`
-  against the private `admin` table instead, which `init` seeds with the publisher's identity.
+  against the `admin` flag in the private `user` table instead, which `init` seeds with the
+  publisher's identity.
 - **`init` does not run again on republish, and nothing updates timers automatically.**
   `schedules.ts` holds every interval, and `applySchedulers` rewrites any timer row that's missing,
   duplicated or at an old interval. `init` calls it. After publishing a changed interval or a new
