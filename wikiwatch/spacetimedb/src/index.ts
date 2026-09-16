@@ -8,7 +8,8 @@ import { applySchedulers } from "./schedules";
 
 export default spacetimedb;
 
-export { pollWikipedia } from "./poll";
+export { pollRecentChanges } from "./edits";
+export { fetchArticlePreviews } from "./previews";
 export { sweepLiveSet } from "./live";
 export { pruneOldData } from "./prune";
 export { updateSchedulers } from "./schedules";

@@ -130,6 +130,12 @@ export const PreviewQueue = __t.object("PreviewQueue", {
 });
 export type PreviewQueue = __Infer<typeof PreviewQueue>;
 
+export const PreviewTimer = __t.object("PreviewTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type PreviewTimer = __Infer<typeof PreviewTimer>;
+
 export const PruneTimer = __t.object("PruneTimer", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),

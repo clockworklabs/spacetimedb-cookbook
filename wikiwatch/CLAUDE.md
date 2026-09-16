@@ -62,11 +62,13 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 
 ### Module
 
-- **`pollWikipedia` is a scheduled *procedure*, not a reducer**, because it makes HTTP requests. It
-  runs every 15s. HTTP happens outside `ctx.withTx`, and each `withTx` block is its own transaction.
-  State that has to survive between those transactions lives in a table (`preview_queue`), so a
-  failed fetch is retried on the next tick. `sweepLiveSet` (every 5 min) and `pruneOldData` (hourly)
-  are scheduled reducers.
+- **The Wikipedia fetchers are scheduled *procedures*, not reducers**, because they make HTTP
+  requests. `pollRecentChanges` runs every 15s and `fetchArticlePreviews` every 5s. HTTP happens
+  outside `ctx.withTx`, and each `withTx` block is its own transaction. State that has to survive
+  between those transactions, or pass from one process to the other, lives in a table
+  (`poller_status`, `preview_queue`). The module runs procedures one at a time, so the fetchers never
+  send Wikipedia concurrent requests. `sweepLiveSet` (every 5 min) and `pruneOldData` (hourly) are
+  scheduled reducers.
 - Every scheduled export rejects callers other than the scheduler with
   `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
   scheduled exports need the same guard. Admin reducers (`updateSchedulers`) check `ctx.sender`
@@ -78,8 +80,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   process needs its interval and timer table added to `applySchedulers`.
 - `schema.ts` holds every table, the types stored in them (`Edit`, `Thumbnail`, `FetchActivity`), the
   singleton ids and the `TxCtx`/`ProcCtx` context types. Define new tables and database types there.
-- There's one file per process, and each holds its scheduled export and its logic: `poll.ts`
-  (`pollWikipedia`, which runs `edits.ts` then `previews.ts`), `live.ts` (`sweepLiveSet`) and
+- There's one file per process, and each holds its scheduled export and its logic: `edits.ts`
+  (`pollRecentChanges`), `previews.ts` (`fetchArticlePreviews`), `live.ts` (`sweepLiveSet`) and
   `prune.ts` (`pruneOldData`). `status.ts` is the poller's reporting. `wikipedia.ts` is the
   MediaWiki API client. `time.ts` does timestamp arithmetic in bigint microseconds.
 - `index.ts` is the entry. It holds `init` and re-exports each reducer and procedure. SpacetimeDB registers
@@ -121,6 +123,9 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - Don't name a column after an SQL keyword. The preview summary isn't called `extract` because that
   broke queries naming the column.
 - A column added to an existing table needs `.default(...)` so the data can migrate (see `edit.live`).
+- A publish can't point a timer table at a different reducer or procedure, which includes renaming its
+  export: "Removing schedules is not yet implemented". The migration plan looks fine, so
+  `--delete-data=on-conflict` doesn't help. Only `--delete-data=always` gets past it.
 - `URLSearchParams` isn't guaranteed in the module runtime. `wikipedia.ts` encodes query strings by
   hand.
 

@@ -67,8 +67,9 @@ export const article_preview = table(
   },
 );
 
-// Pages waiting for a preview fetch. Lets a failed fetch be retried on the
-// next tick instead of being lost between the procedure's transactions.
+// Pages waiting for a preview fetch. Polling for edits adds to it and the
+// preview fetcher takes from it, so neither process waits on the other, and a
+// failed fetch is retried on the fetcher's next run.
 export const preview_queue = table(
   { name: "preview_queue" },
   {
@@ -157,11 +158,20 @@ export const fetch_log = table(
   },
 );
 
-// The schedules. pollWikipedia (poll.ts), sweepLiveSet (live.ts) and
-// pruneOldData (prune.ts) each name their timer with `onSchedule`. The rows,
-// and the intervals they repeat at, are written by schedules.ts.
+// The schedules. pollRecentChanges (edits.ts), fetchArticlePreviews
+// (previews.ts), sweepLiveSet (live.ts) and pruneOldData (prune.ts) each name
+// their timer with `onSchedule`. The rows, and the intervals they repeat at,
+// are written by schedules.ts.
 export const poll_timer = table(
   { name: "poll_timer" },
+  {
+    scheduled_id: t.u64().primaryKey().autoInc(),
+    scheduled_at: t.scheduleAt(),
+  },
+);
+
+export const preview_timer = table(
+  { name: "preview_timer" },
   {
     scheduled_id: t.u64().primaryKey().autoInc(),
     scheduled_at: t.scheduleAt(),
@@ -193,6 +203,7 @@ const spacetimedb = schema({
   admin,
   fetch_log,
   poll_timer,
+  preview_timer,
   prune_timer,
   sweep_timer,
 });

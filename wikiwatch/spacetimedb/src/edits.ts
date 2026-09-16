@@ -1,13 +1,20 @@
-// Pulling Wikipedia's recent changes into the edit table: the first half of
-// each poll.
+// Polling for edits: every POLL_INTERVAL (schedules.ts), fetch Wikipedia's
+// recent changes into the edit table, and queue their articles for a preview
+// (previews.ts).
 
 import type { Timestamp } from "spacetimedb";
-import { STATUS_ID, type ProcCtx, type TxCtx } from "./schema";
+import { SenderError, t } from "spacetimedb/server";
+import spacetimedb, {
+  STATUS_ID,
+  poll_timer,
+  type ProcCtx,
+  type TxCtx,
+} from "./schema";
 import { isLive } from "./live";
 import { enqueuePreview } from "./previews";
 import { errorMessage, logFetch, recordError } from "./status";
 import { HOUR, MINUTE, later, minus } from "./time";
-import { fetchRecentChanges } from "./wikipedia";
+import { fetchRecentChanges, userAgent } from "./wikipedia";
 
 // Recent changes can appear in the API slightly after their timestamp, so
 // each poll re-reads this much before the cursor. rc_id dedupes the overlap.
@@ -18,7 +25,25 @@ const MAX_BACKFILL = HOUR;
 const INITIAL_BACKFILL = MAX_BACKFILL;
 const MAX_RC_PAGES = 5;
 
-export function ingestRecentChanges(ctx: ProcCtx, agent: string) {
+// Procedures and reducers can be called by any client. This one makes
+// outbound HTTP requests, so only the scheduler may run it.
+export const pollRecentChanges = spacetimedb.procedure(
+  { onSchedule: poll_timer },
+  { timer: poll_timer.rowType },
+  t.unit(),
+  (ctx) => {
+    if (!ctx.sender.equals(ctx.databaseIdentity)) {
+      throw new SenderError(
+        "pollRecentChanges may only be run by the scheduler",
+      );
+    }
+    ingestRecentChanges(ctx);
+    return {};
+  },
+);
+
+function ingestRecentChanges(ctx: ProcCtx) {
+  const agent = userAgent(ctx);
   const fetch_id = ctx.newUuidV7();
   const start = ctx.withTx((tx) => {
     const earliest = minus(tx.timestamp, MAX_BACKFILL);
