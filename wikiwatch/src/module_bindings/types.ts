@@ -116,19 +116,17 @@ export const PollerStatus = __t.object("PollerStatus", {
 });
 export type PollerStatus = __Infer<typeof PollerStatus>;
 
+export const PreviewFailure = __t.object("PreviewFailure", {
+  pageId: __t.u64(),
+  attempts: __t.u8(),
+});
+export type PreviewFailure = __Infer<typeof PreviewFailure>;
+
 export const PreviewPage = __t.object("PreviewPage", {
   pageId: __t.u64(),
   title: __t.string(),
 });
 export type PreviewPage = __Infer<typeof PreviewPage>;
-
-export const PreviewQueue = __t.object("PreviewQueue", {
-  pageId: __t.u64(),
-  title: __t.string(),
-  attempts: __t.u8(),
-  enqueuedAt: __t.timestamp(),
-});
-export type PreviewQueue = __Infer<typeof PreviewQueue>;
 
 export const PreviewTimer = __t.object("PreviewTimer", {
   scheduledId: __t.u64(),

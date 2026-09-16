@@ -65,8 +65,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - **The Wikipedia fetchers are scheduled *procedures*, not reducers**, because they make HTTP
   requests. `pollRecentChanges` runs every 15s and `fetchArticlePreviews` every 5s. HTTP happens
   outside `ctx.withTx`, and each `withTx` block is its own transaction. State that has to survive
-  between those transactions, or pass from one process to the other, lives in a table
-  (`poller_status`, `preview_queue`). The module runs procedures one at a time, so the fetchers never
+  between those transactions lives in a table (`poller_status`, `preview_failure`). The module runs procedures one at a time, so the fetchers never
   send Wikipedia concurrent requests. `sweepLiveSet` (every 5 min) and `pruneOldData` (hourly) are
   scheduled reducers.
 - Every scheduled export rejects callers other than the scheduler with
@@ -95,6 +94,9 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   `edit WHERE live = true`, so aged edits arrive as deletes and nobody ever resubscribes.
 - Previews reach clients through a `rightSemijoin` of live edits onto `article_preview`
   (`src/live/hooks.ts`). The module never tracks which previews are live.
+- Nothing queues preview fetches. Each run, `fetchArticlePreviews` works out which pages with live
+  edits have no fresh preview and fetches a batch, newest edits first. `edits.ts` knows nothing about
+  previews. Only failures are stored (`preview_failure`), because they can't be derived.
 - `fetch_log` is an **event table**. The client sees its rows only through `onInsert`, never in the
   cache. Each fetch's start and end rows share a `fetch_id`.
 
@@ -126,6 +128,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - A publish can't point a timer table at a different reducer or procedure, which includes renaming its
   export: "Removing schedules is not yet implemented". The migration plan looks fine, so
   `--delete-data=on-conflict` doesn't help. Only `--delete-data=always` gets past it.
+- A publish won't remove a table that still has rows. Empty it first, as the owner, with
+  `spacetime sql ... "DELETE FROM <table>"`, and publish before anything writes to it again.
 - `URLSearchParams` isn't guaranteed in the module runtime. `wikipedia.ts` encodes query strings by
   hand.
 

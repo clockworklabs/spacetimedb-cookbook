@@ -1,9 +1,9 @@
 // Pruning: every PRUNE_INTERVAL (schedules.ts), delete edits older than
-// RETENTION, and the previews of articles that have no edits left.
+// RETENTION, and the previews and preview failures of articles that have no
+// edits left.
 
 import { Range, SenderError } from "spacetimedb/server";
 import spacetimedb, { prune_timer, type TxCtx } from "./schema";
-import { hasEdits } from "./previews";
 import { HOUR, minus } from "./time";
 
 // How much history to keep.
@@ -34,13 +34,18 @@ export const pruneOldData = spacetimedb.reducer(
   },
 );
 
-// Deletes the previews of whichever of `page_ids` have no edits left. Returns
-// how many it deleted.
+// Deletes the previews and preview failures of whichever of `page_ids` have no
+// edits left. Returns how many previews it deleted.
 function prunePreviews(tx: TxCtx, page_ids: Iterable<bigint>): number {
   let pruned = 0;
   for (const page_id of page_ids) {
     if (hasEdits(tx, page_id)) continue;
+    tx.db.preview_failure.page_id.delete(page_id);
     if (tx.db.article_preview.page_id.delete(page_id)) pruned++;
   }
   return pruned;
+}
+
+function hasEdits(tx: TxCtx, page_id: bigint): boolean {
+  return [...tx.db.edit.page_id.filter(page_id)].length > 0;
 }
