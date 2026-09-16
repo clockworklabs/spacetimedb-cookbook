@@ -9,8 +9,12 @@ import { ScheduleAt } from "spacetimedb";
 import spacetimedb, { type TxCtx } from "./schema";
 import { HOUR, MINUTE, SECOND } from "./time";
 
-// pollWikipedia (poll.ts).
+// pollRecentChanges (edits.ts).
 const POLL_INTERVAL = 15n * SECOND;
+
+// fetchArticlePreviews (previews.ts). Each run fetches one batch of
+// PREVIEW_BATCH_SIZE (wikipedia.ts), so this sets how fast the queue drains.
+const PREVIEW_INTERVAL = 5n * SECOND;
 
 // sweepLiveSet (live.ts). Aged edits stay live until the next sweep, so a live
 // edit can be up to LIVE_FOR + SWEEP_INTERVAL old.
@@ -22,6 +26,7 @@ const PRUNE_INTERVAL = HOUR;
 export function applySchedulers(tx: TxCtx) {
   const written = [
     ensureInterval(tx.db.poll_timer, POLL_INTERVAL),
+    ensureInterval(tx.db.preview_timer, PREVIEW_INTERVAL),
     ensureInterval(tx.db.sweep_timer, SWEEP_INTERVAL),
     ensureInterval(tx.db.prune_timer, PRUNE_INTERVAL),
   ];

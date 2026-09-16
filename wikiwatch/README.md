@@ -35,19 +35,24 @@ It shows:
 
 ### HTTP requests from a scheduled procedure
 
-Reducers can't make network requests, so the poller, `pollWikipedia`, is a procedure. Procedures can be
-scheduled like reducers: `init` inserts a row into `poll_timer` that runs it every 15 seconds.
+Reducers can't make network requests, so the two processes that fetch from Wikipedia are procedures.
+Procedures can be scheduled like reducers. `init` inserts a row into `poll_timer` that runs
+`pollRecentChanges` every 15 seconds, and one into `preview_timer` that runs `fetchArticlePreviews` every
+5 seconds.
 
 ```ts
-export const pollWikipedia = spacetimedb.procedure(
+export const pollRecentChanges = spacetimedb.procedure(
   { onSchedule: poll_timer },
   { timer: poll_timer.rowType },
   t.unit(),
   (ctx) => {
     if (!ctx.sender.equals(ctx.databaseIdentity)) {
-      throw new SenderError("pollWikipedia may only be run by the scheduler");
+      throw new SenderError(
+        "pollRecentChanges may only be run by the scheduler",
+      );
     }
-    // ...
+    ingestRecentChanges(ctx);
+    return {};
   },
 );
 ```
@@ -79,15 +84,15 @@ const inserted = ctx.withTx((tx) => {
 });
 ```
 
-Nothing carries over from one transaction to the next unless it's in a table, so that's where the poller
-keeps its progress:
+Nothing carries over from one transaction to the next unless it's in a table, so that's where the
+fetchers keep their progress, and how one hands work to the other:
 
 - **The cursor** lives in `poller_status`. Each poll re-reads a minute before it, because changes can
   reach the API slightly after their timestamps, and keying `edit` on Wikipedia's `rcid` makes the
   overlap harmless. After downtime the cursor skips ahead rather than back-filling more than an hour.
 - **Articles that need a preview** go into the private `preview_queue` table, in the same transaction as
-  their edits. The rest of the poll fetches up to three batches of twenty from the queue. A page whose
-  fetch fails stays queued for the next poll, until it has failed three times. A preview more than a day
+  their edits. Each run of `fetchArticlePreviews` fetches the oldest twenty. A page whose fetch fails
+  stays queued for the next run, until it has failed three times. A preview more than a day
   old is fetched again the next time its article is edited.
 
 `init` runs only when a database is created, not when a module is republished, so a changed interval or a
@@ -199,9 +204,8 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | -------------- | --------------------------------------------------------------------------------------- |
 | `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                              |
 | `schema.ts`    | The tables, and the types stored in them                                                |
-| `poll.ts`      | `pollWikipedia`, which fetches recent changes and then previews every 15 seconds        |
-| `edits.ts`     | Ingests recent changes into the `edit` table                                            |
-| `previews.ts`  | Queues, fetches and stores article previews                                             |
+| `edits.ts`     | `pollRecentChanges`, which fetches recent changes into `edit` every 15 seconds          |
+| `previews.ts`  | `fetchArticlePreviews`, which fetches queued article previews every 5 seconds           |
 | `live.ts`      | `sweepLiveSet`, which ages edits out of the live set that clients subscribe to          |
 | `prune.ts`     | `pruneOldData`, which deletes edits and previews older than a day                       |
 | `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them |
@@ -209,16 +213,16 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `wikipedia.ts` | A small client for the MediaWiki Action API                                             |
 | `time.ts`      | Timestamp arithmetic                                                                    |
 
-| Table                                      | Visibility   | Holds                                                    |
-| ------------------------------------------ | ------------ | -------------------------------------------------------- |
-| `edit`                                     | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
-| `article_preview`                          | public       | Each article's title, description, summary and thumbnail |
-| `poller_status`                            | public       | The poll cursor, and the poller's health                 |
-| `fetch_log`                                | public event | The start and end of each fetch, for the toasts          |
-| `preview_queue`                            | private      | Articles waiting for a preview fetch                     |
-| `settings`                                 | private      | The contact sent to Wikipedia                            |
-| `admin`                                    | private      | The identities allowed to call `updateSchedulers`        |
-| `poll_timer`, `prune_timer`, `sweep_timer` | private      | The schedules                                            |
+| Table                            | Visibility   | Holds                                                    |
+| -------------------------------- | ------------ | -------------------------------------------------------- |
+| `edit`                           | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
+| `article_preview`                | public       | Each article's title, description, summary and thumbnail |
+| `poller_status`                  | public       | The poll cursor, and the poller's health                 |
+| `fetch_log`                      | public event | The start and end of each fetch, for the toasts          |
+| `preview_queue`                  | private      | Articles waiting for a preview fetch                     |
+| `settings`                       | private      | The contact sent to Wikipedia                            |
+| `admin`                          | private      | The identities allowed to call `updateSchedulers`        |
+| `poll_timer`, `preview_timer`, … | private      | The schedules                                            |
 
 ### The client (`src`)
 

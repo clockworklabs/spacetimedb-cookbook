@@ -1,21 +1,22 @@
-// Article previews: queueing pages that need one, and fetching them in batches
-// in the second half of each poll. Clients get the previews that go with the
-// live set by joining them to the live edits, so nothing here tracks which
-// previews are live.
+// Article previews: every PREVIEW_INTERVAL (schedules.ts), fetch the oldest
+// batch of pages waiting in preview_queue. Polling for edits (edits.ts) fills
+// the queue. Clients get the previews that go with the live set by joining
+// them to the live edits, so nothing here tracks which previews are live.
 
-import type { ProcCtx, TxCtx } from "./schema";
+import { SenderError, t } from "spacetimedb/server";
+import spacetimedb, { preview_timer, type ProcCtx, type TxCtx } from "./schema";
 import { errorMessage, logFetch, recordError } from "./status";
 import { HOUR, compare, minus } from "./time";
 import {
   PREVIEW_BATCH_SIZE,
   fetchPreviews,
+  userAgent,
   type PagePreview,
 } from "./wikipedia";
 
 // How long a preview stays fresh.
 const PREVIEW_MAX_AGE = 24n * HOUR;
 
-const PREVIEW_BATCHES_PER_TICK = 3;
 const MAX_PREVIEW_ATTEMPTS = 3;
 
 export function enqueuePreview(tx: TxCtx, page_id: bigint, title: string) {
@@ -38,48 +39,64 @@ export function enqueuePreview(tx: TxCtx, page_id: bigint, title: string) {
   });
 }
 
-export function ingestPreviews(ctx: ProcCtx, agent: string) {
-  const batches = ctx.withTx((tx) => {
-    const oldestFirst = [...tx.db.preview_queue.iter()]
-      .sort((a, b) => compare(a.enqueued_at, b.enqueued_at))
-      .slice(0, PREVIEW_BATCH_SIZE * PREVIEW_BATCHES_PER_TICK);
-    return chunk(oldestFirst, PREVIEW_BATCH_SIZE);
-  });
-
-  for (const batch of batches) {
-    const fetch_id = ctx.newUuidV7();
-    const pageIds = batch.map((entry) => entry.page_id);
-    ctx.withTx((tx) =>
-      logFetch(tx, fetch_id, {
-        tag: "fetching_previews",
-        value: {
-          pages: batch.map(({ page_id, title }) => ({ page_id, title })),
-        },
-      }),
-    );
-
-    let previews;
-    try {
-      previews = fetchPreviews(ctx.http, agent, pageIds);
-    } catch (e) {
-      // Wikipedia is struggling; count the attempt and try again next tick.
-      const message = `previews: ${errorMessage(e)}`;
-      console.error(message);
-      ctx.withTx((tx) => {
-        pageIds.forEach((id) => recordPreviewAttempt(tx, id));
-        recordError(tx, message, false);
-        logFetch(tx, fetch_id, { tag: "previews_failed", value: message });
-      });
-      return;
+// Procedures and reducers can be called by any client. This one makes
+// outbound HTTP requests, so only the scheduler may run it.
+export const fetchArticlePreviews = spacetimedb.procedure(
+  { onSchedule: preview_timer },
+  { timer: preview_timer.rowType },
+  t.unit(),
+  (ctx) => {
+    if (!ctx.sender.equals(ctx.databaseIdentity)) {
+      throw new SenderError(
+        "fetchArticlePreviews may only be run by the scheduler",
+      );
     }
+    ingestPreviews(ctx);
+    return {};
+  },
+);
+
+function ingestPreviews(ctx: ProcCtx) {
+  const batch = ctx.withTx((tx) =>
+    [...tx.db.preview_queue.iter()]
+      .sort((a, b) => compare(a.enqueued_at, b.enqueued_at))
+      .slice(0, PREVIEW_BATCH_SIZE),
+  );
+  if (batch.length === 0) return;
+
+  const agent = userAgent(ctx);
+  const fetch_id = ctx.newUuidV7();
+  const pageIds = batch.map((entry) => entry.page_id);
+  ctx.withTx((tx) =>
+    logFetch(tx, fetch_id, {
+      tag: "fetching_previews",
+      value: {
+        pages: batch.map(({ page_id, title }) => ({ page_id, title })),
+      },
+    }),
+  );
+
+  let previews;
+  try {
+    previews = fetchPreviews(ctx.http, agent, pageIds);
+  } catch (e) {
+    // Wikipedia is struggling; count the attempt and try again next time.
+    const message = `previews: ${errorMessage(e)}`;
+    console.error(message);
     ctx.withTx((tx) => {
-      const stored = storePreviews(tx, pageIds, previews);
-      logFetch(tx, fetch_id, {
-        tag: "fetched_previews",
-        value: { stored, missing: previews.length - stored },
-      });
+      pageIds.forEach((id) => recordPreviewAttempt(tx, id));
+      recordError(tx, message, false);
+      logFetch(tx, fetch_id, { tag: "previews_failed", value: message });
     });
+    return;
   }
+  ctx.withTx((tx) => {
+    const stored = storePreviews(tx, pageIds, previews);
+    logFetch(tx, fetch_id, {
+      tag: "fetched_previews",
+      value: { stored, missing: previews.length - stored },
+    });
+  });
 }
 
 // Whether any of a page's edits are still kept. Pruning may have deleted them.
@@ -135,12 +152,4 @@ function recordPreviewAttempt(tx: TxCtx, page_id: bigint) {
       attempts: entry.attempts + 1,
     });
   }
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) {
-    chunks.push(items.slice(i, i + size));
-  }
-  return chunks;
 }

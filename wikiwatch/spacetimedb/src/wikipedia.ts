@@ -3,7 +3,7 @@
 // https://www.mediawiki.org/wiki/API:Query (prop=extracts|pageimages|description)
 
 import { TimeDuration, Timestamp } from "spacetimedb";
-import type { Edit, ProcCtx, Thumbnail } from "./schema";
+import { SETTINGS_ID, type Edit, type ProcCtx, type Thumbnail } from "./schema";
 
 const API_URL = "https://en.wikipedia.org/w/api.php";
 
@@ -14,7 +14,10 @@ const API_URL = "https://en.wikipedia.org/w/api.php";
 const AGENT_NAME = "wikiwatch/0.1";
 const FALLBACK_CONTACT = "SpacetimeDB demo module; https://spacetimedb.com";
 
-export function userAgent(contact: string | undefined): string {
+export function userAgent(ctx: ProcCtx): string {
+  const contact = ctx.withTx(
+    (tx) => tx.db.settings.id.find(SETTINGS_ID)?.wikipedia_contact,
+  );
   // A line break in a header value would start a new header.
   const cleaned = contact?.replace(/[\r\n]+/g, " ").trim();
   return `${AGENT_NAME} (${cleaned || FALLBACK_CONTACT})`;
