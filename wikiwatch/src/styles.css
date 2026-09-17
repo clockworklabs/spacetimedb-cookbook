@@ -141,21 +141,29 @@ input:focus-visible {
   color: var(--ink);
 }
 
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--added);
-  animation: live 2s ease-out infinite;
+/* The favicon's trace, drawn again each time a fetch succeeds. */
+.live-pulse {
+  display: block;
+  width: 26px;
+  height: 16px;
+}
+
+.live-pulse polyline {
+  fill: none;
+  stroke: var(--added);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 130;
+  animation: live 1.2s ease-out;
 }
 
 @keyframes live {
-  0% {
-    box-shadow: 0 0 0 0 rgb(20 134 109 / 0.5);
+  from {
+    stroke-dashoffset: 130;
   }
-  70%,
-  100% {
-    box-shadow: 0 0 0 6px rgb(20 134 109 / 0);
+  to {
+    stroke-dashoffset: 0;
   }
 }
 
@@ -1589,7 +1597,7 @@ a.entry-user:hover {
   .ticker li.fresh,
   .history li.fresh,
   .stream li.fresh,
-  .live-dot,
+  .live-pulse polyline,
   .heartbeat,
   .toast,
   .toast.running {
