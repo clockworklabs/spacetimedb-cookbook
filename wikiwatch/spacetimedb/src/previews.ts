@@ -9,6 +9,7 @@ import { SenderError, t } from "spacetimedb/server";
 import spacetimedb, {
   schedule_fetch_article_previews,
   type PreviewPage,
+  type ProcCtx,
   type TxCtx,
 } from "./schema";
 import { errorMessage, sendFetchEvent } from "./status";
@@ -38,47 +39,74 @@ export const fetchArticlePreviews = spacetimedb.procedure(
       );
     }
     const pages = ctx.withTx(pagesNeedingPreviews);
-    if (pages.length === 0) return {};
-
-    const agent = userAgent(ctx);
-    const fetch_id = ctx.newUuidV7();
-    const pageIds = pages.map((page) => page.page_id);
-    ctx.withTx((tx) =>
-      sendFetchEvent(tx, fetch_id, {
-        tag: "fetching_previews",
-        value: { pages },
-      }),
-    );
-
-    let previews;
-    try {
-      previews = queryPreviews(ctx.http, agent, pageIds);
-    } catch (e) {
-      // Wikipedia is struggling; count the attempt and try again next time.
-      const message = `previews: ${errorMessage(e)}`;
-      console.error(message);
-      ctx.withTx((tx) => {
-        pageIds.forEach((id) => recordFailure(tx, id));
-        sendFetchEvent(tx, fetch_id, {
-          tag: "previews_failed",
-          value: message,
-        });
-      });
-      return {};
-    }
-    const stored = ctx.withTx((tx) => {
-      const count = storePreviews(tx, pageIds, previews);
-      sendFetchEvent(tx, fetch_id, {
-        tag: "fetched_previews",
-        value: { stored: count, missing: previews.length - count },
-      });
-      return count;
-    });
-
-    console.info(`Stored ${stored} of ${pageIds.length} article previews`);
+    if (pages.length > 0) fetchPreviews(ctx, pages);
     return {};
   },
 );
+
+// Fetches one page's preview now, whether or not it has live edits, a fresh
+// preview or failed attempts. For when Wikipedia has changed an article, or
+// this module has changed what a preview holds. Admins only, because it
+// makes outbound HTTP requests.
+export const refetchArticlePreview = spacetimedb.procedure(
+  { page_id: t.u64() },
+  t.unit(),
+  (ctx, { page_id }) => {
+    const page = ctx.withTx((tx) => {
+      if (!tx.db.user.identity.find(ctx.sender)?.admin) {
+        throw new SenderError(
+          "refetchArticlePreview may only be called by an admin",
+        );
+      }
+      const title =
+        tx.db.article_preview.page_id.find(page_id)?.title ??
+        tx.db.edit.page_id.filter(page_id).next().value?.title ??
+        "";
+      return { page_id, title };
+    });
+    fetchPreviews(ctx, [page]);
+    return {};
+  },
+);
+
+function fetchPreviews(ctx: ProcCtx, pages: PreviewPage[]) {
+  const agent = userAgent(ctx);
+  const fetch_id = ctx.newUuidV7();
+  const pageIds = pages.map((page) => page.page_id);
+  ctx.withTx((tx) =>
+    sendFetchEvent(tx, fetch_id, {
+      tag: "fetching_previews",
+      value: { pages },
+    }),
+  );
+
+  let previews;
+  try {
+    previews = queryPreviews(ctx.http, agent, pageIds);
+  } catch (e) {
+    // Wikipedia is struggling; count the attempt and try again next time.
+    const message = `previews: ${errorMessage(e)}`;
+    console.error(message);
+    ctx.withTx((tx) => {
+      pageIds.forEach((id) => recordFailure(tx, id));
+      sendFetchEvent(tx, fetch_id, {
+        tag: "previews_failed",
+        value: message,
+      });
+    });
+    return;
+  }
+  const stored = ctx.withTx((tx) => {
+    const count = storePreviews(tx, pageIds, previews);
+    sendFetchEvent(tx, fetch_id, {
+      tag: "fetched_previews",
+      value: { stored: count, missing: previews.length - count },
+    });
+    return count;
+  });
+
+  console.info(`Stored ${stored} of ${pageIds.length} article previews`);
+}
 
 // Up to a batch of the pages with live edits that need a preview. Most
 // recently edited first, so the articles clients are showing right now come

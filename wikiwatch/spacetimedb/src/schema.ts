@@ -46,10 +46,18 @@ export const edit = table(
 );
 export type Edit = Infer<typeof edit.rowType>;
 
+// An article's image, with the credit its licence asks for. Only stored when
+// Wikipedia says what the licence is.
 const Thumbnail = t.object("Thumbnail", {
   url: t.string(),
   width: t.u32(),
   height: t.u32(),
+  // The image's own page, which has its full licence and source.
+  file_page_url: t.string(),
+  // Short, like "CC BY-SA 4.0" or "Fair use".
+  license: t.string(),
+  // As plain text. Wikipedia often has no author for non-free images.
+  artist: t.option(t.string()),
 });
 export type Thumbnail = Infer<typeof Thumbnail>;
 

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import type { Thumbnail } from "../module_bindings/types";
 import {
   byteDelta,
   editsPerMinute,
@@ -99,13 +100,7 @@ export function ArticlePage({ pageId, live, isActive, now }: Props) {
               )}
               <div className="article-about">
                 {preview?.thumbnail && (
-                  <img
-                    className="article-image"
-                    src={preview.thumbnail.url}
-                    width={preview.thumbnail.width}
-                    height={preview.thumbnail.height}
-                    alt=""
-                  />
+                  <ArticleImage thumbnail={preview.thumbnail} />
                 )}
                 <div className="article-text">
                   {preview?.summary && (
@@ -197,5 +192,25 @@ function LivePulse({ live, now }: { live: LiveSet; now: number }) {
     <PulseRibbon
       counts={editsPerMinute(edits, revealed, clock, WINDOW_MS / 60_000)}
     />
+  );
+}
+
+// The image, credited as its licence asks. The file page has the full details.
+function ArticleImage({ thumbnail }: { thumbnail: Thumbnail }) {
+  return (
+    <figure className="article-image">
+      <img
+        src={thumbnail.url}
+        width={thumbnail.width}
+        height={thumbnail.height}
+        alt=""
+      />
+      <figcaption>
+        <a href={thumbnail.filePageUrl} target="_blank" rel="noreferrer">
+          {thumbnail.artist && <>Image: {thumbnail.artist} · </>}
+          {thumbnail.license}
+        </a>
+      </figcaption>
+    </figure>
   );
 }
