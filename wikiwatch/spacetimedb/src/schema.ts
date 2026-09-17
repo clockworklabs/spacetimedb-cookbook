@@ -39,6 +39,9 @@ export const edit = table(
     // Whether the edit is in the live set that clients subscribe to: made
     // within LIVE_FOR, give or take an expiry run (see edits.ts).
     live: t.bool().default(false).index("btree"),
+    // Whether the edit undoes earlier edits, going by its tags. Indexed so the
+    // arguments page can subscribe to reverts alone.
+    is_revert: t.bool().default(false).index("btree"),
   },
 );
 export type Edit = Infer<typeof edit.rowType>;

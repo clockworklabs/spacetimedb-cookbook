@@ -28,4 +28,5 @@ export default __t.row({
   tags: __t.array(__t.string()),
   editedAt: __t.timestamp().name("edited_at"),
   live: __t.bool(),
+  isRevert: __t.bool().name("is_revert"),
 });

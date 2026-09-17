@@ -1,10 +1,6 @@
 import type { Edit } from "./module_bindings/types";
 import { toMillis } from "./replay";
 
-// MediaWiki tags an edit that undoes earlier edits when it's saved. (It also
-// tags the undone edit `mw-reverted`, but only later, after we've fetched it.)
-const REVERT_TAGS = new Set(["mw-undo", "mw-rollback", "mw-manual-revert"]);
-
 // A side has to revert at least this often to count as arguing, which leaves
 // out a patroller reverting a vandal who never reverts back.
 const MIN_REVERTS_PER_SIDE = 2;
@@ -24,16 +20,11 @@ export type Argument = {
   lastRevertAt: number;
 };
 
-export function isRevert(edit: Edit): boolean {
-  return edit.tags.some((tag) => REVERT_TAGS.has(tag));
-}
-
 // Pages where at least two editors, not bots, have each reverted the page
-// repeatedly. Most recently fought over first.
-export function findArguments(edits: Iterable<Edit>): Argument[] {
+// repeatedly, from a set of reverts. Most recently fought over first.
+export function findArguments(reverts: Iterable<Edit>): Argument[] {
   const byPage = new Map<string, Revert[]>();
-  for (const edit of edits) {
-    if (!isRevert(edit)) continue;
+  for (const edit of reverts) {
     const revert = { edit, at: toMillis(edit.editedAt) };
     const key = edit.pageId.toString();
     const group = byPage.get(key);

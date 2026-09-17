@@ -55,7 +55,7 @@ export function ArgumentPage({ live, isActive, now }: Props) {
           </p>
         </header>
         {!isReady ? (
-          <p className="empty">Loading the last day’s edits…</p>
+          <p className="empty">Loading the last day’s reverts…</p>
         ) : found.length === 0 ? (
           <p className="empty">
             Nobody has reverted anybody twice on the same page today. Check back

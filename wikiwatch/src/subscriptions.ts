@@ -79,12 +79,14 @@ export function useArticle(pageId: bigint): Article {
   return { edits, preview: previews[0], isReady: editsReady && previewReady };
 }
 
-// Pages being argued over, from every edit the server still holds. That's a
-// day of edits, far more than the live set, so only subscribe while the
+// Pages being argued over, from every revert the server still holds. That's a
+// day of reverts, far more than the live set, so only subscribe while the
 // arguments page is open.
 export function useArguments(): { arguments: Argument[]; isReady: boolean } {
-  const [edits, isReady] = useTable(tables.edit);
-  const found = useMemo(() => findArguments(edits), [edits]);
+  const [reverts, isReady] = useTable(
+    tables.edit.where((row) => row.isRevert.eq(true)),
+  );
+  const found = useMemo(() => findArguments(reverts), [reverts]);
   return { arguments: found, isReady };
 }
 
