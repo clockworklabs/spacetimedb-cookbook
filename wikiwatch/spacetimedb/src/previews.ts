@@ -66,13 +66,16 @@ export const fetchArticlePreviews = spacetimedb.procedure(
       });
       return {};
     }
-    ctx.withTx((tx) => {
-      const stored = storePreviews(tx, pageIds, previews);
+    const stored = ctx.withTx((tx) => {
+      const count = storePreviews(tx, pageIds, previews);
       sendFetchEvent(tx, fetch_id, {
         tag: "fetched_previews",
-        value: { stored, missing: previews.length - stored },
+        value: { stored: count, missing: previews.length - count },
       });
+      return count;
     });
+
+    console.info(`Stored ${stored} of ${pageIds.length} article previews`);
     return {};
   },
 );
