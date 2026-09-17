@@ -18,6 +18,14 @@ export function EditTrail({
   clock: number;
   spanMs?: number;
 }) {
+  // Move the trail along one viewBox unit at a time. The clock changes far
+  // more often than that, and following it exactly would shift every line of
+  // every trail by an invisible fraction, so the browser would repaint every
+  // trail on the page each time. Rounded up, so the newest edit never lands
+  // beyond the right-hand edge.
+  const stepMs = spanMs / WIDTH;
+  const steppedClock = Math.ceil(clock / stepMs) * stepMs;
+
   return (
     <svg
       className="trail"
@@ -33,7 +41,7 @@ export function EditTrail({
         y2={MIDLINE}
       />
       {edits.map(({ edit, key, revealAt }) => {
-        const x = WIDTH * (1 - (clock - revealAt) / spanMs);
+        const x = WIDTH * (1 - (steppedClock - revealAt) / spanMs);
         const bytes = byteDelta(edit);
         const scale = Math.min(1, Math.log10(1 + Math.abs(bytes)) / 4);
         const length = 3 + (MIDLINE - 3) * scale;
