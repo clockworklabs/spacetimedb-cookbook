@@ -29,8 +29,10 @@ It shows:
   the fetchers' 15-second bursts back into a steady stream.
 - **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, and every edit to
   it that the server still holds, as soon as each one arrives.
-- **The edit stream** (`#/edits`, not linked from anywhere) shows the latest 100 edits, one line each,
-  newest first, as soon as each one arrives.
+- **The edit stream** (`#/edits`) shows the latest 100 edits, one line each, newest first, as soon as
+  each one arrives.
+- **Arguments** (`#/arguments`) finds pages where two editors keep reverting each other over the last
+  day, and draws each argument as a rally between them.
 - **Toasts** report what the server's Wikipedia fetchers are doing, and when they fail.
 
 ## How it works

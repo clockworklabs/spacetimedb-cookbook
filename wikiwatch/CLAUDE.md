@@ -111,8 +111,9 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   timestamp second evenly across it (`src/replay.ts`, pure functions). Article pages show edits
   as soon as they arrive.
 - Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
-- `#/edits` (`EditStream.tsx`) is a deliberately unlinked page: the latest 100 live edits, shown as
-  soon as they arrive.
+- `#/edits` (`EditStream.tsx`) is the latest 100 live edits, shown as soon as they arrive, linked from
+  the front page's Latest edits heading. `#/arguments` (`ArgumentPage.tsx`) is the front page's second
+  tab, and subscribes to every edit only while it's open.
 
 ### Constants that must change together
 
