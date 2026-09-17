@@ -88,7 +88,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 ### The live set (spans server and client)
 
 - Clients don't filter on time. Each `edit` row carries a `live` flag. New edits are live, and
-  `expireOldEdits` clears the flag once an edit is more than `LIVE_FOR` (30 min) old. Clients subscribe to
+  `expireOldEdits` clears the flag once an edit is more than `LIVE_FOR` (15 min) old. Clients subscribe to
   `edit WHERE live = true`, so aged edits arrive as deletes and nobody ever resubscribes.
 - Previews reach clients through a `rightSemijoin` of live edits onto `article_preview`
   (`src/subscriptions.ts`). The module never tracks which previews are live.

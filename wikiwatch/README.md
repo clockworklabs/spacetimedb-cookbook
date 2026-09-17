@@ -22,7 +22,7 @@ It shows:
 
 ## What you see
 
-- **The front page** ranks the most active articles of the last 30 minutes, with recent edits counting
+- **The front page** ranks the most active articles of the last 15 minutes, with recent edits counting
   most. Each article has a trail of its edits across those minutes: additions rise above the line,
   removals drop below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest
   edits, and a toggle to hide bot edits. The page replays edits 30 seconds behind real time, which turns
@@ -117,8 +117,8 @@ Any client can call a reducer, so this one refuses callers who aren't admins in 
 
 ### A live set that ages on the server
 
-The front page shows the last 30 minutes, so the obvious subscription filters on time. But a subscription
-query is fixed when it's made. A cutoff of 30 minutes ago goes stale straight away, and rows older than it
+The front page shows the last 15 minutes, so the obvious subscription filters on time. But a subscription
+query is fixed when it's made. A cutoff of 15 minutes ago goes stale straight away, and rows older than it
 stay in the client's cache until the client resubscribes with a new one.
 
 Instead, each `edit` row carries a `live` flag, and clients subscribe to the live edits only:
@@ -128,7 +128,7 @@ useTable(tables.edit.where((row) => row.live.eq(true)));
 ```
 
 New edits are inserted live. Every five minutes, the scheduled reducer `expireOldEdits` clears the flag
-on edits more than 30 minutes old (`spacetimedb/src/edits.ts`):
+on edits more than 15 minutes old (`spacetimedb/src/edits.ts`):
 
 ```ts
 const aged = [...ctx.db.edit.live.filter(true)].filter(
@@ -140,8 +140,8 @@ for (const edit of aged) {
 ```
 
 A row that stops matching a subscription reaches its subscribers as a delete. Each client's cache stays
-about half an hour deep, without the client resubscribing or knowing how long anything is kept. Between
-expiry runs a live edit can be up to 35 minutes old, so the front page ignores anything older than 30 minutes
+about a quarter of an hour deep, without the client resubscribing or knowing how long anything is kept. Between
+expiry runs a live edit can be up to 20 minutes old, so the front page ignores anything older than 15 minutes
 when it draws.
 
 The server keeps 24 hours of edits, and `deleteOldHistory` deletes older ones every hour. Article pages
