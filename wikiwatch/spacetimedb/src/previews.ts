@@ -9,7 +9,6 @@ import { SenderError, t } from "spacetimedb/server";
 import spacetimedb, {
   schedule_fetch_article_previews,
   type PreviewPage,
-  type ProcCtx,
   type TxCtx,
 } from "./schema";
 import { errorMessage, sendFetchEvent } from "./status";
@@ -38,46 +37,45 @@ export const fetchArticlePreviews = spacetimedb.procedure(
         "fetchArticlePreviews may only be run by the scheduler",
       );
     }
-    ingestPreviews(ctx);
+    const pages = ctx.withTx(pagesNeedingPreviews);
+    if (pages.length === 0) return {};
+
+    const agent = userAgent(ctx);
+    const fetch_id = ctx.newUuidV7();
+    const pageIds = pages.map((page) => page.page_id);
+    ctx.withTx((tx) =>
+      sendFetchEvent(tx, fetch_id, {
+        tag: "fetching_previews",
+        value: { pages },
+      }),
+    );
+
+    let previews;
+    try {
+      previews = queryPreviews(ctx.http, agent, pageIds);
+    } catch (e) {
+      // Wikipedia is struggling; count the attempt and try again next time.
+      const message = `previews: ${errorMessage(e)}`;
+      console.error(message);
+      ctx.withTx((tx) => {
+        pageIds.forEach((id) => recordFailure(tx, id));
+        sendFetchEvent(tx, fetch_id, {
+          tag: "previews_failed",
+          value: message,
+        });
+      });
+      return {};
+    }
+    ctx.withTx((tx) => {
+      const stored = storePreviews(tx, pageIds, previews);
+      sendFetchEvent(tx, fetch_id, {
+        tag: "fetched_previews",
+        value: { stored, missing: previews.length - stored },
+      });
+    });
     return {};
   },
 );
-
-function ingestPreviews(ctx: ProcCtx) {
-  const pages = ctx.withTx(pagesNeedingPreviews);
-  if (pages.length === 0) return;
-
-  const agent = userAgent(ctx);
-  const fetch_id = ctx.newUuidV7();
-  const pageIds = pages.map((page) => page.page_id);
-  ctx.withTx((tx) =>
-    sendFetchEvent(tx, fetch_id, {
-      tag: "fetching_previews",
-      value: { pages },
-    }),
-  );
-
-  let previews;
-  try {
-    previews = queryPreviews(ctx.http, agent, pageIds);
-  } catch (e) {
-    // Wikipedia is struggling; count the attempt and try again next time.
-    const message = `previews: ${errorMessage(e)}`;
-    console.error(message);
-    ctx.withTx((tx) => {
-      pageIds.forEach((id) => recordFailure(tx, id));
-      sendFetchEvent(tx, fetch_id, { tag: "previews_failed", value: message });
-    });
-    return;
-  }
-  ctx.withTx((tx) => {
-    const stored = storePreviews(tx, pageIds, previews);
-    sendFetchEvent(tx, fetch_id, {
-      tag: "fetched_previews",
-      value: { stored, missing: previews.length - stored },
-    });
-  });
-}
 
 // Up to a batch of the pages with live edits that need a preview. Most
 // recently edited first, so the articles clients are showing right now come

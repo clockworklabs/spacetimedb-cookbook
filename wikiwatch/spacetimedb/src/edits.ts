@@ -14,7 +14,6 @@ import spacetimedb, {
   STATUS_ID,
   schedule_expire_old_edits,
   schedule_fetch_recent_edits,
-  type ProcCtx,
   type TxCtx,
 } from "./schema";
 import { countEditsFailure, errorMessage, sendFetchEvent } from "./status";
@@ -47,66 +46,62 @@ export const fetchRecentEdits = spacetimedb.procedure(
         "fetchRecentEdits may only be run by the scheduler",
       );
     }
-    ingestRecentEdits(ctx);
+    const agent = userAgent(ctx);
+    const fetch_id = ctx.newUuidV7();
+    const start = ctx.withTx((tx) => {
+      const earliest = minus(tx.timestamp, MAX_BACKFILL);
+      const since = later(minus(cursor(tx), FETCH_OVERLAP), earliest);
+      sendFetchEvent(tx, fetch_id, { tag: "fetching_edits", value: { since } });
+      return since;
+    });
+
+    let changes;
+    try {
+      changes = queryRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
+    } catch (e) {
+      const message = `recentchanges: ${errorMessage(e)}`;
+      console.error(message);
+      ctx.withTx((tx) => {
+        countEditsFailure(tx);
+        sendFetchEvent(tx, fetch_id, { tag: "edits_failed", value: message });
+      });
+      return {};
+    }
+
+    const inserted = ctx.withTx((tx) => {
+      const status = tx.db.fetch_status.id.find(STATUS_ID);
+      if (!status) return 0;
+
+      let newest = status.cursor;
+      let count = 0;
+      for (const change of changes) {
+        newest = later(newest, change.edited_at);
+        if (tx.db.edit.rc_id.find(change.rc_id)) continue;
+        // Back-filled edits can arrive already too old to be live.
+        tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
+        count++;
+      }
+
+      tx.db.fetch_status.id.update({
+        ...status,
+        cursor: newest,
+        last_success_at: tx.timestamp,
+        consecutive_failures: 0,
+        edits_ingested: status.edits_ingested + BigInt(count),
+      });
+      sendFetchEvent(tx, fetch_id, {
+        tag: "fetched_edits",
+        value: { received: changes.length, added: count },
+      });
+      return count;
+    });
+
+    if (inserted > 0) {
+      console.info(`Ingested ${inserted} of ${changes.length} recent changes`);
+    }
     return {};
   },
 );
-
-function ingestRecentEdits(ctx: ProcCtx) {
-  const agent = userAgent(ctx);
-  const fetch_id = ctx.newUuidV7();
-  const start = ctx.withTx((tx) => {
-    const earliest = minus(tx.timestamp, MAX_BACKFILL);
-    const since = later(minus(cursor(tx), FETCH_OVERLAP), earliest);
-    sendFetchEvent(tx, fetch_id, { tag: "fetching_edits", value: { since } });
-    return since;
-  });
-
-  let changes;
-  try {
-    changes = queryRecentChanges(ctx.http, agent, start, MAX_RC_PAGES);
-  } catch (e) {
-    const message = `recentchanges: ${errorMessage(e)}`;
-    console.error(message);
-    ctx.withTx((tx) => {
-      countEditsFailure(tx);
-      sendFetchEvent(tx, fetch_id, { tag: "edits_failed", value: message });
-    });
-    return;
-  }
-
-  const inserted = ctx.withTx((tx) => {
-    const status = tx.db.fetch_status.id.find(STATUS_ID);
-    if (!status) return 0;
-
-    let newest = status.cursor;
-    let count = 0;
-    for (const change of changes) {
-      newest = later(newest, change.edited_at);
-      if (tx.db.edit.rc_id.find(change.rc_id)) continue;
-      // Back-filled edits can arrive already too old to be live.
-      tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
-      count++;
-    }
-
-    tx.db.fetch_status.id.update({
-      ...status,
-      cursor: newest,
-      last_success_at: tx.timestamp,
-      consecutive_failures: 0,
-      edits_ingested: status.edits_ingested + BigInt(count),
-    });
-    sendFetchEvent(tx, fetch_id, {
-      tag: "fetched_edits",
-      value: { received: changes.length, added: count },
-    });
-    return count;
-  });
-
-  if (inserted > 0) {
-    console.info(`Ingested ${inserted} of ${changes.length} recent changes`);
-  }
-}
 
 // The edits cursor, from the fetch_status row. A new database has no
 // row until its first fetch creates one, starting INITIAL_BACKFILL back.
