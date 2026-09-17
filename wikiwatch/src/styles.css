@@ -254,6 +254,44 @@ input:focus-visible {
   color: var(--muted);
 }
 
+/* Views as tabs, set at the size of the heading they replace. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 28px;
+}
+
+.tab {
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab.current {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+a.tab:hover {
+  color: var(--ink);
+}
+
+.section-link {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
 .legend {
   display: flex;
   gap: 14px;

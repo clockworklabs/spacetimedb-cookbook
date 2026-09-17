@@ -9,6 +9,7 @@ import {
   WINDOW_MS,
   type ReplayEdit,
 } from "../replay";
+import { ARGUMENTS_HREF, EDITS_HREF } from "../route";
 import type { LiveSet } from "../subscriptions";
 import { ArticleCard, type CardSize } from "./ArticleCard";
 import { HideBotsToggle } from "./HideBotsToggle";
@@ -106,8 +107,15 @@ export function FrontPage({
       <main className="layout">
         <section aria-labelledby="articles-heading">
           <div className="section-head">
-            <h2 id="articles-heading">Most active</h2>
-            <p>last {WINDOW_MINUTES} minutes</p>
+            {/* The front page is the first tab; the arguments page is the other. */}
+            <nav className="tabs" aria-label="Views">
+              <h2 id="articles-heading" className="tab current">
+                Most active
+              </h2>
+              <a className="tab" href={ARGUMENTS_HREF}>
+                Arguments
+              </a>
+            </nav>
             <TrailLegend />
           </div>
           {cards.length === 0 ? (
@@ -142,6 +150,9 @@ export function FrontPage({
         <aside className="rail" aria-labelledby="latest-heading">
           <div className="section-head">
             <h2 id="latest-heading">Latest edits</h2>
+            <a className="section-link" href={EDITS_HREF}>
+              Every edit →
+            </a>
           </div>
           {latest.length === 0 ? (
             <p className="empty">{emptyMessage}</p>

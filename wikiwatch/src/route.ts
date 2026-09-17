@@ -9,15 +9,16 @@ export type Route =
   | { page: "article"; pageId: bigint };
 
 export const FRONT_PAGE_HREF = "#/";
+export const EDITS_HREF = "#/edits";
+export const ARGUMENTS_HREF = "#/arguments";
 
 export function articleHref(pageId: bigint): string {
   return `#/article/${pageId}`;
 }
 
 function parseRoute(hash: string): Route {
-  // Neither is linked from anywhere: you have to know they're there.
-  if (hash === "#/edits") return { page: "edits" };
-  if (hash === "#/arguments") return { page: "arguments" };
+  if (hash === EDITS_HREF) return { page: "edits" };
+  if (hash === ARGUMENTS_HREF) return { page: "arguments" };
   const match = hash.match(/^#\/article\/(\d+)$/);
   return match
     ? { page: "article", pageId: BigInt(match[1]) }
