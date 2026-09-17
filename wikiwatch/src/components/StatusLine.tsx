@@ -34,7 +34,7 @@ export function StatusLine(props: Props) {
             : undefined
         }
       >
-        <span className="live-dot" aria-hidden="true" />
+        <LivePulse beat={props.status?.lastSuccessAt?.microsSinceUnixEpoch} />
         Live
       </p>
     );
@@ -71,4 +71,19 @@ function describe(
     ];
   }
   return [LIVE, false];
+}
+
+// Keyed on the last successful fetch, so each one remounts the trace and
+// plays its animation again.
+function LivePulse({ beat }: { beat: bigint | undefined }) {
+  return (
+    <svg
+      className="live-pulse"
+      viewBox="4 14 56 38"
+      aria-hidden="true"
+      key={String(beat)}
+    >
+      <polyline points="6,20 13,20 21,46 32,22 43,46 51,20 58,20" />
+    </svg>
+  );
 }
