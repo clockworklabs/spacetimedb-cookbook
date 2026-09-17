@@ -402,24 +402,28 @@ a.tab:hover {
   z-index: -1;
   border-radius: 3px;
   pointer-events: none;
-  background: transparent;
-  animation: heartbeat 500ms ease-in-out forwards;
+  background: var(--fresh);
+  box-shadow: inset 0 0 0 1px var(--heat);
+  opacity: 0;
+  animation: heartbeat 500ms ease-in-out;
 }
 
 .mini .heartbeat {
   inset: 0 -6px;
 }
 
+/* Only opacity and transform are animated, here and in `arrive`. The browser
+   runs those on its compositor. Animating a colour instead makes it restyle
+   and repaint the page every frame, and with edits arriving every second
+   there's always one of these running. */
 @keyframes heartbeat {
   0%,
   100% {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px transparent;
+    opacity: 0;
     transform: scale(1);
   }
   40% {
-    background: var(--fresh);
-    box-shadow: inset 0 0 0 1px var(--heat);
+    opacity: 1;
     transform: scale(1.02);
   }
 }
@@ -731,18 +735,34 @@ a.tab:hover {
   padding-block: 11px;
 }
 
-.ticker li.fresh,
-.history li.fresh,
-.stream li.fresh {
+/* A new row's highlight is a layer behind it that fades out, rather than a
+   fading background colour (see `heartbeat`). */
+.ticker li,
+.history li,
+.stream li {
+  position: relative;
+  isolation: isolate;
+}
+
+.ticker li.fresh::before,
+.history li.fresh::before,
+.stream li.fresh::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--fresh);
+  opacity: 0;
   animation: arrive 2.5s ease-out;
 }
 
 @keyframes arrive {
   from {
-    background: var(--fresh);
+    opacity: 1;
   }
   to {
-    background: transparent;
+    opacity: 0;
   }
 }
 
@@ -1594,9 +1614,9 @@ a.entry-user:hover {
 @media (prefers-reduced-motion: reduce) {
   .rally-path,
   .rally-shot,
-  .ticker li.fresh,
-  .history li.fresh,
-  .stream li.fresh,
+  .ticker li.fresh::before,
+  .history li.fresh::before,
+  .stream li.fresh::before,
   .live-pulse polyline,
   .heartbeat,
   .toast,
