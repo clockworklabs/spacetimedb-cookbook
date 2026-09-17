@@ -40,6 +40,7 @@ export const Edit = __t.object("Edit", {
   tags: __t.array(__t.string()),
   editedAt: __t.timestamp(),
   live: __t.bool(),
+  isRevert: __t.bool(),
 });
 export type Edit = __Infer<typeof Edit>;
 

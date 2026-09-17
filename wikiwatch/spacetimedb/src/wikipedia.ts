@@ -30,6 +30,10 @@ const MAX_LAG_SECONDS = "5";
 
 const RC_PAGE_SIZE = "500";
 
+// MediaWiki tags an edit that undoes earlier edits when it's saved. (It also
+// tags the undone edit `mw-reverted`, but only later, after we've fetched it.)
+const REVERT_TAGS = new Set(["mw-undo", "mw-rollback", "mw-manual-revert"]);
+
 export const PREVIEW_BATCH_SIZE = 20; // `extracts` caps at 20 pages per request
 
 type Http = ProcCtx["http"];
@@ -184,7 +188,12 @@ function parseRecentChange(rc: RawRecentChange): RecentChange {
     comment: rc.comment ?? "",
     tags: rc.tags ?? [],
     edited_at: Timestamp.fromDate(new Date(rc.timestamp)),
+    is_revert: isRevert(rc.tags ?? []),
   };
+}
+
+export function isRevert(tags: readonly string[]): boolean {
+  return tags.some((tag) => REVERT_TAGS.has(tag));
 }
 
 function parsePage(page: RawPage): PagePreview[] {

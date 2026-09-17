@@ -80,6 +80,12 @@ const tablesSchema = __schema({
           columns: ["editedAt"],
         },
         {
+          accessor: "is_revert",
+          name: "edit_is_revert_idx_btree",
+          algorithm: "btree",
+          columns: ["isRevert"],
+        },
+        {
           accessor: "live",
           name: "edit_live_idx_btree",
           algorithm: "btree",

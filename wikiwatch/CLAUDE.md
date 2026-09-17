@@ -113,7 +113,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
 - `#/edits` (`EditStream.tsx`) is the latest 100 live edits, shown as soon as they arrive, linked from
   the front page's Latest edits heading. `#/arguments` (`ArgumentPage.tsx`) is the front page's second
-  tab, and subscribes to every edit only while it's open.
+  tab, and subscribes to every revert (`edit WHERE is_revert = true`) only while it's open. The module
+  sets `is_revert` from the edit's tags when it ingests it.
 
 ### Constants that must change together
 
