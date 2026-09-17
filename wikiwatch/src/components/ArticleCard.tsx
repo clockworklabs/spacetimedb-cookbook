@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import type { ArticlePreview } from "../module_bindings/types";
-import type { ReplayEdit } from "../replay";
+import { WINDOW_MS, type ReplayEdit } from "../replay";
 import { ago, formatNumber, plural } from "../format";
 import { articleHref } from "../route";
 import { EditTrail } from "./EditTrail";
@@ -124,7 +124,7 @@ export function ArticleCard({
           <figure className="card-trail">
             <EditTrail edits={edits} clock={clock} />
             <figcaption aria-hidden="true">
-              <span>30 min ago</span>
+              <span>{WINDOW_MS / 60_000} min ago</span>
               <span>now</span>
             </figcaption>
           </figure>

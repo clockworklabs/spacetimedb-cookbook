@@ -23,7 +23,7 @@ import { queryRecentChanges, userAgent } from "./wikipedia";
 // How long an edit stays live after it's made. Aged edits leave at the next
 // expiry run, so a live edit can be up to LIVE_FOR + EXPIRE_INTERVAL
 // (schedules.ts) old.
-const LIVE_FOR = 30n * MINUTE;
+const LIVE_FOR = 15n * MINUTE;
 
 // Recent changes can appear in the API slightly after their timestamp, so
 // each fetch re-reads this much before the cursor. rc_id dedupes the overlap.
