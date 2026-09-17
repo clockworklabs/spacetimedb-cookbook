@@ -6,3 +6,11 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all procedure arg schemas
+import * as RefetchArticlePreviewProcedure from "../refetch_article_preview_procedure";
+
+export type RefetchArticlePreviewArgs = __Infer<
+  typeof RefetchArticlePreviewProcedure.params
+>;
+export type RefetchArticlePreviewResult = __Infer<
+  typeof RefetchArticlePreviewProcedure.returnType
+>;

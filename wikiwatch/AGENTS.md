@@ -66,7 +66,7 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   scheduled reducers.
 - Every scheduled export rejects callers other than the scheduler with
   `ctx.sender.equals(ctx.databaseIdentity)`. Any client can call a reducer or procedure, so new
-  scheduled exports need the same guard. Admin reducers (`updateSchedulers`) check `ctx.sender`
+  scheduled exports need the same guard. Admin exports (`updateSchedulers`, `refetchArticlePreview`) check `ctx.sender`
   against the `admin` flag in the private `user` table instead, which `init` seeds with the
   publisher's identity.
 - **`init` does not run again on republish, and nothing updates timers automatically.**
@@ -78,7 +78,8 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
   singleton ids and the `TxCtx`/`ProcCtx` context types. Define new tables and database types there.
 - There's one file per process, and each holds its scheduled export and its logic: `edits.ts`
   (`fetchRecentEdits` and `expireOldEdits`), `previews.ts` (`fetchArticlePreviews`) and
-  `history.ts` (`deleteOldHistory`). `status.ts` is the fetchers' reporting. `wikipedia.ts` is the
+  `history.ts` (`deleteOldHistory`). `previews.ts` also holds `refetchArticlePreview`, which an admin calls
+  to fetch one page's preview now. `status.ts` is the fetchers' reporting. `wikipedia.ts` is the
   MediaWiki API client. `time.ts` does timestamp arithmetic in bigint microseconds.
 - `index.ts` is the entry. It holds `init` and re-exports each reducer and procedure. SpacetimeDB registers
   every named export of the entry and throws on anything that isn't a hook, reducer or procedure, so
@@ -129,6 +130,11 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - A publish can't point a timer table at a different reducer or procedure, which includes renaming its
   export: "Removing schedules is not yet implemented". The migration plan looks fine, so
   `--delete-data=on-conflict` doesn't help. Only `--delete-data=always` gets past it.
+- A publish can't change a column's type, even in an empty table, including adding a field to a
+  `t.object` stored in one. It can drop an empty table and add one. To replace a table's schema without
+  wiping the database: stop anything writing to it (delete a scheduled writer's timer row), empty it,
+  publish the new code with the table renamed by `table({ name: "<table>_migrating", ... })`, publish
+  again without the rename, then call `update_schedulers`. Both publishes disconnect every client.
 - A publish won't remove a table that still has rows. Empty it first, as the owner, with
   `spacetime sql ... "DELETE FROM <table>"`, and publish before anything writes to it again.
 - `URLSearchParams` isn't guaranteed in the module runtime. `wikipedia.ts` encodes query strings by

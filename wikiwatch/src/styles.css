@@ -1223,15 +1223,40 @@ a.entry-user:hover {
 
 /* Wikipedia sends 320px thumbnails, so never stretch them past that. */
 .article-image {
-  display: block;
   flex-shrink: 0;
   width: 220px;
+}
+
+.article-image img {
+  display: block;
+  width: 100%;
   height: auto;
   aspect-ratio: 4 / 5;
   object-fit: cover;
   object-position: top;
   border-radius: 2px;
   background: var(--rule-soft);
+}
+
+.article-image figcaption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  /* Some authors run to a sentence. The file page has them in full. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.article-image figcaption a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.article-image figcaption a:hover {
+  text-decoration: underline;
 }
 
 .article-text {

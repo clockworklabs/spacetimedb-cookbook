@@ -27,8 +27,8 @@ It shows:
   removals drop below it. Alongside are a per-minute pulse of edit volume, a ticker of the latest
   edits, and a toggle to hide bot edits. The page replays edits 30 seconds behind real time, which turns
   the fetchers' 15-second bursts back into a steady stream.
-- **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, and every edit to
-  it that the server still holds, as soon as each one arrives.
+- **Article pages** (`#/article/<page id>`) show an article's summary and thumbnail, credited with its
+  author and licence, and every edit to it that the server still holds, as soon as each one arrives.
 - **The edit stream** (`#/edits`) shows the latest 100 edits, one line each, newest first, as soon as
   each one arrives.
 - **Arguments** (`#/arguments`) finds pages where two editors keep reverting each other over the last
@@ -207,28 +207,28 @@ private, so clients can't subscribe to it, and only the database owner can read 
 
 ### The module (`spacetimedb/src`)
 
-| File           | What it does                                                                                   |
-| -------------- | ---------------------------------------------------------------------------------------------- |
-| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                                     |
-| `schema.ts`    | The tables, and the types stored in them                                                       |
-| `edits.ts`     | `fetchRecentEdits` and `expireOldEdits`, which bring edits in and age them out of the live set |
-| `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds             |
-| `history.ts`   | `deleteOldHistory`, which deletes edits and previews older than a day                          |
-| `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them        |
-| `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_event`             |
-| `wikipedia.ts` | A small client for the MediaWiki Action API                                                    |
-| `time.ts`      | Timestamp arithmetic                                                                           |
+| File           | What it does                                                                                                                                    |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`     | The entry: `init`, and re-exports of the scheduled exports                                                                                      |
+| `schema.ts`    | The tables, and the types stored in them                                                                                                        |
+| `edits.ts`     | `fetchRecentEdits` and `expireOldEdits`, which bring edits in and age them out of the live set                                                  |
+| `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds, and `refetchArticlePreview`, an admin's refetch of one page |
+| `history.ts`   | `deleteOldHistory`, which deletes edits and previews older than a day                                                                           |
+| `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them                                                         |
+| `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_event`                                                              |
+| `wikipedia.ts` | A small client for the MediaWiki Action API                                                                                                     |
+| `time.ts`      | Timestamp arithmetic                                                                                                                            |
 
-| Table                                    | Visibility   | Holds                                                    |
-| ---------------------------------------- | ------------ | -------------------------------------------------------- |
-| `edit`                                   | public       | One row per recent change, keyed by Wikipedia's `rcid`   |
-| `article_preview`                        | public       | Each article's title, description, summary and thumbnail |
-| `fetch_status`                           | public       | The edits cursor, and the fetchers' health               |
-| `fetch_event`                            | public event | The start and end of each fetch, for the toasts          |
-| `preview_failure`                        | private      | Articles Wikipedia didn't return a preview for           |
-| `settings`                               | private      | The contact sent to Wikipedia                            |
-| `user`                                   | private      | Who may call `updateSchedulers`, by their `admin` flag   |
-| `schedule_*`                             | private      | The schedules                                            |
+| Table             | Visibility   | Holds                                                                                 |
+| ----------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `edit`            | public       | One row per recent change, keyed by Wikipedia's `rcid`                                |
+| `article_preview` | public       | Each article's title, description, summary and thumbnail, with the thumbnail's credit |
+| `fetch_status`    | public       | The edits cursor, and the fetchers' health                                            |
+| `fetch_event`     | public event | The start and end of each fetch, for the toasts                                       |
+| `preview_failure` | private      | Articles Wikipedia didn't return a preview for                                        |
+| `settings`        | private      | The contact sent to Wikipedia                                                         |
+| `user`            | private      | Who may call `updateSchedulers` and `refetchArticlePreview`, by their `admin` flag    |
+| `schedule_*`      | private      | The schedules                                                                         |
 
 ### The client (`src`)
 

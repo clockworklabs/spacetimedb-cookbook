@@ -9,7 +9,7 @@ import { applySchedulers } from "./schedules";
 export default spacetimedb;
 
 export { expireOldEdits, fetchRecentEdits } from "./edits";
-export { fetchArticlePreviews } from "./previews";
+export { fetchArticlePreviews, refetchArticlePreview } from "./previews";
 export { deleteOldHistory } from "./history";
 export { updateSchedulers } from "./schedules";
 

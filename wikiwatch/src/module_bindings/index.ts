@@ -37,6 +37,7 @@ import {
 import UpdateSchedulersReducer from "./update_schedulers_reducer";
 
 // Import all procedure arg schemas
+import * as RefetchArticlePreviewProcedure from "./refetch_article_preview_procedure";
 
 // Import all table schema definitions
 import ArticlePreviewRow from "./article_preview_table";
@@ -144,7 +145,13 @@ const reducersSchema = __reducers(
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
-const proceduresSchema = __procedures();
+const proceduresSchema = __procedures(
+  __procedureSchema(
+    "refetch_article_preview",
+    RefetchArticlePreviewProcedure.params,
+    RefetchArticlePreviewProcedure.returnType,
+  ),
+);
 
 type __SchemaWithTableAccessorAliases = Omit<
   typeof tablesSchema.schemaType,

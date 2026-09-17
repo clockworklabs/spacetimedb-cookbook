@@ -1,6 +1,7 @@
 // A small client for the parts of the MediaWiki Action API we need.
 // https://www.mediawiki.org/wiki/API:RecentChanges
 // https://www.mediawiki.org/wiki/API:Query (prop=extracts|pageimages|description)
+// https://www.mediawiki.org/wiki/API:Imageinfo (iiprop=extmetadata)
 
 import { TimeDuration, Timestamp } from "spacetimedb";
 import { SETTINGS_ID, type Edit, type ProcCtx, type Thumbnail } from "./schema";
@@ -82,6 +83,13 @@ type RawPage = {
   description?: string;
   extract?: string;
   thumbnail?: { source: string; width: number; height: number };
+  // The image's file name, with underscores for spaces.
+  pageimage?: string;
+  // Only on the File: pages of an imageinfo query.
+  imageinfo?: {
+    descriptionurl: string;
+    extmetadata?: Record<string, { value: string } | undefined>;
+  }[];
 };
 
 type RawResponse = {
@@ -89,6 +97,8 @@ type RawResponse = {
   continue?: Params;
   query?: { recentchanges?: RawRecentChange[]; pages?: RawPage[] };
 };
+
+type ImageCredit = Omit<Thumbnail, "url" | "width" | "height">;
 
 // Queries article edits and page creations made at or after `start`, oldest
 // first, following continuation for at most `maxPages` requests. When the cap
@@ -122,7 +132,8 @@ export function queryRecentChanges(
   return changes;
 }
 
-// Queries hover-card data for up to PREVIEW_BATCH_SIZE pages in one request.
+// Queries hover-card data for up to PREVIEW_BATCH_SIZE pages, in one request
+// for the pages and one for their images' credits.
 export function queryPreviews(
   http: Http,
   agent: string,
@@ -139,11 +150,51 @@ export function queryPreviews(
     explaintext: "1",
     exsentences: "3",
     exlimit: String(PREVIEW_BATCH_SIZE),
-    piprop: "thumbnail",
+    piprop: "thumbnail|name",
     pithumbsize: "320",
     pilimit: String(PREVIEW_BATCH_SIZE),
+    // The default, "free", silently drops non-free images: film posters,
+    // album and comic covers, logos. About one article image in six is one.
+    pilicense: "any",
   });
-  return (body.query?.pages ?? []).flatMap(parsePage);
+  const pages = body.query?.pages ?? [];
+  const credits = queryImageCredits(
+    http,
+    agent,
+    pages.flatMap((page) => (page.thumbnail && page.pageimage) || []),
+  );
+  return pages.flatMap((page) => parsePage(page, credits));
+}
+
+// Each image's licence and author, keyed by file name as pageimages gives it.
+// An image whose licence Wikipedia doesn't state is left out.
+function queryImageCredits(
+  http: Http,
+  agent: string,
+  fileNames: string[],
+): Map<string, ImageCredit> {
+  const credits = new Map<string, ImageCredit>();
+  if (fileNames.length === 0) return credits;
+  const body = apiGet(http, agent, {
+    action: "query",
+    prop: "imageinfo",
+    titles: fileNames.map((name) => `File:${name}`).join("|"),
+    iiprop: "url|extmetadata",
+    iiextmetadatafilter: "LicenseShortName|Artist",
+  });
+  for (const page of body.query?.pages ?? []) {
+    const info = page.imageinfo?.[0];
+    const license = info?.extmetadata?.LicenseShortName?.value;
+    if (!page.title || !info || !license) continue;
+    // Titles come back as "File:Some name.jpg", with spaces.
+    const name = page.title.replace(/^File:/, "").replace(/ /g, "_");
+    credits.set(name, {
+      file_page_url: info.descriptionurl,
+      license,
+      artist: plainText(info.extmetadata?.Artist?.value ?? "") || undefined,
+    });
+  }
+  return credits;
 }
 
 function apiGet(http: Http, agent: string, params: Params): RawResponse {
@@ -196,10 +247,14 @@ export function isRevert(tags: readonly string[]): boolean {
   return tags.some((tag) => REVERT_TAGS.has(tag));
 }
 
-function parsePage(page: RawPage): PagePreview[] {
+function parsePage(
+  page: RawPage,
+  credits: Map<string, ImageCredit>,
+): PagePreview[] {
   if (page.pageid === undefined) return [];
   const page_id = BigInt(page.pageid);
   if (page.missing || page.invalid) return [{ page_id, missing: true }];
+  const credit = page.pageimage && credits.get(page.pageimage);
   return [
     {
       page_id,
@@ -207,13 +262,35 @@ function parsePage(page: RawPage): PagePreview[] {
       title: page.title ?? "",
       description: page.description,
       summary: page.extract ?? "",
-      thumbnail: page.thumbnail && {
-        url: page.thumbnail.source,
-        width: page.thumbnail.width,
-        height: page.thumbnail.height,
-      },
+      // Only images we can credit.
+      thumbnail:
+        page.thumbnail && credit
+          ? {
+              url: page.thumbnail.source,
+              width: page.thumbnail.width,
+              height: page.thumbnail.height,
+              ...credit,
+            }
+          : undefined,
     },
   ];
+}
+
+// Wikipedia's extmetadata values are HTML fragments, such as a link to the
+// artist's user page. Some repeat their text in a hidden element.
+function plainText(html: string): string {
+  return html
+    .replace(/<(\w+)[^>]*display:\s*none[^>]*>.*?<\/\1>/gs, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;|&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // MediaWiki accepts ISO 8601, but not with fractional seconds.

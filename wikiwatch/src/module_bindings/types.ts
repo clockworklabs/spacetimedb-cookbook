@@ -155,6 +155,9 @@ export const Thumbnail = __t.object("Thumbnail", {
   url: __t.string(),
   width: __t.u32(),
   height: __t.u32(),
+  filePageUrl: __t.string(),
+  license: __t.string(),
+  artist: __t.option(__t.string()),
 });
 export type Thumbnail = __Infer<typeof Thumbnail>;
 
