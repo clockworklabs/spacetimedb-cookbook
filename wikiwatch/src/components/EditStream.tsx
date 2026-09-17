@@ -7,7 +7,8 @@ import {
   type ReplayEdit,
 } from "../replay";
 import { deltaClass, formatClock, formatDelta, parseComment } from "../format";
-import { contributionsUrl, diffUrl } from "../wikipedia";
+import { diffUrl } from "../wikipedia";
+import { EditFlags, EditUser } from "./EditMeta";
 import type { LiveSet } from "../subscriptions";
 import { articleHref } from "../route";
 import { HideBotsToggle } from "./HideBotsToggle";
@@ -98,11 +99,6 @@ function Stream({ edits, held }: { edits: ReplayEdit[]; held: ReplayEdit[] }) {
       {edits.map(({ edit, key, at }) => {
         const bytes = byteDelta(edit);
         const { section, text } = parseComment(edit.comment);
-        const flags = [
-          edit.isNew && "created the article",
-          edit.isBot && "bot",
-          edit.isMinor && "minor",
-        ].filter(Boolean);
 
         return (
           <li key={key} className={initial.has(key) ? undefined : "fresh"}>
@@ -119,23 +115,8 @@ function Stream({ edits, held }: { edits: ReplayEdit[]; held: ReplayEdit[] }) {
               {edit.title}
             </a>
             <p className="entry-meta">
-              {edit.userName ? (
-                <a
-                  className="entry-user"
-                  href={contributionsUrl(edit.userName)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {edit.userName}
-                </a>
-              ) : (
-                <span className="entry-user">Hidden user</span>
-              )}
-              {flags.map((flag) => (
-                <span key={String(flag)} className="entry-flag">
-                  {flag}
-                </span>
-              ))}
+              <EditUser edit={edit} />
+              <EditFlags edit={edit} />
               {section && <span className="entry-section">§ {section}</span>}
               {text && <span className="entry-comment">{text}</span>}
             </p>

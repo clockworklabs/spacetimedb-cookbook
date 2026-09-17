@@ -8,7 +8,8 @@ import {
   formatDelta,
   parseComment,
 } from "../format";
-import { contributionsUrl, diffUrl } from "../wikipedia";
+import { diffUrl } from "../wikipedia";
+import { EditFlags, EditUser } from "./EditMeta";
 
 type Props = {
   // Oldest first.
@@ -32,13 +33,6 @@ export const EditHistory = memo(function EditHistory({
       {[...edits].reverse().map(({ edit, key, at }) => {
         const bytes = byteDelta(edit);
         const { section, text } = parseComment(edit.comment);
-        const flags = [
-          edit.isNew && "created the article",
-          edit.isBot && "bot",
-          edit.isMinor && "minor",
-          edit.isTemp && "temporary account",
-          edit.isRedirect && "redirect",
-        ].filter(Boolean);
 
         return (
           <li key={key} className={initial.has(key) ? undefined : "fresh"}>
@@ -61,23 +55,8 @@ export const EditHistory = memo(function EditHistory({
                 </p>
               )}
               <p className="entry-meta">
-                {edit.userName ? (
-                  <a
-                    className="entry-user"
-                    href={contributionsUrl(edit.userName)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {edit.userName}
-                  </a>
-                ) : (
-                  <span className="entry-user">Hidden user</span>
-                )}
-                {flags.map((flag) => (
-                  <span key={String(flag)} className="entry-flag">
-                    {flag}
-                  </span>
-                ))}
+                <EditUser edit={edit} />
+                <EditFlags edit={edit} all />
                 {edit.title !== title && <span>as “{edit.title}”</span>}
                 {displayTags(edit.tags).map((tag) => (
                   <span key={tag}>{tag}</span>

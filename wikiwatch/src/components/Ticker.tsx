@@ -2,6 +2,7 @@ import { byteDelta, type ReplayEdit } from "../replay";
 import { deltaClass, formatClock, formatDelta, parseComment } from "../format";
 import { diffUrl } from "../wikipedia";
 import { articleHref } from "../route";
+import { EditFlags } from "./EditMeta";
 
 // How long a newly revealed edit stays highlighted.
 const FRESH_MS = 2500;
@@ -18,11 +19,6 @@ export function Ticker({
       {edits.map(({ edit, key, at, revealAt }) => {
         const bytes = byteDelta(edit);
         const { section, text } = parseComment(edit.comment);
-        const flags = [
-          edit.isNew && "created the article",
-          edit.isBot && "bot",
-          edit.isMinor && "minor",
-        ].filter(Boolean);
 
         return (
           <li
@@ -50,11 +46,7 @@ export function Ticker({
                 <span className="entry-user">
                   {edit.userName || "Hidden user"}
                 </span>
-                {flags.map((flag) => (
-                  <span key={String(flag)} className="entry-flag">
-                    {flag}
-                  </span>
-                ))}
+                <EditFlags edit={edit} />
                 {section && <span className="entry-section">§ {section}</span>}
                 {text && <span className="entry-comment">{text}</span>}
               </p>
