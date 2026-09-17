@@ -4,6 +4,7 @@
 
 import { Range, SenderError } from "spacetimedb/server";
 import spacetimedb, { schedule_delete_old_history, type TxCtx } from "./schema";
+import { markArguments } from "./arguments";
 import { HOUR, minus } from "./time";
 
 // How much history to keep.
@@ -27,6 +28,11 @@ export const deleteOldHistory = spacetimedb.reducer(
     for (const row of expired) {
       ctx.db.edit.rc_id.delete(row.rc_id);
     }
+    // A page that's lost a revert may have dropped out of being an argument.
+    markArguments(
+      ctx,
+      new Set(expired.filter((row) => row.is_revert).map((row) => row.page_id)),
+    );
     const deleted = deleteOrphanedPreviews(
       ctx,
       new Set(expired.map((row) => row.page_id)),

@@ -6,6 +6,8 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import RemarkArgumentsReducer from "../remark_arguments_reducer";
 import UpdateSchedulersReducer from "../update_schedulers_reducer";
 
+export type RemarkArgumentsParams = __Infer<typeof RemarkArgumentsReducer>;
 export type UpdateSchedulersParams = __Infer<typeof UpdateSchedulersReducer>;

@@ -40,8 +40,9 @@ export const PREVIEW_BATCH_SIZE = 20; // `extracts` caps at 20 pages per request
 type Http = ProcCtx["http"];
 type Params = Record<string, string>;
 
-// An edit row, less the live flag, which depends on when it's ingested.
-export type RecentChange = Omit<Edit, "live">;
+// An edit row, less the two flags the module works out for itself: live
+// depends on when the edit is ingested, in_argument on its page's other edits.
+export type RecentChange = Omit<Edit, "live" | "in_argument">;
 
 export type PagePreview =
   | { page_id: bigint; missing: true }

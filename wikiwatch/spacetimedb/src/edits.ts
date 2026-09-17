@@ -16,6 +16,7 @@ import spacetimedb, {
   schedule_fetch_recent_edits,
   type TxCtx,
 } from "./schema";
+import { markArguments } from "./arguments";
 import { countEditsFailure, errorMessage, sendFetchEvent } from "./status";
 import { HOUR, MINUTE, compare, later, minus } from "./time";
 import { queryRecentChanges, userAgent } from "./wikipedia";
@@ -74,13 +75,21 @@ export const fetchRecentEdits = spacetimedb.procedure(
 
       let newest = status.cursor;
       let count = 0;
+      // The pages that gained a revert, and so might now be an argument.
+      const argued = new Set<bigint>();
       for (const change of changes) {
         newest = later(newest, change.edited_at);
         if (tx.db.edit.rc_id.find(change.rc_id)) continue;
         // Back-filled edits can arrive already too old to be live.
-        tx.db.edit.insert({ ...change, live: isLive(tx, change.edited_at) });
+        tx.db.edit.insert({
+          ...change,
+          live: isLive(tx, change.edited_at),
+          in_argument: false,
+        });
+        if (change.is_revert) argued.add(change.page_id);
         count++;
       }
+      markArguments(tx, argued);
 
       tx.db.fetch_status.id.update({
         ...status,

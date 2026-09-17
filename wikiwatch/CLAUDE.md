@@ -55,6 +55,14 @@ and reads `wikiwatch-dev` as the reducer's name:
 spacetime call --no-config --server local wikiwatch-dev update_schedulers
 ```
 
+Likewise, a republish doesn't recompute the `in_argument` flag. After changing
+`MIN_REVERTS_PER_SIDE` in `spacetimedb/src/arguments.ts`, or publishing the column for the first time,
+an admin recomputes it across the database:
+
+```bash
+spacetime call --no-config --server local wikiwatch-dev remark_arguments
+```
+
 `scripts/set-contact.sh <db> <server>` stores the Wikimedia User-Agent contact in the private
 `settings` table. The contact is personal data, so it must never go in source code.
 
@@ -83,8 +91,10 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - There's one file per process, and each holds its scheduled export and its logic: `edits.ts`
   (`fetchRecentEdits` and `expireOldEdits`), `previews.ts` (`fetchArticlePreviews`) and
   `history.ts` (`deleteOldHistory`). `previews.ts` also holds `refetchArticlePreview`, which an admin calls
-  to fetch one page's preview now. `status.ts` is the fetchers' reporting. `wikipedia.ts` is the
-  MediaWiki API client. `time.ts` does timestamp arithmetic in bigint microseconds.
+  to fetch one page's preview now. `arguments.ts` isn't a process: it holds `markArguments`, which
+  `edits.ts` and `history.ts` call, and the `remarkArguments` admin reducer. `status.ts` is the
+  fetchers' reporting. `wikipedia.ts` is the MediaWiki API client. `time.ts` does timestamp
+  arithmetic in bigint microseconds.
 - `index.ts` is the entry. It holds `init` and re-exports each reducer and procedure. SpacetimeDB registers
   every named export of the entry and throws on anything that isn't a hook, reducer or procedure, so
   re-export only those, by name, never with `export *`.
@@ -114,8 +124,17 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
 - `#/edits` (`EditStream.tsx`) is the latest 100 live edits, shown as soon as they arrive, linked from
   the front page's Latest edits heading. `#/arguments` (`ArgumentPage.tsx`) is the front page's second
-  tab, and subscribes to every revert (`edit WHERE is_revert = true`) only while it's open. The module
-  sets `is_revert` from the edit's tags when it ingests it.
+  tab, and subscribes only while it's open, since these rows reach back a day rather than 15 minutes.
+  The module sets `is_revert` from the edit's tags when it ingests it.
+- **Arguments are marked server-side, the same way the live set is.** A page is an argument when two
+  editors have each reverted it `MIN_REVERTS_PER_SIDE` times, which is a fact about the page, so
+  `arguments.ts` writes it onto each of the page's reverts as `in_argument` and clients subscribe to
+  `edit WHERE in_argument = true`. Nearly every revert is a one-off, so that's a few hundred rows
+  instead of a few thousand. Qualification reads only `is_revert`, `user_name` and `is_bot`, none of
+  which change after ingest, so a page's answer can only change when it gains a revert (`edits.ts`) or
+  loses an aged one (`history.ts`); both call `markArguments` with the pages they touched, in the same
+  transaction. `expireOldEdits` rewriting `live` on these rows doesn't affect it. `markArguments` skips
+  rows whose flag is already right, because writing a subscribed row re-sends it.
 
 ### Constants that must change together
 
@@ -123,6 +142,9 @@ spacetime call --no-config --server local wikiwatch-dev update_schedulers
 - `RETENTION` (`spacetimedb/src/history.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
 - `RECENT_EDITS_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
   must stay several fetches long
+- `MIN_REVERTS_PER_SIDE` (`spacetimedb/src/arguments.ts`) ↔ `MIN_REVERTS_PER_SIDE` (`src/arguments.ts`).
+  The module decides which pages qualify; the client uses the same number to tell the two sides from
+  everyone else. Changing it needs a `remark_arguments` call (see Commands).
 
 ### Gotchas seen in this codebase
 

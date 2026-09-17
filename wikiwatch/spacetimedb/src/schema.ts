@@ -39,9 +39,13 @@ export const edit = table(
     // Whether the edit is in the live set that clients subscribe to: made
     // within LIVE_FOR, give or take an expiry run (see edits.ts).
     live: t.bool().default(false).index("btree"),
-    // Whether the edit undoes earlier edits, going by its tags. Indexed so the
-    // arguments page can subscribe to reverts alone.
+    // Whether the edit undoes earlier edits, going by its tags.
     is_revert: t.bool().default(false).index("btree"),
+    // Whether this revert belongs to a page that's being argued over: one
+    // where two editors have each reverted repeatedly (see arguments.ts). A
+    // page-level fact held on each of its reverts, so the arguments page
+    // subscribes to just those, not to every revert of the last 24 hours.
+    in_argument: t.bool().default(false).index("btree"),
   },
 );
 export type Edit = Infer<typeof edit.rowType>;

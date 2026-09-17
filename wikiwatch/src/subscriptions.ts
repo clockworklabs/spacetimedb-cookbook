@@ -79,12 +79,15 @@ export function useArticle(pageId: bigint): Article {
   return { edits, preview: previews[0], isReady: editsReady && previewReady };
 }
 
-// Pages being argued over, from every revert the server still holds. That's a
-// day of reverts, far more than the live set, so only subscribe while the
-// arguments page is open.
+// Pages being argued over. The server marks the reverts that belong to one
+// (in_argument, see spacetimedb/src/arguments.ts), which is most of a day's
+// reverts thrown away before they reach the wire: nearly every revert is a
+// one-off, and only a few dozen pages are actually being fought over. Still
+// only subscribe while the arguments page is open, since these rows reach much
+// further back than the live set.
 export function useArguments(): { arguments: Argument[]; isReady: boolean } {
   const [reverts, isReady] = useTable(
-    tables.edit.where((row) => row.isRevert.eq(true)),
+    tables.edit.where((row) => row.inArgument.eq(true)),
   );
   const found = useMemo(() => findArguments(reverts), [reverts]);
   return { arguments: found, isReady };

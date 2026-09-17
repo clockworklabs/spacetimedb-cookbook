@@ -41,6 +41,7 @@ export const Edit = __t.object("Edit", {
   editedAt: __t.timestamp(),
   live: __t.bool(),
   isRevert: __t.bool(),
+  inArgument: __t.bool(),
 });
 export type Edit = __Infer<typeof Edit>;
 

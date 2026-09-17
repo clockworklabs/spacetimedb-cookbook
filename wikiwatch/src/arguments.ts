@@ -2,7 +2,10 @@ import type { Edit } from "./module_bindings/types";
 import { toMillis } from "./replay";
 
 // A side has to revert at least this often to count as arguing, which leaves
-// out a patroller reverting a vandal who never reverts back.
+// out a patroller reverting a vandal who never reverts back. The server
+// decides which pages are arguments by the same number
+// (MIN_REVERTS_PER_SIDE in spacetimedb/src/arguments.ts), so the two have to
+// change together; this copy tells the two sides from everyone else.
 const MIN_REVERTS_PER_SIDE = 2;
 
 export type Revert = { edit: Edit; at: number };
@@ -22,6 +25,12 @@ export type Argument = {
 
 // Pages where at least two editors, not bots, have each reverted the page
 // repeatedly, from a set of reverts. Most recently fought over first.
+//
+// The server has already kept only the reverts of pages that qualify, so this
+// groups a few hundred rows rather than a few thousand. The work that's left is
+// naming the two sides, which the rally needs anyway; the test that there are
+// two of them is then a safety net, for a database whose flags predate the
+// column or the current threshold (see remarkArguments).
 export function findArguments(reverts: Iterable<Edit>): Argument[] {
   const byPage = new Map<string, Revert[]>();
   for (const edit of reverts) {

@@ -13,7 +13,8 @@ It shows:
 - [HTTP requests from a scheduled procedure](#http-requests-from-a-scheduled-procedure), with the work
   in progress kept in tables
 - [A live set that ages on the server](#a-live-set-that-ages-on-the-server), so old rows leave client
-  caches without anyone resubscribing
+  caches without anyone resubscribing, and [the same flag trick for a query SQL can't
+  express](#the-same-trick-for-something-sql-cant-express)
 - [A subscription join](#previews-through-a-subscription-join) that sends each article's preview along
   with its live edits
 - [An event table](#progress-through-an-event-table) that reports what the fetchers are doing, without
@@ -148,6 +149,47 @@ The server keeps 24 hours of edits, and `deleteOldHistory` deletes older ones ev
 subscribe to all of an article's edits, live or not. Subscriptions share one client cache, but `useTable`
 filters it by each query, so the front page never sees those older edits.
 
+#### The same trick for something SQL can't express
+
+The arguments page wants the pages where two editors have each reverted the article at least twice. That's
+an aggregate over a group, and neither a subscription query nor a query-builder view can say it: views get
+`where` and semijoins, and a *procedural* view can't scan a table at all — it's restricted to indexed
+lookups, because SpacetimeDB has to re-run the whole function whenever anything it read changes.
+
+So the obvious thing is to subscribe to every revert and work it out on the client. That's correct, and
+wasteful: of about 5,000 reverts in a day, only 30-odd pages are really being fought over, so **95% of
+what the page downloads is thrown away**.
+
+The fix is the `live` flag again. Being an argument is a fact about a *page*, so the module writes it onto
+each of that page's reverts as `in_argument`, and the client subscribes to those alone:
+
+```ts
+useTable(tables.edit.where((row) => row.inArgument.eq(true)));
+```
+
+What makes this cheap is that qualification reads only `is_revert`, `user_name` and `is_bot`, and none of
+them ever change after an edit is ingested. So a page's answer can only change when it *gains* a revert or
+*loses* an aged one — two places that already know which pages they touched, and each recomputes just
+those in the same transaction (`spacetimedb/src/arguments.ts`):
+
+```ts
+const reverts = [...tx.db.edit.page_id.filter(page_id)].filter((e) => e.is_revert);
+const arguing = qualifies(reverts);
+for (const edit of reverts) {
+  if (edit.in_argument === arguing) continue; // writing a subscribed row re-sends it
+  tx.db.edit.rc_id.update({ ...edit, in_argument: arguing });
+}
+```
+
+A page holds at most a few dozen edits of the last day, so the index read is small. Note the skip: a row
+that's written is a row every subscriber receives again, so leave the ones that already say the right
+thing alone.
+
+The catch with deriving a column is the rows that predate it. `.default(false)` lets the column migrate,
+but it also means every existing revert reads as not-arguing, and changing the threshold leaves every flag
+stale. So there's an admin reducer, `remarkArguments`, that recomputes the lot — a reducer *can* iterate a
+table, which is exactly the freedom the view didn't have.
+
 ### Previews through a subscription join
 
 Each card on the front page needs its article's preview. Rather than subscribe to a day's worth of
@@ -214,6 +256,7 @@ private, so clients can't subscribe to it, and only the database owner can read 
 | `edits.ts`     | `fetchRecentEdits` and `expireOldEdits`, which bring edits in and age them out of the live set                                                  |
 | `previews.ts`  | `fetchArticlePreviews`, which fetches the previews live edits lack every 5 seconds, and `refetchArticlePreview`, an admin's refetch of one page |
 | `history.ts`   | `deleteOldHistory`, which deletes edits and previews older than a day                                                                           |
+| `arguments.ts` | `markArguments`, which marks the reverts of pages being argued over, and `remarkArguments`, an admin's recompute of all of them                 |
 | `schedules.ts` | Every interval, and `updateSchedulers`, which brings the timer tables in line with them                                                         |
 | `status.ts`    | Records the fetchers' health in `fetch_status` and their activity in `fetch_event`                                                              |
 | `wikipedia.ts` | A small client for the MediaWiki Action API                                                                                                     |
