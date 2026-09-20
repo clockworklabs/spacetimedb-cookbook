@@ -114,14 +114,18 @@ spacetime call --no-config --server local wikiwatch-dev remark_arguments
   opens its own subscription. Article pages add a per-`page_id` subscription that includes non-live
   edits. Subscriptions share one client cache: `useTable` filters rows by its query, but it can't
   filter by a join.
-- The front page replays edits `REPLAY_DELAY_MS` (30s) behind real time, spreading edits that share a
-  timestamp second evenly across it (`src/replay.ts`, pure functions). Article pages show edits
-  as soon as they arrive.
+- The front page and `#/edits` replay edits `REPLAY_DELAY_MS` (30s) behind real time, spreading edits
+  that share a timestamp second evenly across it (`src/replay.ts`, pure functions). Both pass
+  `now - REPLAY_DELAY_MS` as the clock to the pure functions in `replay.ts` and set `delayed` on the
+  `Masthead`, which is what explains the delay to the reader. Article pages show their edits as soon as
+  they arrive, though their pulse ribbon is on the delayed clock like the others.
 - Routes live in the URL fragment (`src/route.ts`), so any static host can serve `dist/`.
-- `#/edits` (`EditStream.tsx`) is the latest 100 live edits, shown as soon as they arrive, linked from
-  the front page's Latest edits heading. `#/arguments` (`ArgumentPage.tsx`) is the front page's second
-  tab, and subscribes only while it's open, since these rows reach back a day rather than 15 minutes.
-  The module sets `is_revert` from the edit's tags when it ingests it.
+- `#/edits` (`EditStream.tsx`) is the latest 100 live edits on the same delayed clock as the front page,
+  linked from the front page's Latest edits heading. Its `fresh` highlight compares against the edits
+  *revealed* at mount, not every edit held, or the ones still inside the replay delay would count as
+  already seen. `#/arguments` (`ArgumentPage.tsx`) is the front page's second tab, and subscribes only
+  while it's open, since these rows reach back a day rather than 15 minutes. The module sets
+  `is_revert` from the edit's tags when it ingests it.
 - **Arguments are marked server-side, the same way the live set is.** A page is an argument when two
   editors have each reverted it `MIN_REVERTS_PER_SIDE` times, which is a fact about the page, so
   `arguments.ts` writes it onto each of the page's reverts as `in_argument` and clients subscribe to

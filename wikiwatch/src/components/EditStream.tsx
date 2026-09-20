@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   byteDelta,
   editsPerMinute,
+  REPLAY_DELAY_MS,
   revealedCount,
   WINDOW_MS,
   type ReplayEdit,
@@ -26,8 +27,9 @@ type Props = {
   onHideBotsChange: (hideBots: boolean) => void;
 };
 
-// The latest edits and nothing else, one line each, like `tail -f`. Unlike the
-// front page, edits show as soon as they arrive rather than replayed.
+// The latest edits and nothing else, one line each, like `tail -f`. Replayed
+// REPLAY_DELAY_MS behind real time, like the front page: the fetcher runs every
+// 15 seconds, so without that the lines arrive twenty at a time and then stop.
 export function EditStream({
   live,
   isActive,
@@ -35,15 +37,15 @@ export function EditStream({
   hideBots,
   onHideBotsChange,
 }: Props) {
+  const clock = now - REPLAY_DELAY_MS;
+
   const replay = live.replay;
   const edits = useMemo(
     () =>
       hideBots ? replay.all.filter(({ edit }) => !edit.isBot) : replay.all,
     [replay, hideBots],
   );
-  // Edits sharing a timestamp second are spread across it, so a few are
-  // still due to appear.
-  const revealed = revealedCount(edits, now);
+  const revealed = revealedCount(edits, clock);
 
   const latest: ReplayEdit[] = [];
   for (let i = revealed - 1; i >= 0 && latest.length < STREAM_LENGTH; i--) {
@@ -57,11 +59,11 @@ export function EditStream({
         loaded={live.isLoaded}
         status={live.status}
         now={now}
-        delayed={false}
+        delayed
       >
         {live.isLoaded && (
           <PulseRibbon
-            counts={editsPerMinute(edits, revealed, now, WINDOW_MINUTES)}
+            counts={editsPerMinute(edits, revealed, clock, WINDOW_MINUTES)}
           />
         )}
         <HideBotsToggle hideBots={hideBots} onChange={onHideBotsChange} />
@@ -80,18 +82,23 @@ export function EditStream({
             shortly.
           </p>
         ) : (
-          <Stream edits={latest} held={replay.all} />
+          <Stream
+            edits={latest}
+            held={replay.all.slice(0, revealedCount(replay.all, clock))}
+          />
         )}
       </main>
     </>
   );
 }
 
-// Mounted once the live set has loaded, so only edits that arrive after that
+// Mounted once the live set has loaded, so only edits that appear after that
 // are highlighted.
 function Stream({ edits, held }: { edits: ReplayEdit[]; held: ReplayEdit[] }) {
-  // Every edit held at mount, bots included, so unhiding bots doesn't
-  // highlight edits that were already there.
+  // Every edit already revealed at mount, bots included, so unhiding bots
+  // doesn't highlight edits that were already there. Revealed rather than
+  // held, or the edits still inside the replay delay would count as already
+  // seen and slide in without the highlight.
   const [initial] = useState(() => new Set(held.map(({ key }) => key)));
 
   return (
