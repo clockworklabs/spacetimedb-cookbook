@@ -64,9 +64,19 @@ function describe(
     return ["Waiting for the first edits from Wikipedia…", false];
   }
   const lastSuccess = toMillis(status.lastSuccessAt);
-  if (status.consecutiveFailures > 0 || now - lastSuccess > STALE_AFTER_MS) {
+  // Only the server's own count of failures means Wikipedia is the problem.
+  if (status.consecutiveFailures > 0) {
     return [
       `Wikipedia hasn’t answered since ${formatClock(lastSuccess)}. Showing the edits collected until then.`,
+      true,
+    ];
+  }
+  // Every fetch, success or failure, updates this row. Long silence with no
+  // failures means updates have stopped reaching us, though the socket may
+  // still look open: a network that drops out doesn't close it.
+  if (now - lastSuccess > STALE_AFTER_MS) {
+    return [
+      `Haven’t heard from the wikiwatch server since ${formatClock(lastSuccess)}. Showing the edits collected until then.`,
       true,
     ];
   }
