@@ -9,12 +9,13 @@ import { ScheduleAt } from "spacetimedb";
 import spacetimedb, { type TxCtx } from "./schema";
 import { HOUR, MINUTE, SECOND } from "./time";
 
-// fetchRecentEdits (edits.ts).
-const RECENT_EDITS_INTERVAL = 15n * SECOND;
-
-// fetchArticlePreviews (previews.ts). Each run fetches one batch of
-// PREVIEW_BATCH_SIZE (wikipedia.ts), so this sets how fast previews arrive.
-const PREVIEW_INTERVAL = 5n * SECOND;
+// fetchRecentEdits (edits.ts) and fetchArticlePreviews (previews.ts). The
+// two share an interval because previews only find new work after a fetch of
+// recent edits, and every run reads the whole live set to look for it: run
+// any more often and it mostly scans the same rows to find nothing. Each
+// preview run fetches one batch of PREVIEW_BATCH_SIZE (wikipedia.ts), so this
+// also sets how fast previews arrive.
+const FETCH_INTERVAL = 15n * SECOND;
 
 // expireOldEdits (edits.ts). Aged edits stay live until the next expiry run,
 // so a live edit can be up to LIVE_FOR + EXPIRE_INTERVAL old.
@@ -25,8 +26,8 @@ const DELETE_INTERVAL = HOUR;
 
 export function applySchedulers(tx: TxCtx) {
   const written = [
-    ensureInterval(tx.db.schedule_fetch_recent_edits, RECENT_EDITS_INTERVAL),
-    ensureInterval(tx.db.schedule_fetch_article_previews, PREVIEW_INTERVAL),
+    ensureInterval(tx.db.schedule_fetch_recent_edits, FETCH_INTERVAL),
+    ensureInterval(tx.db.schedule_fetch_article_previews, FETCH_INTERVAL),
     ensureInterval(tx.db.schedule_expire_old_edits, EXPIRE_INTERVAL),
     ensureInterval(tx.db.schedule_delete_old_history, DELETE_INTERVAL),
   ];

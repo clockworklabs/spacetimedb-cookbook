@@ -1,6 +1,6 @@
-// Edits: every RECENT_EDITS_INTERVAL (schedules.ts), fetch Wikipedia's
-// recent changes into the edit table, and every EXPIRE_INTERVAL take aged edits
-// out of the live set.
+// Edits: every FETCH_INTERVAL (schedules.ts), fetch Wikipedia's recent
+// changes into the edit table, and every EXPIRE_INTERVAL take aged edits out
+// of the live set.
 //
 // The live set is the recent edits that clients subscribe to. Edits carry a
 // `live` flag rather than clients filtering on time, so a single subscription

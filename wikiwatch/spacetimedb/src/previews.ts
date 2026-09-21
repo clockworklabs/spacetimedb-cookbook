@@ -1,4 +1,4 @@
-// Article previews: every PREVIEW_INTERVAL (schedules.ts), fetch a batch of
+// Article previews: every FETCH_INTERVAL (schedules.ts), fetch a batch of
 // the previews that the live edits are missing. Nothing hands this process its
 // work: it works it out from the edit and article_preview tables, so fetching
 // for edits (edits.ts) needn't know that previews exist. Clients get the

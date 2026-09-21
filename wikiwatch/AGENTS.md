@@ -67,7 +67,7 @@ spacetime call --no-config --server local wikiwatch-dev remark_arguments
 ### Module
 
 - **The Wikipedia fetchers are scheduled *procedures*, not reducers**, because they make HTTP
-  requests. `fetchRecentEdits` runs every 15s and `fetchArticlePreviews` every 5s. HTTP happens
+  requests. `fetchRecentEdits` and `fetchArticlePreviews` each run every 15s. HTTP happens
   outside `ctx.withTx`, and each `withTx` block is its own transaction. State that has to survive
   between those transactions lives in a table (`fetch_status`, `preview_failure`). The module runs procedures one at a time, so the fetchers never
   send Wikipedia concurrent requests. `expireOldEdits` (every 5 min) and `deleteOldHistory` (hourly) are
@@ -140,7 +140,7 @@ spacetime call --no-config --server local wikiwatch-dev remark_arguments
 
 - `LIVE_FOR` (`spacetimedb/src/edits.ts`) ↔ `WINDOW_MS` (`src/replay.ts`)
 - `RETENTION` (`spacetimedb/src/history.ts`) ↔ `HISTORY_MS` (`src/components/ArticlePage.tsx`)
-- `RECENT_EDITS_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
+- `FETCH_INTERVAL` (15s, `spacetimedb/src/schedules.ts`) ↔ `STALE_AFTER_MS` (2 min, `src/components/StatusLine.tsx`), which
   must stay several fetches long
 - `MIN_REVERTS_PER_SIDE` (`spacetimedb/src/arguments.ts`) ↔ `MIN_REVERTS_PER_SIDE` (`src/arguments.ts`).
   The module decides which pages qualify; the client uses the same number to tell the two sides from
