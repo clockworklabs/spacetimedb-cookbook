@@ -1,0 +1,1636 @@
+/*
+ * Palette from Wikimedia's own design tokens: the cool paper and ink of the
+ * article page, the green and red of a diff's byte counts, and the warning
+ * yellow as the one warm accent, reserved for heat. Light only.
+ */
+:root {
+  color-scheme: light;
+
+  --paper: #f8f9fa;
+  --ink: #202122;
+  --muted: #54595d;
+  --rule: #c8ccd1;
+  --rule-soft: #eaecf0;
+  --link: #3366cc;
+  --added: #14866d;
+  --removed: #d73333;
+  --heat: #edab00;
+  --fresh: #fef6e7;
+  --shadow: rgb(0 0 0 / 0.12);
+
+  /* The fixed colophon's height; the page and the toasts keep clear of it. */
+  --footer-height: 56px;
+
+  --serif:
+    "Libertinus Serif", "Linux Libertine", Georgia, "Times New Roman", serif;
+  --sans: "Libertinus Sans", "Gill Sans", "Segoe UI", system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: var(--footer-height);
+}
+
+h1,
+h2,
+h3,
+p,
+figure {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+/* Only cards take part in view transitions; the rest updates in place. */
+:root {
+  view-transition-name: none;
+}
+
+::view-transition-group(*) {
+  animation-duration: 500ms;
+}
+
+.page {
+  max-width: 1680px;
+  margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 48px);
+}
+
+/* Masthead */
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px 32px;
+  padding-block: 28px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.masthead-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.wordmark {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 2.5rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.wordmark a {
+  text-decoration: none;
+}
+
+.tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.125rem;
+  color: var(--muted);
+}
+
+.masthead-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.status {
+  max-width: 48ch;
+}
+
+.status.problem {
+  color: var(--removed);
+}
+
+.status.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+}
+
+/* The favicon's trace, drawn again each time a fetch succeeds. */
+.live-pulse {
+  display: block;
+  width: 26px;
+  height: 16px;
+}
+
+.live-pulse polyline {
+  fill: none;
+  stroke: var(--added);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 130;
+  animation: live 1.2s ease-out;
+}
+
+@keyframes live {
+  from {
+    stroke-dashoffset: 130;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.pulse {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.pulse svg {
+  display: block;
+  width: 178px;
+  height: 28px;
+}
+
+.pulse .bar {
+  fill: var(--rule);
+}
+
+.pulse .bar.current {
+  fill: var(--heat);
+}
+
+.pulse strong {
+  color: var(--ink);
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 20px;
+  border-left: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+/* The checkbox, drawn as a switch. */
+.toggle input {
+  appearance: none;
+  position: relative;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--rule);
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.toggle input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 150ms;
+}
+
+.toggle input:checked {
+  background: var(--link);
+}
+
+.toggle input:checked::before {
+  transform: translateX(12px);
+}
+
+/* Layout */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 48px;
+  padding-block: 28px 48px;
+}
+
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+  margin-bottom: 18px;
+}
+
+.section-head h2 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.5rem;
+}
+
+.section-head p {
+  max-width: 72ch;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* Views as tabs, set at the size of the heading they replace. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 28px;
+}
+
+.tab {
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.5rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab.current {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+}
+
+a.tab:hover {
+  color: var(--ink);
+}
+
+.section-link {
+  margin-left: auto;
+  font-size: 0.9rem;
+  color: var(--link);
+  text-decoration: none;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
+.legend {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.empty {
+  max-width: 50ch;
+  padding-block: 12px;
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+/* Article cards */
+
+.tiers {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 36px 24px;
+}
+
+.lead-tier {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The next four sit beneath the lead as smaller, sideways cards. */
+.medium-tier {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 28px 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+@container (min-width: 640px) {
+  .medium-tier {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.standard-tier {
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  padding-top: 28px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+@container (max-width: 560px) {
+  .standard-tier {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 16px;
+  }
+}
+
+/* The long tail of the ranking, as a list set off by a rule. */
+.mini-tier {
+  display: block;
+  columns: 2;
+  column-gap: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+}
+
+@container (max-width: 560px) {
+  .mini-tier {
+    columns: 1;
+  }
+}
+
+.card {
+  position: relative;
+  /* Keeps the heartbeat behind the card's content but above the page. */
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* A card swells and settles, once, whenever an edit to its article arrives. */
+.heartbeat {
+  position: absolute;
+  inset: -8px;
+  z-index: -1;
+  border-radius: 3px;
+  pointer-events: none;
+  background: var(--fresh);
+  box-shadow: inset 0 0 0 1px var(--heat);
+  opacity: 0;
+  animation: heartbeat 500ms ease-in-out;
+}
+
+.mini .heartbeat {
+  inset: 0 -6px;
+}
+
+/* Only opacity and transform are animated, here and in `arrive`. The browser
+   runs those on its compositor. Animating a colour instead makes it restyle
+   and repaint the page every frame, and with edits arriving every second
+   there's always one of these running. */
+@keyframes heartbeat {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card-rank {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rank {
+  min-width: 0.6em;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A short gauge, so it never reads as a rule across the card. */
+.heat {
+  width: 64px;
+  height: 3px;
+  background: var(--rule-soft);
+}
+
+.heat span {
+  display: block;
+  height: 100%;
+  background: var(--heat);
+}
+
+.card-image-link {
+  display: block;
+}
+
+.card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  /* Most thumbnails are taller than 3:2, and cropping from the centre cuts
+     off the heads in portraits. Crop from the bottom instead. */
+  object-position: top;
+  border-radius: 2px;
+  background: var(--rule-soft);
+}
+
+.card h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.card h3 a,
+.mini-title {
+  text-decoration: none;
+}
+
+.card h3 a:hover,
+.mini-title:hover {
+  text-decoration: underline;
+}
+
+.card-description {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.card-summary {
+  max-width: 65ch;
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pinned to the bottom, so trails line up across a row. */
+.card-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.card-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.card-meta strong {
+  color: var(--ink);
+}
+
+.medium h3,
+.standard h3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.medium .card-description,
+.standard .card-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The hottest article leads, with the biggest image on the page. */
+.lead .rank {
+  font-size: 1.75rem;
+}
+
+.lead h3 {
+  font-size: clamp(2rem, 3.4vw, 3rem);
+  line-height: 1.02;
+}
+
+.lead .card-description {
+  font-size: 0.95rem;
+}
+
+.lead .card-summary {
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.lead .trail {
+  height: 56px;
+}
+
+.lead .card-meta {
+  font-size: 0.95rem;
+}
+
+.card-trail figcaption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+@media (min-width: 720px) {
+  .card.lead {
+    display: grid;
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    align-items: start;
+    gap: 32px;
+  }
+
+  .card.lead:not(:has(> .card-image-link)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card.medium {
+  flex-direction: row;
+  gap: 18px;
+}
+
+.medium .card-image-link {
+  flex-shrink: 0;
+}
+
+.medium .card-image {
+  width: 132px;
+  height: 132px;
+  aspect-ratio: 1;
+}
+
+.medium .card-body {
+  flex-grow: 1;
+  gap: 6px;
+}
+
+.medium h3 {
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+
+.medium .trail {
+  height: 36px;
+}
+
+/* Without an image, the opening lines fill the space under the title. */
+.standard .card-summary {
+  -webkit-line-clamp: 6;
+}
+
+.standard .trail {
+  height: 28px;
+}
+
+.card.mini {
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr) 96px 1.4em;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 32px;
+  border-bottom: 1px solid var(--rule-soft);
+  break-inside: avoid;
+}
+
+.mini .rank {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.mini-title {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mini .trail {
+  height: 18px;
+  margin: 0;
+}
+
+.mini-count {
+  font-size: 0.8rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Edit trail */
+
+.trail {
+  display: block;
+  width: 100%;
+  height: 36px;
+  margin-top: 2px;
+}
+
+.trail-axis {
+  stroke: var(--rule);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tick {
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.tick.added {
+  stroke: var(--added);
+}
+
+.tick.removed {
+  stroke: var(--removed);
+}
+
+.tick.neutral {
+  stroke: var(--muted);
+}
+
+.tick.bot {
+  opacity: 0.45;
+}
+
+/* Latest edits */
+
+.rail {
+  min-width: 0;
+}
+
+.ticker,
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticker li,
+.history li {
+  display: grid;
+  grid-template-columns: 3.6em minmax(0, 1fr);
+  column-gap: 12px;
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.history li {
+  grid-template-columns: 4.8em 3.2em minmax(0, 1fr);
+  column-gap: 14px;
+  padding-block: 11px;
+}
+
+/* A new row's highlight is a layer behind it that fades out, rather than a
+   fading background colour (see `heartbeat`). */
+.ticker li,
+.history li,
+.stream li {
+  position: relative;
+  isolation: isolate;
+}
+
+.ticker li.fresh::before,
+.history li.fresh::before,
+.stream li.fresh::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--fresh);
+  opacity: 0;
+  animation: arrive 2.5s ease-out;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.delta {
+  padding-top: 0.15em;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: right;
+  text-decoration: none;
+}
+
+a.delta:hover {
+  text-decoration: underline;
+}
+
+.delta.added {
+  color: var(--added);
+}
+
+.delta.removed {
+  color: var(--removed);
+}
+
+.delta.neutral {
+  color: var(--muted);
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.entry-title {
+  min-width: 0;
+  font-family: var(--serif);
+  font-size: 1rem;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-title:hover {
+  text-decoration: underline;
+}
+
+.ticker time,
+.stream time {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* One line per edit in the ticker and the stream: the comment gives way first. */
+.ticker .entry-meta,
+.stream .entry-meta {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ticker .entry-meta > *,
+.stream .entry-meta > * {
+  flex-shrink: 0;
+}
+
+.ticker .entry-meta > .entry-comment,
+.stream .entry-meta > .entry-comment {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-user {
+  color: var(--ink);
+}
+
+a.entry-user {
+  text-decoration: none;
+}
+
+a.entry-user:hover {
+  text-decoration: underline;
+}
+
+.entry-flag {
+  font-style: italic;
+}
+
+/* Edit stream page */
+
+.stream-page {
+  padding-block: 28px 48px;
+}
+
+.stream-page .section-head {
+  margin-bottom: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.stream {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stream li {
+  display: grid;
+  grid-template-columns: 4.8em 4.2em minmax(0, 22em) minmax(0, 1fr);
+  grid-template-areas: "time delta title meta";
+  column-gap: 18px;
+  align-items: baseline;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.stream time {
+  grid-area: time;
+}
+
+.stream .delta {
+  grid-area: delta;
+}
+
+.stream .entry-title {
+  grid-area: title;
+}
+
+.stream .entry-meta {
+  grid-area: meta;
+}
+
+@media (max-width: 720px) {
+  .stream li {
+    grid-template-columns: 4.2em minmax(0, 1fr) auto;
+    grid-template-areas:
+      "delta title time"
+      "delta meta meta";
+    column-gap: 12px;
+  }
+}
+
+/* Arguments page: each argument is a rally, reverts volleying between the
+   two editors' lanes, in the blue and red of opposite corners. */
+
+.arguments-page {
+  --side-a: #3366cc;
+  --side-b: #d73333;
+  --side-net: #a2a9b1;
+
+  max-width: 68rem;
+  padding-block: 32px 64px;
+}
+
+.arguments-intro {
+  max-width: 44rem;
+  margin-bottom: 36px;
+}
+
+.arguments-intro h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.arguments-intro p {
+  margin-top: 12px;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.arguments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.argument {
+  padding-block: 24px 20px;
+  border-top: 1px solid var(--rule);
+}
+
+.argument-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 24px;
+  margin-bottom: 14px;
+}
+
+.argument-head h2 {
+  min-width: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  line-height: 1.15;
+}
+
+.argument-head h2 a {
+  text-decoration: none;
+}
+
+.argument-head h2 a:hover {
+  text-decoration: underline;
+}
+
+.argument-last {
+  font-family: var(--serif);
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  color: var(--muted);
+}
+
+.argument-last span {
+  font-weight: 700;
+}
+
+.side-a {
+  color: var(--side-a);
+}
+
+.side-b {
+  color: var(--side-b);
+}
+
+.side-net {
+  color: var(--muted);
+}
+
+.rally {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rally-side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.rally-side a {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.rally-side.side-a a {
+  color: var(--side-a);
+}
+
+.rally-side.side-b a {
+  color: var(--side-b);
+}
+
+.rally-side a:hover {
+  text-decoration: underline;
+}
+
+.rally-court {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.rally-net {
+  stroke: var(--rule);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+.rally-path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  animation: rally-draw 1.2s ease-in-out both;
+}
+
+.rally-shot {
+  animation: rally-land 0.3s ease-out both;
+}
+
+.rally-shot.side-a {
+  fill: var(--side-a);
+}
+
+.rally-shot.side-b {
+  fill: var(--side-b);
+}
+
+.rally-shot.side-net {
+  fill: var(--side-net);
+}
+
+.rally-latest {
+  fill: none;
+  stroke: var(--heat);
+  stroke-width: 3;
+}
+
+@keyframes rally-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rally-land {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.argument-log {
+  margin-top: 14px;
+}
+
+.argument-log summary {
+  width: fit-content;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.argument-log summary:hover {
+  color: var(--ink);
+}
+
+.argument-log .history {
+  max-width: 48rem;
+  margin-top: 8px;
+}
+
+.argument-log .entry-user {
+  font-weight: 700;
+}
+
+.argument-comment {
+  font-family: var(--serif);
+  overflow-wrap: anywhere;
+}
+
+/* Article page */
+
+.article {
+  padding-block: 20px 48px;
+}
+
+.back {
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+}
+
+.back a,
+.article-links a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+.back a:hover,
+.article-links a:hover {
+  text-decoration: underline;
+}
+
+.article-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: start;
+  gap: 64px;
+}
+
+.article-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.article-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.article-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.article-description {
+  color: var(--muted);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+  margin: 0;
+  padding-block: 16px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+/* The figure reads above its label, while the label stays first for dl. */
+.stats div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.stats dt {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.875rem;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats dd.added {
+  color: var(--added);
+}
+
+.stats dd.removed {
+  color: var(--removed);
+}
+
+.article-trail .trail {
+  height: 64px;
+}
+
+.article-trail figcaption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.article-about {
+  display: flex;
+  align-items: start;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+/* Wikipedia sends 320px thumbnails, so never stretch them past that. */
+.article-image {
+  flex-shrink: 0;
+  width: 220px;
+}
+
+.article-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 2px;
+  background: var(--rule-soft);
+}
+
+.article-image figcaption {
+  margin-top: 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  /* Some authors run to a sentence. The file page has them in full. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.article-image figcaption a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.article-image figcaption a:hover {
+  text-decoration: underline;
+}
+
+.article-text {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.article-summary {
+  max-width: 65ch;
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+
+.article-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 0.95rem;
+}
+
+.history time {
+  padding-top: 0.2em;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.history-comment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.history-comment .entry-section {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Colophon, fixed to the bottom of the window */
+
+.colophon {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 5;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+}
+
+.colophon-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  max-width: 1680px;
+  min-height: var(--footer-height);
+  margin-inline: auto;
+  padding: 8px clamp(16px, 3vw, 48px);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.colophon-links {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 16px;
+}
+
+.source-link {
+  display: block;
+  opacity: 0.75;
+  transition: opacity 150ms;
+}
+
+.source-link:hover {
+  opacity: 1;
+}
+
+.source-link img {
+  display: block;
+}
+
+.made-with {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 150ms;
+}
+
+.made-with:hover {
+  border-color: var(--muted);
+}
+
+.made-with span {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.made-with img {
+  display: block;
+  width: auto;
+  height: 26px;
+}
+
+/* Fetch activity toasts */
+
+.toasts {
+  position: fixed;
+  inset-inline-end: clamp(16px, 3vw, 48px);
+  inset-block-end: calc(var(--footer-height) + 12px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, calc(100vw - 32px));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Informational only; never block clicks on the page beneath. */
+  pointer-events: none;
+}
+
+.toast {
+  padding: 10px 14px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-inline-start: 3px solid var(--heat);
+  border-radius: 2px;
+  box-shadow: 0 4px 16px var(--shadow);
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  animation: toast-in 200ms ease-out;
+  transition:
+    opacity 250ms ease-in,
+    transform 250ms ease-in;
+}
+
+.toast.running {
+  animation:
+    toast-in 200ms ease-out,
+    toast-working 900ms ease-in-out infinite alternate;
+}
+
+.toast.done {
+  border-inline-start-color: var(--added);
+}
+
+.toast.failed {
+  border-inline-start-color: var(--removed);
+}
+
+.toast.leaving {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.toast-head {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+/* The one part of a toast that takes clicks. */
+.toast a {
+  pointer-events: auto;
+  color: var(--link);
+}
+
+.toast-subject,
+.toast-result {
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.toast.failed .toast-result {
+  color: var(--removed);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-working {
+  to {
+    border-inline-start-color: var(--rule);
+  }
+}
+
+/* Debug panel: client cache sizes */
+
+.debug-panel {
+  position: fixed;
+  inset-inline-end: 16px;
+  inset-block-start: calc(16px + env(safe-area-inset-top, 0px));
+  z-index: 20;
+  padding: 6px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  box-shadow: 0 4px 16px var(--shadow);
+  font:
+    0.75rem/1.4 ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  color: var(--muted);
+  opacity: 0.92;
+}
+
+.debug-toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.debug-panel table {
+  margin-top: 4px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.debug-panel th,
+.debug-panel td {
+  padding: 1px 0 1px 12px;
+  text-align: end;
+  font-weight: normal;
+}
+
+.debug-panel th:first-child,
+.debug-panel td:first-child {
+  padding-inline-start: 0;
+  text-align: start;
+}
+
+.debug-panel tfoot td {
+  border-top: 1px solid var(--rule-soft);
+}
+
+@media (max-width: 560px) {
+  .toasts {
+    inset-inline: 16px;
+    width: auto;
+  }
+}
+
+@media (min-width: 1041px) {
+  .rail {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px - var(--footer-height));
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1040px) {
+  .layout,
+  .article-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Keep the latest edits within reach below the cards. Cut from the bottom
+     of the ranking, so the rank numbers never skip. */
+  .standard-tier > li:nth-child(n + 9),
+  .mini-tier {
+    display: none;
+  }
+
+  .masthead {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .card.medium {
+    gap: 14px;
+  }
+
+  .medium .card-image {
+    width: 84px;
+    height: 84px;
+  }
+
+  .medium h3 {
+    font-size: 1.25rem;
+  }
+
+  .pulse svg {
+    display: none;
+  }
+
+  .article-about {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rally-path,
+  .rally-shot,
+  .ticker li.fresh::before,
+  .history li.fresh::before,
+  .stream li.fresh::before,
+  .live-pulse polyline,
+  .heartbeat,
+  .toast,
+  .toast.running {
+    animation: none;
+  }
+
+  .toast {
+    transition: none;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}

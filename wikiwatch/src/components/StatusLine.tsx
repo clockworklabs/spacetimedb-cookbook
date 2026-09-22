@@ -1,0 +1,89 @@
+import { useEffect, useRef } from "react";
+import type { FetchStatus } from "../module_bindings/types";
+import { REPLAY_DELAY_MS, toMillis } from "../replay";
+import { formatClock } from "../format";
+
+// The server fetches edits every 15 seconds; this long without success means trouble.
+const STALE_AFTER_MS = 2 * 60_000;
+const LIVE = "Live";
+
+type Props = {
+  isActive: boolean;
+  loaded: boolean;
+  status: FetchStatus | undefined;
+  now: number;
+  // Whether the page replays edits behind real time.
+  delayed: boolean;
+};
+
+export function StatusLine(props: Props) {
+  const wasActive = useRef(false);
+  useEffect(() => {
+    if (props.isActive) wasActive.current = true;
+  }, [props.isActive]);
+
+  const [text, problem] = describe(props, wasActive.current);
+  if (text === LIVE) {
+    return (
+      <p
+        className="status live"
+        role="status"
+        title={
+          props.delayed
+            ? `Edits play back ${REPLAY_DELAY_MS / 1000} seconds after they’re made`
+            : undefined
+        }
+      >
+        <LivePulse beat={props.status?.lastSuccessAt?.microsSinceUnixEpoch} />
+        Live
+      </p>
+    );
+  }
+  return (
+    <p className={problem ? "status problem" : "status"} role="status">
+      {text}
+    </p>
+  );
+}
+
+function describe(
+  { isActive, loaded, status, now }: Props,
+  wasActive: boolean,
+): [string, boolean] {
+  if (!isActive) {
+    // SpacetimeDBProvider reconnects on its own, backing off up to 30 seconds
+    // between attempts, so there's nothing for the reader to do but wait.
+    return wasActive
+      ? ["Lost the connection to the wikiwatch server. Reconnecting…", true]
+      : ["Connecting to the wikiwatch server…", false];
+  }
+  if (!loaded || !status) {
+    return ["Loading the latest edits…", false];
+  }
+  if (!status.lastSuccessAt) {
+    return ["Waiting for the first edits from Wikipedia…", false];
+  }
+  const lastSuccess = toMillis(status.lastSuccessAt);
+  if (status.consecutiveFailures > 0 || now - lastSuccess > STALE_AFTER_MS) {
+    return [
+      `Wikipedia hasn’t answered since ${formatClock(lastSuccess)}. Showing the edits collected until then.`,
+      true,
+    ];
+  }
+  return [LIVE, false];
+}
+
+// Keyed on the last successful fetch, so each one remounts the trace and
+// plays its animation again.
+function LivePulse({ beat }: { beat: bigint | undefined }) {
+  return (
+    <svg
+      className="live-pulse"
+      viewBox="4 14 56 38"
+      aria-hidden="true"
+      key={String(beat)}
+    >
+      <polyline points="6,20 13,20 21,46 32,22 43,46 51,20 58,20" />
+    </svg>
+  );
+}
