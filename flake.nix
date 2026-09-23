@@ -23,6 +23,10 @@
         devShells.default = with pkgs;
           mkShell {
             buildInputs = [
+              # Spacetime
+              spacetimedb
+
+              # TypeScript
               nodejs_26
               pnpm
               typescript
@@ -31,7 +35,13 @@
               prettier
               esbuild
 
-              spacetimedb
+              # Rust
+              cargo-generate
+              cargo-watch
+              rustup
+              rust-analyzer
+              lldb
+              iconv
             ];
           };
       });
