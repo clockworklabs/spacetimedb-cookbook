@@ -1,0 +1,6 @@
+[toolchain]
+# Matches SpacetimeDB's own rust-toolchain.toml. flake.nix reads this file.
+channel = "1.96.1"
+profile = "default"
+targets = ["wasm32-unknown-unknown"]
+components = ["rust-src", "rust-analyzer"]
