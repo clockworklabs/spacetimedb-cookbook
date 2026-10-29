@@ -1,0 +1,10 @@
+{
+  "module-path": "./spacetimedb",
+  "server": "maincloud",
+  "generate": [
+    {
+      "language": "typescript",
+      "out-dir": "./src/module_bindings"
+    }
+  ]
+}

@@ -1,0 +1,319 @@
+:root {
+  --paper: #fcfcfa;
+  --rule: #9ec3e6;
+  --margin: #e3727d;
+  --ink: #1e2b4a;
+  --pencil: #8b93a1;
+  --desk: #d5dbe2;
+
+  /* One rule of the paper. Every vertical measure on the sheet is a multiple of it. */
+  --line: 34px;
+  --margin-x: 64px;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--desk);
+  color: var(--ink);
+  font-family:
+    "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.desk {
+  min-height: 100vh;
+  padding: 48px 16px 32px;
+}
+
+.sheet {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgb(30 43 74 / 0.08),
+    0 6px 18px -6px rgb(30 43 74 / 0.22);
+}
+
+/* The margin line runs the full height of the sheet, header included. */
+.sheet::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 var(--margin-x);
+  width: 1.5px;
+  background: var(--margin);
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  height: calc(var(--line) * 3);
+  padding: 0 24px 6px calc(var(--margin-x) + 14px);
+}
+
+.sheet-head h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.sheet-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 15px;
+  color: var(--pencil);
+  white-space: nowrap;
+}
+
+.sheet-meta time {
+  color: var(--ink);
+}
+
+.date-short {
+  display: none;
+}
+
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 var(--line);
+  border-top: 1px solid var(--rule);
+}
+
+.line {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: var(--line);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Text sits on the rule, the way writing does, rather than floating mid-line. */
+.line-text {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 9px 12px 0 calc(var(--margin-x) + 14px);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: calc(var(--line) - 9px);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+}
+
+.line-text:focus {
+  outline: none;
+}
+
+.line-text:focus-visible,
+input.line-text:focus {
+  background: linear-gradient(to top, rgb(158 195 230 / 0.28), transparent 70%);
+}
+
+.line-text::placeholder {
+  color: var(--pencil);
+  opacity: 0.8;
+}
+
+.line-text:disabled {
+  cursor: default;
+}
+
+/* The tick lives in the margin, left of the red line. */
+.tick {
+  position: absolute;
+  left: calc(var(--margin-x) - 36px);
+  top: 6px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tick input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tick svg {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+
+.tick-box {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 1.5;
+  transition: stroke 120ms;
+}
+
+.tick:hover .tick-box {
+  stroke: var(--ink);
+}
+
+.tick input:focus-visible + svg {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+.tick-mark {
+  fill: none;
+  stroke: var(--margin);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 260ms cubic-bezier(0.6, 0, 0.3, 1);
+}
+
+.is-done .tick-mark {
+  stroke-dashoffset: 0;
+}
+
+.is-done .tick-box {
+  stroke: transparent;
+}
+
+.is-done .line-text {
+  color: var(--pencil);
+  text-decoration: line-through;
+  text-decoration-color: var(--pencil);
+  text-decoration-thickness: 1.5px;
+}
+
+.erase {
+  flex: none;
+  width: 44px;
+  margin: 0;
+  padding: 5px 0 0;
+  border: 0;
+  background: none;
+  color: var(--pencil);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms,
+    color 120ms;
+}
+
+.erase svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+.line:hover .erase,
+.line:focus-within .erase {
+  opacity: 1;
+}
+
+.erase:hover {
+  color: var(--margin);
+}
+
+.erase:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--ink);
+  outline-offset: -6px;
+  border-radius: 4px;
+}
+
+@media (hover: none) {
+  .erase {
+    opacity: 1;
+  }
+}
+
+.line-new form {
+  display: flex;
+  flex: 1;
+}
+
+.line-error .line-text {
+  color: var(--margin);
+  font-size: 15px;
+  cursor: default;
+}
+
+.status {
+  max-width: 640px;
+  margin: 16px auto 0;
+  font-size: 14px;
+  color: #5d6676;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  :root {
+    --margin-x: 48px;
+  }
+
+  .desk {
+    padding-top: 16px;
+  }
+
+  .sheet-head {
+    padding-left: calc(var(--margin-x) + 10px);
+    padding-right: 16px;
+  }
+
+  .sheet-head h1 {
+    font-size: 24px;
+  }
+
+  .date-long {
+    display: none;
+  }
+
+  .date-short {
+    display: inline;
+  }
+
+  .line-text {
+    padding-left: calc(var(--margin-x) + 10px);
+  }
+
+  .tick {
+    left: calc(var(--margin-x) - 34px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tick-mark,
+  .tick-box,
+  .erase {
+    transition: none;
+  }
+}
