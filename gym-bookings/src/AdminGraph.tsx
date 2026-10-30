@@ -32,7 +32,7 @@ export function AdminGraph() {
   const ceiling = step * 4;
 
   return (
-    <article className="sheet sheet-wide" aria-labelledby="sheet-title">
+    <article className="sheet" aria-labelledby="sheet-title">
       <header className="sheet-head">
         <h1 id="sheet-title">Sessions booked per week</h1>
         <div className="sheet-meta">

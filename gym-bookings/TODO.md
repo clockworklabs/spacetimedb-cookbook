@@ -1,0 +1,2 @@
+- [ ] Look less convex.
+- [ ] Consider the Stripe submodule.

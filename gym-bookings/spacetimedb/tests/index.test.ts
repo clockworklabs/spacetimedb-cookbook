@@ -9,11 +9,12 @@ import spacetimedb, * as moduleExports from "../src/index";
 import {
   bookAppointment,
   cancelAppointment,
+  init,
   myCalendar,
   mySchedule,
-  offerService,
   rescheduleAppointment,
   sessionsPerWeek,
+  setPersona,
 } from "../src/index";
 
 const time = (iso: string) => Timestamp.fromDate(new Date(iso));
@@ -34,6 +35,7 @@ const kris = client("kris", 1n);
 const dana = client("dana", 2n);
 const alice = client("alice", 3n);
 const bob = client("bob", 4n);
+const owner = client("owner", 5n);
 
 let test: ReturnType<typeof newHarness>;
 const newHarness = () =>
@@ -52,7 +54,6 @@ const book = (auth: TestAuth, provider: TestAuth, startsAt: Timestamp) => {
   test.withReducerTx(auth, (ctx) =>
     bookAppointment(ctx, {
       provider: providerId,
-      clientName: "Someone",
       startsAt,
     }),
   );
@@ -64,25 +65,56 @@ const viewOf = (view: typeof myCalendar, auth: TestAuth) =>
     view(test.viewContext(auth)) as never,
   );
 
+const assign = (
+  by: TestAuth,
+  who: TestAuth,
+  name: string,
+  service?: string,
+  isAdmin = false,
+) => {
+  const identity = identityOf(who);
+  test.withReducerTx(by, (ctx) =>
+    setPersona(ctx, { identity, name, service, isAdmin }),
+  );
+};
+
+const weeks = (auth: TestAuth) =>
+  sessionsPerWeek(test.viewContext(auth)) as Array<{
+    weekStart: Timestamp;
+    sessions: number;
+  }>;
+
 beforeEach(() => {
   test = newHarness();
-  test.withReducerTx(alice, (ctx) =>
-    offerService(ctx, { name: "Alice", service: "Gym class" }),
-  );
-  test.withReducerTx(bob, (ctx) =>
-    offerService(ctx, { name: "Bob", service: "Piano lesson" }),
-  );
+  test.withReducerTx(owner, (ctx) => init(ctx, {}));
+  assign(owner, alice, "Alice", "Gym class");
+  assign(owner, bob, "Bob", "Piano lesson");
+  assign(owner, kris, "Kris");
+  assign(owner, dana, "Dana");
 });
 
-describe("offerService", () => {
-  it("changes the existing offer when called again", () => {
-    test.withReducerTx(alice, (ctx) =>
-      offerService(ctx, { name: "Alice", service: "Yoga" }),
-    );
+describe("setPersona", () => {
+  it("changes an existing persona when called again", () => {
+    assign(owner, alice, "Alice", "Yoga");
 
-    const offers = [...test.db.provider.iter()];
-    expect(offers).toHaveLength(2);
-    expect(test.db.provider.identity.find(identityOf(alice))?.service).toBe(
+    expect(test.db.person.identity.find(identityOf(alice))?.service).toBe(
+      "Yoga",
+    );
+    expect([...test.db.person.iter()]).toHaveLength(5);
+  });
+
+  it("refuses anyone who isn't an admin", () => {
+    expect(() => assign(kris, kris, "Kris", undefined, true)).toThrow(
+      "Only an admin can set a persona",
+    );
+    expect(test.db.person.identity.find(identityOf(kris))?.isAdmin).toBe(false);
+  });
+
+  it("lets a new admin set personas", () => {
+    assign(owner, kris, "Kris", undefined, true);
+    assign(kris, dana, "Dana", "Yoga");
+
+    expect(test.db.person.identity.find(identityOf(dana))?.service).toBe(
       "Yoga",
     );
   });
@@ -115,6 +147,16 @@ describe("bookAppointment", () => {
 
   it("refuses a provider who isn't offering anything", () => {
     expect(() => book(kris, dana, THU_10AM)).toThrow("Provider not found");
+  });
+
+  it("refuses a caller without a persona", () => {
+    expect(() => book(client("stranger", 6n), alice, THU_10AM)).toThrow(
+      "You don't have a persona yet",
+    );
+  });
+
+  it("takes the client's name from their persona, not from the caller", () => {
+    expect(book(kris, alice, THU_10AM).clientName).toBe("Kris");
   });
 });
 
@@ -206,13 +248,8 @@ describe("views of the one table", () => {
     book(kris, bob, SUN_10AM);
     book(dana, alice, MON_10AM);
 
-    const totals = sessionsPerWeek(test.anonymousViewContext()) as Array<{
-      weekStart: Timestamp;
-      sessions: number;
-    }>;
-
     expect(
-      totals
+      weeks(owner)
         .map((w) => [
           w.weekStart.toDate().toISOString().slice(0, 10),
           w.sessions,
@@ -222,5 +259,13 @@ describe("views of the one table", () => {
       ["2026-10-26", 2],
       ["2026-11-02", 1],
     ]);
+  });
+
+  it("gives the weekly counts to admins only", () => {
+    book(kris, alice, THU_10AM);
+
+    expect(weeks(owner)).toHaveLength(1);
+    expect(weeks(kris)).toHaveLength(0);
+    expect(weeks(alice)).toHaveLength(0);
   });
 });

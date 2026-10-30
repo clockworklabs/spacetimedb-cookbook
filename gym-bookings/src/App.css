@@ -43,7 +43,7 @@ body {
 .desk {
   position: relative;
   min-height: 100vh;
-  padding: 28px 32px 32px;
+  padding: 0 32px 56px;
   overflow-x: clip;
 }
 
@@ -53,20 +53,73 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 130px;
+  height: 174px;
   fill: none;
   stroke-width: 8;
   pointer-events: none;
 }
 
-.sheet {
-  position: relative;
-  max-width: 640px;
+/* Stays on screen, and the stripe's kick passes behind it. */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -32px 20px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--mat);
+  background: var(--white);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  max-width: 1000px;
+  height: 52px;
   margin: 0 auto;
 }
 
-.sheet-wide {
+.brand {
+  font-weight: 900;
+  font-style: italic;
+  font-stretch: 125%;
+  white-space: nowrap;
+}
+
+.navbar-name {
+  margin-left: auto;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.views {
+  display: flex;
+  gap: 4px;
+}
+
+.views a {
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  text-decoration: none;
+}
+
+.views a:hover {
+  background: var(--sun);
+}
+
+.views a[aria-current="page"] {
+  background: var(--ink);
+  color: var(--white);
+}
+
+.sheet {
+  position: relative;
   max-width: 1000px;
+  margin: 0 auto;
 }
 
 .sheet-head {
@@ -115,6 +168,10 @@ body {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.lines {
+  max-width: 640px;
 }
 
 .line {
@@ -173,23 +230,6 @@ section:first-child .day-heading {
 
 .line-error {
   color: var(--error);
-}
-
-.people {
-  font-size: 21px;
-  font-weight: 700;
-  font-style: italic;
-}
-
-a.line-text {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.line-text:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--pink);
-  text-decoration-thickness: 3px;
 }
 
 .erase {
@@ -511,12 +551,19 @@ a.line-text:hover {
   font-weight: 800;
 }
 
+/* Always on screen, lined up with the page, so the ID is there to copy. */
 .status {
-  max-width: 640px;
-  margin: 16px auto 0;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 8px max(32px, calc((100% - 1000px) / 2));
+  border-top: 1px solid var(--mat);
+  background: var(--white);
   font-size: 15px;
   color: var(--ink-soft);
-  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 /* Too narrow for one row: the message gets a row of its own, with room for two lines. */
@@ -536,7 +583,33 @@ a.line-text:hover {
 
 @media (max-width: 720px) {
   .desk {
-    padding: 28px 16px 24px;
+    padding: 0 16px 96px;
+  }
+
+  .navbar {
+    margin: 0 -16px 20px;
+    padding: 0 16px;
+  }
+
+  .navbar-inner {
+    gap: 8px;
+  }
+
+  .brand {
+    font-size: 15px;
+    font-stretch: 75%;
+  }
+
+  .navbar-name {
+    display: none;
+  }
+
+  .views a {
+    padding: 8px 10px;
+  }
+
+  .status {
+    padding-inline: 16px;
   }
 
   /* Push the kick off the right edge, where it would cross the title. */

@@ -8,12 +8,12 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import BookAppointmentReducer from "../book_appointment_reducer";
 import CancelAppointmentReducer from "../cancel_appointment_reducer";
-import OfferServiceReducer from "../offer_service_reducer";
 import RescheduleAppointmentReducer from "../reschedule_appointment_reducer";
+import SetPersonaReducer from "../set_persona_reducer";
 
 export type BookAppointmentParams = __Infer<typeof BookAppointmentReducer>;
 export type CancelAppointmentParams = __Infer<typeof CancelAppointmentReducer>;
-export type OfferServiceParams = __Infer<typeof OfferServiceReducer>;
 export type RescheduleAppointmentParams = __Infer<
   typeof RescheduleAppointmentReducer
 >;
+export type SetPersonaParams = __Infer<typeof SetPersonaReducer>;

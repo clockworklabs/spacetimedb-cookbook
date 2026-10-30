@@ -1,5 +1,5 @@
 {
-  "server": "local",
+  "server": "maincloud",
   "module-path": "./spacetimedb",
   "generate": [
     {

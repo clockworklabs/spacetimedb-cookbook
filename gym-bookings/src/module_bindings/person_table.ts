@@ -13,5 +13,6 @@ import {
 export default __t.row({
   identity: __t.identity().primaryKey(),
   name: __t.string(),
-  service: __t.string(),
+  service: __t.option(__t.string()),
+  isAdmin: __t.bool().name("is_admin"),
 });

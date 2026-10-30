@@ -1,70 +1,92 @@
-import { useSpacetimeDB } from "spacetimedb/react";
+import { useState } from "react";
+import { useSpacetimeDB, useTable } from "spacetimedb/react";
+import { tables } from "./module_bindings";
 import { WeekCalendar } from "./WeekCalendar";
 import { Schedule } from "./Schedule";
 import { AdminGraph } from "./AdminGraph";
 import "./App.css";
 
-function Page({ person }: { person: string | null }) {
-  switch (person) {
-    case "kris":
-      return <WeekCalendar clientName="Kris" />;
-    case "alice":
-      return <Schedule name="Alice" service="Gym class" tone={0} />;
-    case "bob":
-      return <Schedule name="Bob" service="Piano lesson" tone={1} />;
-    case "admin":
-      return <AdminGraph />;
-    default:
-      return <PickPerson />;
-  }
-}
+function App() {
+  const { isActive: connected, identity } = useSpacetimeDB();
+  const [people, ready] = useTable(tables.person);
+  const [view, setView] = useState(location.hash.slice(1));
 
-function PickPerson() {
-  return (
-    <article className="sheet">
-      <header className="sheet-head">
-        <h1>Who are you?</h1>
-      </header>
-      <ul className="lines people">
-        <PersonLine as="kris" label="Kris, booking the week" />
-        <PersonLine as="alice" label="Alice, who teaches gym classes" />
-        <PersonLine as="bob" label="Bob, who teaches piano" />
-        <PersonLine as="admin" label="The admin, watching the numbers" />
-      </ul>
-    </article>
-  );
-}
-
-function PersonLine({ as, label }: { as: string; label: string }) {
-  return (
-    <li className="line">
-      <a className="line-text" href={`?as=${as}`} target="_blank">
-        {label}
-      </a>
-    </li>
-  );
-}
-
-function App({ person }: { person: string | null }) {
-  const { isActive: connected } = useSpacetimeDB();
+  const me = people.find((p) => identity && p.identity.isEqual(identity));
+  const providers = people
+    .filter((p) => p.service)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const views = me?.isAdmin
+    ? ["week", "schedule", "admin"]
+    : ["week", "schedule"];
+  const current = views.includes(view) ? view : "week";
 
   return (
     <main className="desk">
       <svg
         className="stripes"
-        viewBox="0 0 2400 130"
+        viewBox="0 0 2400 174"
         preserveAspectRatio="xMaxYMin slice"
         aria-hidden="true"
       >
-        <path stroke="var(--pink)" d="M0 100 H2250 L2310 -4" />
-        <path stroke="var(--sun)" d="M0 108 H2254.6 L2319.3 -4" />
-        <path stroke="var(--turquoise)" d="M0 116 H2259.2 L2328.5 -4" />
+        <path stroke="var(--pink)" d="M0 144 H2250 L2335.4 -4" />
+        <path stroke="var(--sun)" d="M0 152 H2254.6 L2344.6 -4" />
+        <path stroke="var(--turquoise)" d="M0 160 H2259.2 L2353.9 -4" />
       </svg>
 
-      <Page person={person} />
+      <header className="navbar">
+        <div className="navbar-inner">
+          <strong className="brand">Gym bookings</strong>
+          <nav className="views" aria-label="Pages">
+            {views.map((v) => (
+              <a
+                key={v}
+                href={`#${v}`}
+                aria-current={v === current ? "page" : undefined}
+                onClick={() => setView(v)}
+              >
+                {v[0].toUpperCase() + v.slice(1)}
+              </a>
+            ))}
+          </nav>
+          {me && <span className="navbar-name">{me.name}</span>}
+        </div>
+      </header>
+
+      {me ? (
+        <>
+          {current === "week" && (
+            <WeekCalendar name={me.name} providers={providers} />
+          )}
+          {current === "schedule" && (
+            <Schedule
+              name={me.name}
+              service={me.service ?? "Appointment"}
+              tone={providers.indexOf(me)}
+            />
+          )}
+          {current === "admin" && <AdminGraph />}
+        </>
+      ) : (
+        ready && (
+          <article className="sheet">
+            <header className="sheet-head">
+              <h1>No persona yet</h1>
+            </header>
+            <p>
+              Send an admin your ID, shown below, and they can give you one.
+            </p>
+          </article>
+        )
+      )}
 
       <p className="status" aria-live="polite">
-        {!connected && "Reconnecting. Changes are paused until it's back."}
+        {connected
+          ? identity && (
+              <>
+                Your ID: <code>0x{identity.toHexString()}</code>
+              </>
+            )
+          : "Reconnecting. Changes are paused until it's back."}
       </p>
     </main>
   );

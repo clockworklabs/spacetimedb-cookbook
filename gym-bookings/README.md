@@ -53,17 +53,21 @@ export const mySchedule = spacetimedb.view(
 schedule, and Bob's connection hears nothing about it. The filter runs on the server: Bob's browser never receives
 Alice's appointments.
 
-The `provider` table is public, because clients need it to find out who they can book.
+The `person` table is public, because clients need it to find out who they can book. It holds a name, the
+service they offer if any, and whether they're an admin.
 
 ### A view that aggregates
 
 The admin's page reads a third view, which returns a row per week rather than a row per appointment:
 
 ```ts
-export const sessionsPerWeek = spacetimedb.anonymousView(
+export const sessionsPerWeek = spacetimedb.view(
   { name: "sessions_per_week", public: true },
   t.array(WeekTotal),
   (ctx) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      return [];
+    }
     const totals = new Map<bigint, number>();
     for (const { startsAt } of ctx.db.appointment.iter()) {
       const micros = startsAt.microsSinceUnixEpoch;
@@ -82,10 +86,10 @@ There's no reducer maintaining a counter. Sessions are counted in the week they 
 stay right however an appointment changes, because they're derived from the rows.
 
 The query builder has no `GROUP BY`, so this view is a function. SpacetimeDB reruns it when the table changes,
-where the two views above can be kept up to date row by row. It's also anonymous, so all subscribers share one
-result, which contains no names at all. That's why it needs no admin check in this demo: the page is called
-"admin", but the numbers are public. A real app that wanted them private would use `spacetimedb.view` and check
-`ctx.sender`.
+where the two views above can be kept up to date row by row.
+
+The check on `ctx.sender` is what keeps the numbers private. The client hides the Admin tab from anyone else,
+but that's only tidiness: a non-admin who subscribes to this view by hand gets no rows.
 
 ### Narrowing a view from the client
 
@@ -125,12 +129,26 @@ is for either the client or the provider, so Alice cancelling makes a row vanish
 
 ### Who you are
 
-There's no login. `?as=alice` picks which token the browser keeps in `localStorage` (`src/main.tsx`), so tabs
-in one browser can be different users, and each keeps its identity across reloads. Anyone can open any
-page, so this stands in for a real login, which is where [SpacetimeAuth or another OIDC
-provider](https://spacetimedb.com/docs) would go. The identities and the views wouldn't change.
+Each browser session gets its own identity, and keeps its token in `localStorage` (`src/main.tsx`). An identity
+means nothing until an admin gives it a persona:
 
-Opening Alice's page calls `offerService`, which is what makes Alice bookable.
+```ts
+export const setPersona = spacetimedb.reducer(
+  {
+    identity: t.identity(),
+    name: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
+  },
+  (ctx, { identity, name, service, isAdmin }) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      throw new SenderError("Only an admin can set a persona");
+    }
+```
+
+Whoever publishes the database becomes the first admin, in the module's `init`. There's no login: a real app
+would add [SpacetimeAuth or another OIDC provider](https://spacetimedb.com/docs) here. The identities and the
+views wouldn't change.
 
 ## Running the demo
 
@@ -150,21 +168,29 @@ spacetime publish gym-bookings
 pnpm dev
 ```
 
-Open these side by side, starting with Alice and Bob so that Kris has someone to book:
+Open `http://localhost:5173` in a separate browser session for each person, and each shows its ID at the
+bottom of the page. Chrome's incognito windows all share one session, so use separate browser profiles, or a
+different browser for each. From your terminal, using the identity you published with:
 
-| Page                              | Who                            |
-| --------------------------------- | ------------------------------ |
-| `http://localhost:5173/?as=alice` | Alice's appointments           |
-| `http://localhost:5173/?as=bob`   | Bob's appointments             |
-| `http://localhost:5173/?as=admin` | The graph of sessions per week |
-| `http://localhost:5173/?as=kris`  | Kris's week, where you book    |
+```bash
+ID=0xc200...   # the ID from that session's page
 
-On Kris's page, pick a provider and click a slot to book it. Click an appointment and then an empty slot to
-move it. The × cancels it, and Alice and Bob have one too.
+# Arguments: identity, name, service, is admin.
+spacetime call gym-bookings set_persona "\"$ID\"" '"Kris"' '{"none":[]}' false
+spacetime call gym-bookings set_persona "\"$ID\"" '"Alice"' '{"some":"Gym class"}' false
+spacetime call gym-bookings set_persona "\"$ID\"" '"Bob"' '{"some":"Piano lesson"}' false
+spacetime call gym-bookings set_persona "\"$ID\"" '"Sam"' '{"none":[]}' true
+```
+
+Each page changes as soon as the call lands. Everyone gets Week and Schedule, and admins get Admin too.
+
+On the Week page, pick a provider and click a slot to book it. Click an appointment and then an empty slot to
+move it. The × cancels it, and providers have one too on their Schedule page.
 
 The book doesn't refuse times in the past, so the demo works at any hour of the day.
 
-`spacetime.json` points the CLI at the local server. `spacetime dev` writes a `spacetime.local.json`
+This demo only ever uses the local server. The client connects to `ws://localhost:3000`, and `spacetime.json`
+points the CLI there, as long as you run it from this folder. `spacetime dev` writes a `spacetime.local.json`
 (gitignored) naming a database of its own. While that file exists, the CLI uses that name, so set
 `VITE_SPACETIMEDB_DB_NAME` in `.env.local` to match.
 
@@ -180,8 +206,8 @@ spacetime sql gym-bookings "SELECT * FROM appointment"
 | --------------------------------- | --------------------------------------------------------------------- |
 | `spacetimedb/src/index.ts`        | The module: two tables, three views, and the reducers                 |
 | `spacetimedb/tests/index.test.ts` | Tests for the reducers and the views, against an in-memory database   |
-| `src/main.tsx`                    | Connects to SpacetimeDB, with one identity per `?as=` person          |
-| `src/App.tsx`                     | Picks the page for that person                                        |
+| `src/main.tsx`                    | Connects to SpacetimeDB, keeping this browser's identity              |
+| `src/App.tsx`                     | Finds your persona, and switches between Week, Schedule and Admin     |
 | `src/WeekCalendar.tsx`            | The client's week: subscribes to `my_calendar`, books and reschedules |
 | `src/Schedule.tsx`                | A provider's appointments by date: subscribes to `my_schedule`        |
 | `src/AdminGraph.tsx`              | The admin's graph: subscribes to `sessions_per_week`                  |

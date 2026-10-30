@@ -11,6 +11,8 @@ import {
 } from "spacetimedb";
 
 export default {
+  identity: __t.identity(),
   name: __t.string(),
-  service: __t.string(),
+  service: __t.option(__t.string()),
+  isAdmin: __t.bool(),
 };

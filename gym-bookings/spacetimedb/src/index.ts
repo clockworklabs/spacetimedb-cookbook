@@ -13,34 +13,58 @@ const appointment = table(
   },
 );
 
-const provider = table(
-  { name: "provider", public: true },
+const person = table(
+  { name: "person", public: true },
   {
     identity: t.identity().primaryKey(),
     name: t.string(),
-    service: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
   },
 );
 
-const spacetimedb = schema({ appointment, provider });
+const spacetimedb = schema({ appointment, person });
 export default spacetimedb;
 
+// Whoever publishes the database is its first admin.
+export const init = spacetimedb.init((ctx) => {
+  ctx.db.person.insert({
+    identity: ctx.sender,
+    name: "Owner",
+    service: undefined,
+    isAdmin: true,
+  });
+});
+
 // CREATE
-export const offerService = spacetimedb.reducer(
-  { name: t.string(), service: t.string() },
-  (ctx, { name, service }) => {
-    if (ctx.db.provider.identity.find(ctx.sender)) {
-      ctx.db.provider.identity.update({ identity: ctx.sender, name, service });
+export const setPersona = spacetimedb.reducer(
+  {
+    identity: t.identity(),
+    name: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
+  },
+  (ctx, { identity, name, service, isAdmin }) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      throw new SenderError("Only an admin can set a persona");
+    }
+    const persona = { identity, name, service, isAdmin };
+    if (ctx.db.person.identity.find(identity)) {
+      ctx.db.person.identity.update(persona);
     } else {
-      ctx.db.provider.insert({ identity: ctx.sender, name, service });
+      ctx.db.person.insert(persona);
     }
   },
 );
 
 export const bookAppointment = spacetimedb.reducer(
-  { provider: t.identity(), clientName: t.string(), startsAt: t.timestamp() },
-  (ctx, { provider, clientName, startsAt }) => {
-    if (!ctx.db.provider.identity.find(provider)) {
+  { provider: t.identity(), startsAt: t.timestamp() },
+  (ctx, { provider, startsAt }) => {
+    const client = ctx.db.person.identity.find(ctx.sender);
+    if (!client) {
+      throw new SenderError("You don't have a persona yet");
+    }
+    if (!ctx.db.person.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
     for (const booked of ctx.db.appointment.provider.filter(provider)) {
@@ -52,7 +76,7 @@ export const bookAppointment = spacetimedb.reducer(
     ctx.db.appointment.insert({
       id: 0n,
       client: ctx.sender,
-      clientName,
+      clientName: client.name,
       provider,
       startsAt,
     });
@@ -80,10 +104,13 @@ const WeekTotal = t.row("WeekTotal", {
 const DAY = 86_400_000_000n;
 const FIRST_MONDAY = 4n * DAY; // 5 January 1970, the first Monday after the epoch.
 
-export const sessionsPerWeek = spacetimedb.anonymousView(
+export const sessionsPerWeek = spacetimedb.view(
   { name: "sessions_per_week", public: true },
   t.array(WeekTotal),
   (ctx) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      return [];
+    }
     const totals = new Map<bigint, number>();
     for (const { startsAt } of ctx.db.appointment.iter()) {
       const micros = startsAt.microsSinceUnixEpoch;

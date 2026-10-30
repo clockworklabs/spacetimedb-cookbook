@@ -25,12 +25,13 @@ export type MyCalendar = __Infer<typeof MyCalendar>;
 export const MySchedule = __t.object("MySchedule", {});
 export type MySchedule = __Infer<typeof MySchedule>;
 
-export const Provider = __t.object("Provider", {
+export const Person = __t.object("Person", {
   identity: __t.identity(),
   name: __t.string(),
-  service: __t.string(),
+  service: __t.option(__t.string()),
+  isAdmin: __t.bool(),
 });
-export type Provider = __Infer<typeof Provider>;
+export type Person = __Infer<typeof Person>;
 
 export const SessionsPerWeek = __t.object("SessionsPerWeek", {});
 export type SessionsPerWeek = __Infer<typeof SessionsPerWeek>;

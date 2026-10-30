@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
-import type { Appointment } from "./module_bindings/types";
+import type { Appointment, Person } from "./module_bindings/types";
 import {
   HOURS,
   addDays,
@@ -14,15 +14,17 @@ import {
 } from "./dates";
 import { useErrorBanner } from "./useErrorBanner";
 
-export function WeekCalendar({ clientName }: { clientName: string }) {
+export function WeekCalendar({
+  name: clientName,
+  providers,
+}: {
+  name: string;
+  providers: Person[];
+}) {
   const [monday, setMonday] = useState(() => startOfWeek(startOfToday()));
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 
   const { isActive: connected } = useSpacetimeDB();
-  const [providerRows] = useTable(tables.provider);
-  const providers = [...providerRows].sort((a, b) =>
-    a.name.localeCompare(b.name),
-  );
   const [appointments, ready] = useTable(
     tables.myCalendar
       .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
@@ -49,13 +51,13 @@ export function WeekCalendar({ clientName }: { clientName: string }) {
       setMoving(null);
     } else if (selected) {
       withErrorBanner(
-        bookAppointment({ provider: selected.identity, clientName, startsAt }),
+        bookAppointment({ provider: selected.identity, startsAt }),
       );
     }
   };
 
   return (
-    <article className="sheet sheet-wide" aria-labelledby="sheet-title">
+    <article className="sheet" aria-labelledby="sheet-title">
       <header className="sheet-head">
         <h1 id="sheet-title">{clientName}'s week</h1>
         <PageTurner
@@ -90,7 +92,7 @@ export function WeekCalendar({ clientName }: { clientName: string }) {
           ) : moving ? (
             "Pick a new slot, or click it again to stay put."
           ) : providers.length === 0 ? (
-            "Nobody's taking bookings yet. Open Alice's and Bob's pages first."
+            "Nobody's taking bookings yet. An admin can give someone a service."
           ) : (
             "Click a slot to book it."
           )}

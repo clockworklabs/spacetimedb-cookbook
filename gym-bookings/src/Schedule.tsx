@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
-import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
+import { useReducer, useTable } from "spacetimedb/react";
 import type { Appointment } from "./module_bindings/types";
 import { formatDate, startOfToday } from "./dates";
 import { useErrorBanner } from "./useErrorBanner";
@@ -33,18 +33,11 @@ export function Schedule({
 }) {
   const [today] = useState(startOfToday);
 
-  const { isActive: connected } = useSpacetimeDB();
   const [appointments, ready] = useTable(
     tables.mySchedule.where((a) => a.startsAt.gte(Timestamp.fromDate(today))),
   );
-  const offerService = useReducer(reducers.offerService);
   const cancelAppointment = useReducer(reducers.cancelAppointment);
   const [error, withErrorBanner] = useErrorBanner();
-
-  // Opening this page is what puts this person in the book.
-  useEffect(() => {
-    if (connected) withErrorBanner(offerService({ name, service }));
-  }, [connected]);
 
   return (
     <article className={`sheet tone-${tone}`} aria-labelledby="sheet-title">
