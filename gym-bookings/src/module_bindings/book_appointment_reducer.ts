@@ -10,4 +10,8 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default {};
+export default {
+  provider: __t.identity(),
+  clientName: __t.string(),
+  startsAt: __t.timestamp(),
+};

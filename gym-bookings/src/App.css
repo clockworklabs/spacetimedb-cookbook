@@ -1,0 +1,572 @@
+:root {
+  --white: #ffffff;
+  --ink: #1f1147;
+  --ink-soft: #5c5480;
+  --pink: #ff2e88;
+  --turquoise: #00c2c7;
+  --sun: #ffd60a;
+  --mat: #eef1f8;
+  --error: #c4105f;
+
+  color-scheme: light;
+}
+
+/* Each provider keeps one colour on every page. */
+.tone-0 {
+  --tone: var(--pink);
+}
+
+.tone-1 {
+  --tone: var(--turquoise);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--ink);
+  font-family: "Archivo", system-ui, sans-serif;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.desk {
+  position: relative;
+  min-height: 100vh;
+  padding: 28px 32px 32px;
+  overflow-x: clip;
+}
+
+/* The leotard stripe: straight under the title, then up off the top of the page. */
+.stripes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 130px;
+  fill: none;
+  stroke-width: 8;
+  pointer-events: none;
+}
+
+.sheet {
+  position: relative;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.sheet-wide {
+  max-width: 1000px;
+}
+
+.sheet-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 56px 16px;
+  padding-bottom: 56px;
+}
+
+.sheet-head:has(> :nth-child(2)) {
+  padding-bottom: 20px;
+}
+
+.sheet-head h1 {
+  flex: 0 0 100%;
+  margin: 0;
+  font-size: 42px;
+  font-weight: 900;
+  font-style: italic;
+  font-stretch: 125%;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.sheet-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--ink-soft);
+}
+
+.total {
+  font-size: 42px;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lines,
+.day-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  border-bottom: 1px solid var(--mat);
+}
+
+.line-text {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-heading {
+  margin: 0;
+  min-height: 0;
+  padding-top: 20px;
+  border: 0;
+  font-size: 21px;
+  font-weight: 800;
+  font-style: italic;
+}
+
+section:first-child .day-heading {
+  padding-top: 0;
+}
+
+/* A slanted tab in the provider's colour, cut like the stripe. */
+.tab::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 28px;
+  background: var(--tone);
+  transform: skewX(-20deg);
+}
+
+.margin-time {
+  flex: none;
+  width: 48px;
+  margin-left: 16px;
+  font-size: 21px;
+  font-weight: 800;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+.line-empty {
+  color: var(--ink-soft);
+}
+
+.line-error {
+  color: var(--error);
+}
+
+.people {
+  font-size: 21px;
+  font-weight: 700;
+  font-style: italic;
+}
+
+a.line-text {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.line-text:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--pink);
+  text-decoration-thickness: 3px;
+}
+
+.erase {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.erase svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.line:hover .erase,
+.line:focus-within .erase,
+.booked:hover .erase,
+.booked:focus-within .erase {
+  opacity: 1;
+}
+
+.erase:hover {
+  color: var(--ink);
+}
+
+@media (hover: none) {
+  .erase {
+    opacity: 1;
+  }
+}
+
+/* Each new booking lands in its provider's colour and settles, so a change from elsewhere catches the eye. */
+.just-written {
+  animation: land 900ms ease-out;
+}
+
+@keyframes land {
+  from {
+    background: var(--tone);
+  }
+}
+
+.turner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.turner button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--mat);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.turner button:hover {
+  background: var(--sun);
+}
+
+/* A fixed height, whatever the message says, so the calendar below never jumps. */
+.booking-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  height: 56px;
+  padding-bottom: 16px;
+}
+
+/* The radio stays in the page, invisible and full size, so keyboards and screen readers still have it. */
+.choice {
+  position: relative;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--mat);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  background: var(--tone);
+}
+
+.choice:has(input:focus-visible) {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.hint {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  overflow: hidden;
+}
+
+.error {
+  color: var(--error);
+}
+
+.week-scroll {
+  overflow-x: auto;
+}
+
+.week {
+  width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 15px;
+}
+
+.week thead td,
+.week tbody th {
+  width: 56px;
+}
+
+.week th {
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.week thead th {
+  height: 32px;
+  color: var(--ink);
+  font-weight: 800;
+  font-style: italic;
+}
+
+.week tbody th {
+  padding-right: 8px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.week tbody td {
+  height: 48px;
+  padding: 0;
+}
+
+/* Empty slots are mats laid out on the studio floor. */
+.slot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: var(--mat);
+  cursor: pointer;
+}
+
+.slot:hover:enabled,
+.slot:focus-visible {
+  background: var(--sun);
+}
+
+.slot:disabled {
+  cursor: default;
+}
+
+.booked {
+  display: flex;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--tone);
+  animation: drop-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@keyframes drop-in {
+  from {
+    transform: scale(0.8);
+  }
+}
+
+.booked.is-moving {
+  outline: 2px dashed var(--ink);
+  outline-offset: 2px;
+}
+
+.booked-move {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2px 0 2px 10px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-stretch: 75%;
+  line-height: 1.15;
+  text-align: left;
+  cursor: grab;
+}
+
+.booked-move strong,
+.booked-move span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.booked .erase {
+  width: 22px;
+  height: auto;
+  color: var(--ink);
+}
+
+.graph {
+  position: relative;
+  height: 420px;
+  margin-left: 32px;
+}
+
+.gridlines {
+  position: absolute;
+  inset: 24px 0 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.gridlines span {
+  height: 0;
+  border-top: 1px solid var(--mat);
+  font-size: 14px;
+  line-height: 0;
+  text-indent: -28px;
+  color: var(--ink-soft);
+}
+
+.bars {
+  position: absolute;
+  inset: 24px 0 0;
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars li {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  position: relative;
+  width: min(70%, 56px);
+  border-radius: 4px 4px 0 0;
+  background: var(--pink);
+  transition: height 500ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.bar-value {
+  position: absolute;
+  bottom: 100%;
+  left: -10px;
+  right: -10px;
+  padding-bottom: 2px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 800;
+  font-style: italic;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-label {
+  flex: none;
+  height: 36px;
+  padding-top: 10px;
+  overflow: hidden;
+  text-align: center;
+  font-size: 14px;
+  font-stretch: 75%;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.is-this-week .bar-label {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.status {
+  max-width: 640px;
+  margin: 16px auto 0;
+  font-size: 15px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+/* Too narrow for one row: the message gets a row of its own, with room for two lines. */
+@media (max-width: 1000px) {
+  .booking-bar {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    height: 108px;
+  }
+
+  .hint {
+    flex-basis: 100%;
+    height: 2.5em;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 720px) {
+  .desk {
+    padding: 28px 16px 24px;
+  }
+
+  /* Push the kick off the right edge, where it would cross the title. */
+  .stripes {
+    width: calc(100% + 180px);
+  }
+
+  .sheet-head h1 {
+    font-size: 27px;
+    font-stretch: 75%;
+  }
+
+  .booking-bar {
+    column-gap: 8px;
+  }
+
+  .choice {
+    padding: 8px 10px;
+    font-size: 15px;
+    font-stretch: 75%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+
+  .just-written,
+  .booked {
+    animation: none;
+  }
+}

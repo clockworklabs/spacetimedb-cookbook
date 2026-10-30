@@ -1,69 +1,72 @@
-import { useState } from "react";
-import { tables, reducers } from "./module_bindings";
-import { useSpacetimeDB, useTable, useReducer } from "spacetimedb/react";
+import { useSpacetimeDB } from "spacetimedb/react";
+import { WeekCalendar } from "./WeekCalendar";
+import { Schedule } from "./Schedule";
+import { AdminGraph } from "./AdminGraph";
+import "./App.css";
 
-function App() {
-  const [name, setName] = useState("");
+function Page({ person }: { person: string | null }) {
+  switch (person) {
+    case "kris":
+      return <WeekCalendar clientName="Kris" />;
+    case "alice":
+      return <Schedule name="Alice" service="Gym class" tone={0} />;
+    case "bob":
+      return <Schedule name="Bob" service="Piano lesson" tone={1} />;
+    case "admin":
+      return <AdminGraph />;
+    default:
+      return <PickPerson />;
+  }
+}
 
-  const conn = useSpacetimeDB();
-  const { isActive: connected } = conn;
+function PickPerson() {
+  return (
+    <article className="sheet">
+      <header className="sheet-head">
+        <h1>Who are you?</h1>
+      </header>
+      <ul className="lines people">
+        <PersonLine as="kris" label="Kris, booking the week" />
+        <PersonLine as="alice" label="Alice, who teaches gym classes" />
+        <PersonLine as="bob" label="Bob, who teaches piano" />
+        <PersonLine as="admin" label="The admin, watching the numbers" />
+      </ul>
+    </article>
+  );
+}
 
-  // Subscribe to all people in the database
-  const [people] = useTable(tables.person);
+function PersonLine({ as, label }: { as: string; label: string }) {
+  return (
+    <li className="line">
+      <a className="line-text" href={`?as=${as}`} target="_blank">
+        {label}
+      </a>
+    </li>
+  );
+}
 
-  const addReducer = useReducer(reducers.add);
-
-  const addPerson = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || !connected) return;
-
-    // Call the add reducer
-    addReducer({ name: name });
-    setName("");
-  };
+function App({ person }: { person: string | null }) {
+  const { isActive: connected } = useSpacetimeDB();
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>SpacetimeDB React App</h1>
+    <main className="desk">
+      <svg
+        className="stripes"
+        viewBox="0 0 2400 130"
+        preserveAspectRatio="xMaxYMin slice"
+        aria-hidden="true"
+      >
+        <path stroke="var(--pink)" d="M0 100 H2250 L2310 -4" />
+        <path stroke="var(--sun)" d="M0 108 H2254.6 L2319.3 -4" />
+        <path stroke="var(--turquoise)" d="M0 116 H2259.2 L2328.5 -4" />
+      </svg>
 
-      <div style={{ marginBottom: "1rem" }}>
-        Status:{" "}
-        <strong style={{ color: connected ? "green" : "red" }}>
-          {connected ? "Connected" : "Disconnected"}
-        </strong>
-      </div>
+      <Page person={person} />
 
-      <form onSubmit={addPerson} style={{ marginBottom: "2rem" }}>
-        <input
-          type="text"
-          placeholder="Enter name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ padding: "0.5rem", marginRight: "0.5rem" }}
-          disabled={!connected}
-        />
-        <button
-          type="submit"
-          style={{ padding: "0.5rem 1rem" }}
-          disabled={!connected}
-        >
-          Add Person
-        </button>
-      </form>
-
-      <div>
-        <h2>People ({people.length})</h2>
-        {people.length === 0 ? (
-          <p>No people yet. Add someone above!</p>
-        ) : (
-          <ul>
-            {people.map((person, index) => (
-              <li key={index}>{person.name}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      <p className="status" aria-live="polite">
+        {!connected && "Reconnecting. Changes are paused until it's back."}
+      </p>
+    </main>
   );
 }
 

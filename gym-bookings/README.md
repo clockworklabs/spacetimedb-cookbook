@@ -1,116 +1,203 @@
-Get a SpacetimeDB React app running in under 5 minutes.
+# gym-bookings
 
-## Prerequisites
+An appointment book built on SpacetimeDB: two users, and an admin, see different views of the same data, in
+real time.
 
-- [Node.js](https://nodejs.org/) 18+ installed
-- [SpacetimeDB CLI](https://spacetimedb.com/install) installed
+Kris books a gym class with Alice and a piano lesson with Bob. Kris sees the week's calendar. Alice and Bob
+each see their own upcoming appointments, and the list changes as Kris books. An admin watches the sessions per week go up on a
+graph. All of it runs concurrently, from one `appointment` table.
 
-Install the [SpacetimeDB CLI](https://spacetimedb.com/install) before continuing.
+It's the [todo-list](../todo-list) with one idea added. It shows:
 
----
+- [One private table, three views](#one-table-three-views), each deciding what its readers can see
+- [A view that aggregates](#a-view-that-aggregates), so the admin gets counts and no names
+- [Narrowing a view from the client](#narrowing-a-view-from-the-client), so a calendar only receives its week
+- [Reducers as the arbiter](#reducers-as-the-arbiter), when two people want the same slot
 
-## Create your project
+## How it works
 
-Run the `spacetime dev` command to create a new project with a SpacetimeDB module and React client.
+### One table, three views
 
-This will start the local SpacetimeDB server, publish your module, generate TypeScript bindings, and start the React development server.
+Every appointment is one row (`spacetimedb/src/index.ts`):
 
-```bash
-spacetime dev --template react-ts
+```ts
+const appointment = table(
+  { name: "appointment" },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    client: t.identity().index("btree"),
+    clientName: t.string(),
+    provider: t.identity().index("btree"),
+    startsAt: t.timestamp(),
+  },
+);
 ```
 
+It's private, so no client can read it directly. Kris and Alice read that same row through different views:
 
-
-## Open your app
-
-Navigate to [http://localhost:5173](http://localhost:5173) to see your app running.
-
-The template includes a basic React app connected to SpacetimeDB.
-
-
-
-## Explore the project structure
-
-Your project contains both server and client code.
-
-Edit `spacetimedb/src/index.ts` to add tables and reducers. Edit `client/src/App.tsx` to build your UI.
-
-```
-my-spacetime-app/
-├── spacetimedb/          # Your SpacetimeDB module
-│   └── src/
-│       └── index.ts      # Server-side logic
-├── client/               # React frontend
-│   └── src/
-│       ├── App.tsx
-│       └── module_bindings/  # Auto-generated types
-└── package.json
-```
-
-
-
-## Understand tables and reducers
-
-Open `spacetimedb/src/index.ts` to see the module code. The template includes a `person` table and two reducers: `add` to insert a person, and `sayHello` to greet everyone.
-
-Tables store your data. Reducers are functions that modify data — they're the only way to write to the database.
-
-```typescript
-import { schema, table, t } from 'spacetimedb/server';
-
-const spacetimedb = schema({
-  person: table(
-    { public: true },
-    {
-      name: t.string(),
-    }
-  ),
-});
-export default spacetimedb;
-
-export const add = spacetimedb.reducer(
-  { name: t.string() },
-  (ctx, { name }) => {
-    ctx.db.person.insert({ name });
-  }
+```ts
+export const myCalendar = spacetimedb.view(
+  { name: "my_calendar", public: true },
+  t.array(appointment.rowType),
+  (ctx) => ctx.from.appointment.where((a) => a.client.eq(ctx.sender)),
 );
 
-export const sayHello = spacetimedb.reducer(ctx => {
-  for (const person of ctx.db.person.iter()) {
-    console.info(`Hello, ${person.name}!`);
-  }
-  console.info('Hello, World!');
-});
+export const mySchedule = spacetimedb.view(
+  { name: "my_schedule", public: true },
+  t.array(appointment.rowType),
+  (ctx) => ctx.from.appointment.where((a) => a.provider.eq(ctx.sender)),
+);
 ```
 
+`ctx.sender` is whoever is subscribing, so the one `bookAppointment` call updates Kris's calendar and Alice's
+schedule, and Bob's connection hears nothing about it. The filter runs on the server: Bob's browser never receives
+Alice's appointments.
 
+The `provider` table is public, because clients need it to find out who they can book.
 
-## Test with the CLI
+### A view that aggregates
 
-Open a new terminal and navigate to your project directory. Then use the SpacetimeDB CLI to call reducers and query your data directly.
+The admin's page reads a third view, which returns a row per week rather than a row per appointment:
+
+```ts
+export const sessionsPerWeek = spacetimedb.anonymousView(
+  { name: "sessions_per_week", public: true },
+  t.array(WeekTotal),
+  (ctx) => {
+    const totals = new Map<bigint, number>();
+    for (const { startsAt } of ctx.db.appointment.iter()) {
+      const micros = startsAt.microsSinceUnixEpoch;
+      const week = micros - ((micros - FIRST_MONDAY) % (7n * DAY));
+      totals.set(week, (totals.get(week) ?? 0) + 1);
+    }
+    return [...totals].map(([week, sessions]) => ({
+      weekStart: new Timestamp(week),
+      sessions,
+    }));
+  },
+);
+```
+
+There's no reducer maintaining a counter. Sessions are counted in the week they take place, and the numbers
+stay right however an appointment changes, because they're derived from the rows.
+
+The query builder has no `GROUP BY`, so this view is a function. SpacetimeDB reruns it when the table changes,
+where the two views above can be kept up to date row by row. It's also anonymous, so all subscribers share one
+result, which contains no names at all. That's why it needs no admin check in this demo: the page is called
+"admin", but the numbers are public. A real app that wanted them private would use `spacetimedb.view` and check
+`ctx.sender`.
+
+### Narrowing a view from the client
+
+The calendar only wants one week, and a view can't take arguments. A client can still add its own filter
+when it subscribes (`src/WeekCalendar.tsx`):
+
+```ts
+const [appointments, ready] = useTable(
+  tables.myCalendar
+    .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
+    .where((a) => a.startsAt.lt(Timestamp.fromDate(addDays(monday, 7)))),
+);
+```
+
+The server applies that filter too, so only the week's rows are sent. Turn the page and `useTable` swaps the
+subscription. `src/Schedule.tsx` does the same with everything from today onwards in `my_schedule`.
+
+The view decides what you're allowed to see. The `where` decides what you currently want.
+
+### Reducers as the arbiter
+
+If two people go for the same hour, the reducer decides:
+
+```ts
+for (const booked of ctx.db.appointment.provider.filter(provider)) {
+  if (booked.startsAt.toMillis() === startsAt.toMillis()) {
+    throw new SenderError("That slot has just been taken");
+  }
+}
+```
+
+Reducers run one at a time in transactions, so the second caller always sees the first caller's row, and gets
+the error instead of a double booking. `rescheduleAppointment` makes the same check.
+
+The rest is the same as the todo list: `rescheduleAppointment` is for the client only, and `cancelAppointment`
+is for either the client or the provider, so Alice cancelling makes a row vanish from Kris's calendar.
+
+### Who you are
+
+There's no login. `?as=alice` picks which token the browser keeps in `localStorage` (`src/main.tsx`), so tabs
+in one browser can be different users, and each keeps its identity across reloads. Anyone can open any
+page, so this stands in for a real login, which is where [SpacetimeAuth or another OIDC
+provider](https://spacetimedb.com/docs) would go. The identities and the views wouldn't change.
+
+Opening Alice's page calls `offerService`, which is what makes Alice bookable.
+
+## Running the demo
+
+You need Node.js, pnpm, prettier and the SpacetimeDB CLI. The `flake.nix` at the root of this repository
+provides them all: run `direnv allow`, or `nix develop`.
 
 ```bash
-cd my-spacetime-app
+pnpm install
 
-# Call the add reducer to insert a person
-spacetime call add Alice
+# In another terminal: a local SpacetimeDB server on port 3000.
+spacetime start
 
-# Query the person table
-spacetime sql "SELECT * FROM person"
- name
----------
- "Alice"
+# Publish the module under the database name the client uses by default.
+spacetime publish gym-bookings
 
-# Call sayHello to greet everyone
-spacetime call say_hello
-
-# View the module logs
-spacetime logs
-2025-01-13T12:00:00.000000Z  INFO: Hello, Alice!
-2025-01-13T12:00:00.000000Z  INFO: Hello, World!
+# Serve the client at http://localhost:5173.
+pnpm dev
 ```
 
-## Next steps
+Open these side by side, starting with Alice and Bob so that Kris has someone to book:
 
-- See the [Chat App Tutorial](https://spacetimedb.com/docs/tutorials/chat-app) for a complete example
-- Read the [TypeScript SDK Reference](https://spacetimedb.com/docs/clients/typescript) for detailed API docs
+| Page                              | Who                            |
+| --------------------------------- | ------------------------------ |
+| `http://localhost:5173/?as=alice` | Alice's appointments           |
+| `http://localhost:5173/?as=bob`   | Bob's appointments             |
+| `http://localhost:5173/?as=admin` | The graph of sessions per week |
+| `http://localhost:5173/?as=kris`  | Kris's week, where you book    |
+
+On Kris's page, pick a provider and click a slot to book it. Click an appointment and then an empty slot to
+move it. The × cancels it, and Alice and Bob have one too.
+
+The book doesn't refuse times in the past, so the demo works at any hour of the day.
+
+`spacetime.json` points the CLI at the local server. `spacetime dev` writes a `spacetime.local.json`
+(gitignored) naming a database of its own. While that file exists, the CLI uses that name, so set
+`VITE_SPACETIMEDB_DB_NAME` in `.env.local` to match.
+
+To see what's really in the table (it's private, but you published the database):
+
+```bash
+spacetime sql gym-bookings "SELECT * FROM appointment"
+```
+
+## Where things are
+
+| File                              | What it does                                                          |
+| --------------------------------- | --------------------------------------------------------------------- |
+| `spacetimedb/src/index.ts`        | The module: two tables, three views, and the reducers                 |
+| `spacetimedb/tests/index.test.ts` | Tests for the reducers and the views, against an in-memory database   |
+| `src/main.tsx`                    | Connects to SpacetimeDB, with one identity per `?as=` person          |
+| `src/App.tsx`                     | Picks the page for that person                                        |
+| `src/WeekCalendar.tsx`            | The client's week: subscribes to `my_calendar`, books and reschedules |
+| `src/Schedule.tsx`                | A provider's appointments by date: subscribes to `my_schedule`        |
+| `src/AdminGraph.tsx`              | The admin's graph: subscribes to `sessions_per_week`                  |
+| `src/module_bindings/`            | Client bindings, generated from the module                            |
+
+## Checking a change
+
+The bindings in `src/module_bindings` are generated and committed. After changing a table, view or reducer:
+
+```bash
+spacetime generate
+prettier --write src/module_bindings
+spacetime publish gym-bookings
+```
+
+```bash
+pnpm test     # the module's tests
+pnpm build    # type-checks and builds the client
+```

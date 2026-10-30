@@ -10,7 +10,33 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export const Person = __t.object("Person", {
-  name: __t.string(),
+export const Appointment = __t.object("Appointment", {
+  id: __t.u64(),
+  client: __t.identity(),
+  clientName: __t.string(),
+  provider: __t.identity(),
+  startsAt: __t.timestamp(),
 });
-export type Person = __Infer<typeof Person>;
+export type Appointment = __Infer<typeof Appointment>;
+
+export const MyCalendar = __t.object("MyCalendar", {});
+export type MyCalendar = __Infer<typeof MyCalendar>;
+
+export const MySchedule = __t.object("MySchedule", {});
+export type MySchedule = __Infer<typeof MySchedule>;
+
+export const Provider = __t.object("Provider", {
+  identity: __t.identity(),
+  name: __t.string(),
+  service: __t.string(),
+});
+export type Provider = __Infer<typeof Provider>;
+
+export const SessionsPerWeek = __t.object("SessionsPerWeek", {});
+export type SessionsPerWeek = __Infer<typeof SessionsPerWeek>;
+
+export const WeekTotal = __t.object("WeekTotal", {
+  weekStart: __t.timestamp(),
+  sessions: __t.u32(),
+});
+export type WeekTotal = __Infer<typeof WeekTotal>;

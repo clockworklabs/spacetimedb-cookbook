@@ -4,4 +4,5 @@ dist
 
 .DS_Store
 
+tsconfig.tsbuildinfo
 spacetime.local.json
