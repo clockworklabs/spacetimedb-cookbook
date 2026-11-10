@@ -23,14 +23,29 @@ function App() {
   return (
     <main className="desk">
       <svg
-        className="stripes"
-        viewBox="0 0 2400 174"
+        className="ridges"
+        viewBox="0 0 2400 260"
         preserveAspectRatio="xMaxYMin slice"
         aria-hidden="true"
       >
-        <path stroke="var(--pink)" d="M0 144 H2250 L2335.4 -4" />
-        <path stroke="var(--sun)" d="M0 152 H2254.6 L2344.6 -4" />
-        <path stroke="var(--turquoise)" d="M0 160 H2259.2 L2353.9 -4" />
+        <defs>
+          <linearGradient id="mist-far" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--quartzite)" />
+            <stop offset="0.85" stopColor="var(--quartzite)" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="mist-near" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="var(--eucalyptus)" stopOpacity="0.7" />
+            <stop offset="0.8" stopColor="var(--eucalyptus)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path
+          fill="url(#mist-far)"
+          d="M1420 260 L1580 150 L1650 170 L1790 82 L1870 128 L1930 110 L2070 52 L2170 118 L2250 98 L2400 160 V260 Z"
+        />
+        <path
+          fill="url(#mist-near)"
+          d="M1600 260 L1760 168 L1830 186 L1980 112 L2050 146 L2130 128 L2270 182 L2400 140 V260 Z"
+        />
       </svg>
 
       <header className="navbar">

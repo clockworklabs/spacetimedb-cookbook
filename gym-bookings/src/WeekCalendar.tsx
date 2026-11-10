@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
@@ -23,6 +23,7 @@ export function WeekCalendar({
 }) {
   const [monday, setMonday] = useState(() => startOfWeek(startOfToday()));
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+  const now = useNow();
 
   const { isActive: connected } = useSpacetimeDB();
   const [appointments, ready] = useTable(
@@ -105,7 +106,11 @@ export function WeekCalendar({
             <tr>
               <td />
               {days.map((day) => (
-                <th key={day.getTime()} scope="col">
+                <th
+                  key={day.getTime()}
+                  scope="col"
+                  className={addDays(day, 1) <= now ? "is-past" : undefined}
+                >
                   {formatDate(day, { weekday: "short", day: "numeric" })}
                 </th>
               ))}
@@ -120,14 +125,25 @@ export function WeekCalendar({
                   const booked = appointments.find((a) =>
                     isAt(a.startsAt, when),
                   );
+                  // A slot closes once its hour has started, as on the server.
+                  const isPast = when < now;
+                  const minutesIn = (now.getTime() - when.getTime()) / 60_000;
                   return (
                     <td key={day.getTime()}>
+                      {minutesIn >= 0 && minutesIn < 60 && (
+                        <span
+                          className="now-line"
+                          style={{ top: `${(minutesIn / 60) * 100}%` }}
+                          aria-hidden="true"
+                        />
+                      )}
                       {booked ? (
                         <Booked
                           service={providerFor(booked)?.service}
                           name={providerFor(booked)?.name}
                           tone={providers.indexOf(providerFor(booked)!)}
                           isMoving={moving?.id === booked.id}
+                          isPast={isPast}
                           onMove={() =>
                             setMoving(moving?.id === booked.id ? null : booked)
                           }
@@ -140,12 +156,15 @@ export function WeekCalendar({
                       ) : (
                         <button
                           type="button"
-                          className="slot"
+                          className={`slot${isPast ? " is-past" : ""}`}
                           disabled={
-                            !connected || !ready || (!moving && !selected)
+                            isPast ||
+                            !connected ||
+                            !ready ||
+                            (!moving && !selected)
                           }
                           onClick={() => fillSlot(when)}
-                          aria-label={`${moving ? "Move here" : "Book"}: ${formatDate(day, { weekday: "long" })} at ${hour}:00`}
+                          aria-label={`${isPast ? "Passed" : moving ? "Move here" : "Book"}: ${formatDate(day, { weekday: "long" })} at ${hour}:00`}
                         />
                       )}
                     </td>
@@ -165,6 +184,7 @@ function Booked({
   name,
   tone,
   isMoving,
+  isPast,
   onMove,
   onCancel,
 }: {
@@ -172,9 +192,21 @@ function Booked({
   name?: string;
   tone: number;
   isMoving: boolean;
+  isPast: boolean;
   onMove: () => void;
   onCancel: () => void;
 }) {
+  // Past appointments can't be moved or cancelled, so they're just a record.
+  if (isPast) {
+    return (
+      <div className={`booked is-past tone-${tone}`}>
+        <div className="booked-move">
+          <strong>{service}</strong>
+          <span>{name}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`booked tone-${tone}${isMoving ? " is-moving" : ""}`}>
       <button
@@ -222,4 +254,15 @@ function PageTurner({
       </button>
     </nav>
   );
+}
+
+// The current time, refreshed on each new minute.
+function useNow() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const untilNextMinute = 60_000 - (now.getTime() % 60_000);
+    const timer = setTimeout(() => setNow(new Date()), untilNextMinute);
+    return () => clearTimeout(timer);
+  }, [now]);
+  return now;
 }

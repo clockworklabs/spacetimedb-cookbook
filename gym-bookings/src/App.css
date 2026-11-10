@@ -1,23 +1,37 @@
+/* A Swiss thermal spa: quartzite, pine and larch, set like a treatment menu. */
 :root {
+  --snow: #f7f8f5;
   --white: #ffffff;
-  --ink: #1f1147;
-  --ink-soft: #5c5480;
-  --pink: #ff2e88;
-  --turquoise: #00c2c7;
-  --sun: #ffd60a;
-  --mat: #eef1f8;
-  --error: #c4105f;
+  --quartzite: #e3e8e2;
+  --pine: #22332c;
+  --lichen: #687870;
+  --eucalyptus: #bcd6c5;
+  --larch: #edd2b2;
+  --error: #9b2d3b;
+
+  --serif: "Bodoni Moda", Didot, Georgia, serif;
+  --sans: "Hanken Grotesk", system-ui, sans-serif;
 
   color-scheme: light;
 }
 
+/* Bodoni's display cut thins its hairlines to almost nothing; the text cut keeps them sturdy at any size. */
+.brand,
+.sheet-head h1,
+.total,
+.day-heading,
+.margin-time,
+.bar-value {
+  font-variation-settings: "opsz" 11;
+}
+
 /* Each provider keeps one colour on every page. */
 .tone-0 {
-  --tone: var(--pink);
+  --tone: var(--eucalyptus);
 }
 
 .tone-1 {
-  --tone: var(--turquoise);
+  --tone: var(--larch);
 }
 
 *,
@@ -28,67 +42,67 @@
 
 body {
   margin: 0;
-  background: var(--white);
-  color: var(--ink);
-  font-family: "Archivo", system-ui, sans-serif;
+  background: var(--snow);
+  color: var(--pine);
+  font-family: var(--sans);
   font-size: 17px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--pine);
   outline-offset: 2px;
 }
 
 .desk {
   position: relative;
   min-height: 100vh;
-  padding: 0 32px 56px;
+  padding: 0 32px 72px;
   overflow-x: clip;
 }
 
-/* The leotard stripe: straight under the title, then up off the top of the page. */
-.stripes {
+/* Two ranges in the mist, top right, fading into the page. */
+.ridges {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 174px;
-  fill: none;
-  stroke-width: 8;
+  height: 260px;
   pointer-events: none;
 }
 
-/* Stays on screen, and the stripe's kick passes behind it. */
+/* Stays on screen; the peaks show faintly through it. */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 1;
-  margin: 0 -32px 20px;
+  margin: 0 -32px 40px;
   padding: 0 32px;
-  border-bottom: 1px solid var(--mat);
-  background: var(--white);
+  border-bottom: 1px solid var(--quartzite);
+  background: rgb(247 248 245 / 0.82);
+  backdrop-filter: blur(12px);
 }
 
 .navbar-inner {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
   max-width: 1000px;
-  height: 52px;
+  height: 64px;
   margin: 0 auto;
 }
 
 .brand {
-  font-weight: 900;
-  font-style: italic;
-  font-stretch: 125%;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 500;
   white-space: nowrap;
 }
 
 .navbar-name {
   margin-left: auto;
-  font-weight: 600;
+  color: var(--lichen);
   white-space: nowrap;
 }
 
@@ -100,20 +114,24 @@ body {
 .views a {
   padding: 8px 16px;
   border-radius: 999px;
-  color: inherit;
+  color: var(--lichen);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 20px;
   text-decoration: none;
+  transition:
+    background 200ms,
+    color 200ms;
 }
 
 .views a:hover {
-  background: var(--sun);
+  background: var(--quartzite);
+  color: var(--pine);
 }
 
 .views a[aria-current="page"] {
-  background: var(--ink);
-  color: var(--white);
+  background: var(--pine);
+  color: var(--snow);
 }
 
 .sheet {
@@ -127,40 +145,39 @@ body {
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 56px 16px;
+  gap: 40px 16px;
   padding-bottom: 56px;
 }
 
 .sheet-head:has(> :nth-child(2)) {
-  padding-bottom: 20px;
+  padding-bottom: 24px;
 }
 
 .sheet-head h1 {
   flex: 0 0 100%;
   margin: 0;
-  font-size: 42px;
-  font-weight: 900;
-  font-style: italic;
-  font-stretch: 125%;
-  line-height: 56px;
-  letter-spacing: -0.02em;
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 500;
+  line-height: 60px;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
 .sheet-meta {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  color: var(--ink-soft);
+  gap: 10px;
+  color: var(--lichen);
 }
 
 .total {
-  font-size: 42px;
-  font-weight: 900;
-  font-style: italic;
+  font-family: var(--serif);
+  font-size: 52px;
+  font-weight: 400;
   line-height: 1;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
+  color: var(--pine);
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .lines,
@@ -177,14 +194,14 @@ body {
 .line {
   display: flex;
   align-items: center;
-  min-height: 48px;
-  border-bottom: 1px solid var(--mat);
+  min-height: 56px;
+  border-bottom: 1px solid var(--quartzite);
 }
 
 .line-text {
   flex: 1;
   min-width: 0;
-  padding: 10px 0;
+  padding: 12px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,39 +210,40 @@ body {
 .day-heading {
   margin: 0;
   min-height: 0;
-  padding-top: 20px;
+  padding-top: 32px;
   border: 0;
-  font-size: 21px;
-  font-weight: 800;
-  font-style: italic;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 500;
 }
 
 section:first-child .day-heading {
   padding-top: 0;
 }
 
-/* A slanted tab in the provider's colour, cut like the stripe. */
+/* A soft pebble in the provider's colour. */
 .tab::before {
   content: "";
   flex: none;
-  width: 8px;
-  height: 28px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   background: var(--tone);
-  transform: skewX(-20deg);
+  box-shadow: 0 0 0 1px rgb(34 51 44 / 0.12);
 }
 
 .margin-time {
   flex: none;
-  width: 48px;
+  width: 56px;
   margin-left: 16px;
-  font-size: 21px;
-  font-weight: 800;
-  font-style: italic;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 400;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .line-empty {
-  color: var(--ink-soft);
+  color: var(--lichen);
 }
 
 .line-error {
@@ -240,7 +258,7 @@ section:first-child .day-heading {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ink-soft);
+  color: var(--lichen);
   cursor: pointer;
   opacity: 0;
 }
@@ -249,7 +267,7 @@ section:first-child .day-heading {
   width: 14px;
   height: 14px;
   stroke: currentColor;
-  stroke-width: 2;
+  stroke-width: 1.5;
   stroke-linecap: round;
 }
 
@@ -261,7 +279,7 @@ section:first-child .day-heading {
 }
 
 .erase:hover {
-  color: var(--ink);
+  color: var(--pine);
 }
 
 @media (hover: none) {
@@ -270,9 +288,9 @@ section:first-child .day-heading {
   }
 }
 
-/* Each new booking lands in its provider's colour and settles, so a change from elsewhere catches the eye. */
+/* Each new booking glows in its provider's colour and settles, so a change from elsewhere catches the eye. */
 .just-written {
-  animation: land 900ms ease-out;
+  animation: land 1200ms ease-out;
 }
 
 @keyframes land {
@@ -284,24 +302,31 @@ section:first-child .day-heading {
 .turner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 600;
+  gap: 12px;
   white-space: nowrap;
 }
 
+.turner span {
+  min-width: 7em;
+  text-align: center;
+}
+
 .turner button {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 8px;
-  background: var(--mat);
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--quartzite);
+  border-radius: 50%;
+  background: var(--white);
   color: inherit;
   font: inherit;
+  font-size: 20px;
+  line-height: 1;
   cursor: pointer;
+  transition: border-color 200ms;
 }
 
 .turner button:hover {
-  background: var(--sun);
+  border-color: var(--lichen);
 }
 
 /* A fixed height, whatever the message says, so the calendar below never jumps. */
@@ -309,19 +334,35 @@ section:first-child .day-heading {
   display: flex;
   align-items: center;
   gap: 8px 12px;
-  height: 56px;
-  padding-bottom: 16px;
+  height: 64px;
+  padding-bottom: 20px;
 }
 
 /* The radio stays in the page, invisible and full size, so keyboards and screen readers still have it. */
 .choice {
   position: relative;
-  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px 9px 14px;
+  border: 1px solid var(--quartzite);
   border-radius: 999px;
-  background: var(--mat);
-  font-weight: 600;
+  background: var(--white);
+  font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    background 200ms,
+    border-color 200ms;
+}
+
+.choice::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 0 1px rgb(34 51 44 / 0.12);
 }
 
 .choice input {
@@ -335,18 +376,25 @@ section:first-child .day-heading {
 }
 
 .choice:has(input:checked) {
+  border-color: var(--pine);
   background: var(--tone);
 }
 
+.choice:has(input:checked)::before {
+  background: var(--pine);
+  box-shadow: none;
+}
+
 .choice:has(input:focus-visible) {
-  outline: 2px solid var(--ink);
+  outline: 2px solid var(--pine);
   outline-offset: 2px;
 }
 
 .hint {
   flex: 1;
   min-width: 0;
-  color: var(--ink-soft);
+  padding-left: 8px;
+  color: var(--lichen);
   font-size: 15px;
   overflow: hidden;
 }
@@ -364,7 +412,7 @@ section:first-child .day-heading {
   min-width: 720px;
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 4px;
+  border-spacing: 6px;
   font-size: 15px;
 }
 
@@ -374,15 +422,14 @@ section:first-child .day-heading {
 }
 
 .week th {
-  font-weight: 500;
-  color: var(--ink-soft);
+  font-weight: 400;
+  color: var(--lichen);
 }
 
 .week thead th {
-  height: 32px;
-  color: var(--ink);
-  font-weight: 800;
-  font-style: italic;
+  height: 36px;
+  color: var(--pine);
+  font-weight: 500;
 }
 
 .week tbody th {
@@ -392,47 +439,97 @@ section:first-child .day-heading {
 }
 
 .week tbody td {
-  height: 48px;
+  height: 52px;
   padding: 0;
 }
 
-/* Empty slots are mats laid out on the studio floor. */
+/* Empty slots are smooth quartzite tiles, like the bath walls. */
 .slot {
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
-  border-radius: 8px;
-  background: var(--mat);
+  border-radius: 12px;
+  background: var(--quartzite);
   cursor: pointer;
+  transition:
+    background 200ms,
+    box-shadow 200ms;
 }
 
 .slot:hover:enabled,
 .slot:focus-visible {
-  background: var(--sun);
+  background: var(--white);
+  box-shadow: inset 0 0 0 1px var(--lichen);
 }
 
 .slot:disabled {
   cursor: default;
 }
 
+/* Hours that have gone by drain like an emptied bath: only the outline is left. */
+.slot.is-past {
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--quartzite);
+}
+
+.booked.is-past {
+  background: color-mix(in srgb, var(--tone) 40%, var(--snow));
+  color: var(--lichen);
+}
+
+.booked.is-past .booked-move {
+  cursor: default;
+}
+
+.week thead th.is-past {
+  color: var(--lichen);
+}
+
+.week tbody td {
+  position: relative;
+}
+
+/* The one firm mark on the sheet: a pine hairline at this minute, today only. */
+.now-line {
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  z-index: 1;
+  height: 0;
+  border-top: 1.5px solid var(--pine);
+  pointer-events: none;
+}
+
+.now-line::before {
+  content: "";
+  position: absolute;
+  top: -4.75px;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pine);
+}
+
 .booked {
   display: flex;
   height: 100%;
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--tone);
-  animation: drop-in 300ms cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  animation: settle 500ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
-@keyframes drop-in {
+@keyframes settle {
   from {
-    transform: scale(0.8);
+    opacity: 0;
+    transform: scale(0.94);
   }
 }
 
 .booked.is-moving {
-  outline: 2px dashed var(--ink);
-  outline-offset: 2px;
+  outline: 1.5px dashed var(--pine);
+  outline-offset: 3px;
 }
 
 .booked-move {
@@ -441,16 +538,19 @@ section:first-child .day-heading {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 2px 0 2px 10px;
+  padding: 2px 0 2px 12px;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
   font-size: 14px;
-  font-stretch: 75%;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: left;
   cursor: grab;
+}
+
+.booked-move strong {
+  font-weight: 600;
 }
 
 .booked-move strong,
@@ -461,9 +561,9 @@ section:first-child .day-heading {
 }
 
 .booked .erase {
-  width: 22px;
+  width: 24px;
   height: auto;
-  color: var(--ink);
+  color: var(--pine);
 }
 
 .graph {
@@ -482,11 +582,11 @@ section:first-child .day-heading {
 
 .gridlines span {
   height: 0;
-  border-top: 1px solid var(--mat);
+  border-top: 1px solid var(--quartzite);
   font-size: 14px;
   line-height: 0;
   text-indent: -28px;
-  color: var(--ink-soft);
+  color: var(--lichen);
 }
 
 .bars {
@@ -515,10 +615,14 @@ section:first-child .day-heading {
 
 .bar {
   position: relative;
-  width: min(70%, 56px);
-  border-radius: 4px 4px 0 0;
-  background: var(--pink);
-  transition: height 500ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  width: min(60%, 48px);
+  border-radius: 999px 999px 4px 4px;
+  background: var(--eucalyptus);
+  transition: height 700ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.is-this-week .bar {
+  background: var(--larch);
 }
 
 .bar-value {
@@ -526,12 +630,11 @@ section:first-child .day-heading {
   bottom: 100%;
   left: -10px;
   right: -10px;
-  padding-bottom: 2px;
+  padding-bottom: 4px;
   text-align: center;
-  font-size: 17px;
-  font-weight: 800;
-  font-style: italic;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 .bar-label {
@@ -541,14 +644,13 @@ section:first-child .day-heading {
   overflow: hidden;
   text-align: center;
   font-size: 14px;
-  font-stretch: 75%;
-  color: var(--ink-soft);
+  color: var(--lichen);
   white-space: nowrap;
 }
 
 .is-this-week .bar-label {
-  color: var(--ink);
-  font-weight: 800;
+  color: var(--pine);
+  font-weight: 600;
 }
 
 /* Always on screen, lined up with the page, so the ID is there to copy. */
@@ -558,11 +660,11 @@ section:first-child .day-heading {
   bottom: 0;
   left: 0;
   margin: 0;
-  padding: 8px max(32px, calc((100% - 1000px) / 2));
-  border-top: 1px solid var(--mat);
-  background: var(--white);
-  font-size: 15px;
-  color: var(--ink-soft);
+  padding: 10px max(32px, calc((100% - 1000px) / 2));
+  border-top: 1px solid var(--quartzite);
+  background: var(--snow);
+  font-size: 14px;
+  color: var(--lichen);
   overflow-wrap: anywhere;
 }
 
@@ -571,33 +673,34 @@ section:first-child .day-heading {
   .booking-bar {
     flex-wrap: wrap;
     align-content: flex-start;
-    height: 108px;
+    height: 116px;
   }
 
   .hint {
     flex-basis: 100%;
     height: 2.5em;
+    padding-left: 0;
     line-height: 1.25;
   }
 }
 
 @media (max-width: 720px) {
   .desk {
-    padding: 0 16px 96px;
+    padding: 0 16px 104px;
   }
 
   .navbar {
-    margin: 0 -16px 20px;
+    margin: 0 -16px 28px;
     padding: 0 16px;
   }
 
   .navbar-inner {
     gap: 8px;
+    height: 56px;
   }
 
   .brand {
-    font-size: 15px;
-    font-stretch: 75%;
+    font-size: 17px;
   }
 
   .navbar-name {
@@ -612,24 +715,30 @@ section:first-child .day-heading {
     padding-inline: 16px;
   }
 
-  /* Push the kick off the right edge, where it would cross the title. */
-  .stripes {
-    width: calc(100% + 180px);
+  .ridges {
+    width: calc(100% + 400px);
   }
 
   .sheet-head h1 {
-    font-size: 27px;
-    font-stretch: 75%;
+    font-size: 34px;
+    line-height: 40px;
   }
 
-  .booking-bar {
-    column-gap: 8px;
-  }
-
+  /* Share the row rather than wrap, trimming long names. */
   .choice {
-    padding: 8px 10px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 12px 8px 10px;
     font-size: 15px;
-    font-stretch: 75%;
+  }
+
+  .choice::before {
+    flex: none;
+  }
+
+  .choice span {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
