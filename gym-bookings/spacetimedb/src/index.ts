@@ -10,6 +10,16 @@ const FIRST_MONDAY = 4n * DAY; // 5 January 1970, the first Monday after the epo
 ////////////////////////////////////////////////////////////
 // STORAGE (Tables)
 ////////////////////////////////////////////////////////////
+const user = table(
+  { name: "user", public: true },
+  {
+    identity: t.identity().primaryKey(),
+    name: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
+  },
+);
+
 const appointment = table(
   { name: "appointment" },
   {
@@ -21,20 +31,12 @@ const appointment = table(
   },
 );
 
-const user = table(
-  { name: "user", public: true },
-  {
-    identity: t.identity().primaryKey(),
-    name: t.string(),
-    service: t.option(t.string()),
-    isAdmin: t.bool(),
-  },
-);
-
-const spacetimedb = schema({ appointment, user });
+const spacetimedb = schema({ user, appointment });
 export default spacetimedb;
 
-// Whoever publishes the database is its first admin.
+// When the database is created, we register the creating user as an admin.
+// (For a production environment you might want to set it to a known ID.
+// Probably the one shown by `spacetime login show`.)
 export const init = spacetimedb.init((ctx) => {
   ctx.db.user.insert({
     identity: ctx.sender,
@@ -79,13 +81,19 @@ export const bookAppointment = spacetimedb.reducer(
 export const myBookings = spacetimedb.view(
   { name: "my_bookings", public: true },
   t.array(appointment.rowType),
-  (ctx) => ctx.from.appointment.where((a) => a.client.eq(ctx.sender)),
+  (ctx) =>
+    ctx.from.appointment.where((appointment) =>
+      appointment.client.eq(ctx.sender),
+    ),
 );
 
 export const myWorkSchedule = spacetimedb.view(
   { name: "my_work_schedule", public: true },
   t.array(appointment.rowType),
-  (ctx) => ctx.from.appointment.where((a) => a.provider.eq(ctx.sender)),
+  (ctx) =>
+    ctx.from.appointment.where((appointment) =>
+      appointment.provider.eq(ctx.sender),
+    ),
 );
 
 const WeekTotal = t.row("WeekTotal", {
