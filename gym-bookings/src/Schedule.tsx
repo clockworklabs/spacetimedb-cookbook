@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Timestamp } from "spacetimedb";
+import { Timestamp, type Identity } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
-import { useReducer, useTable } from "spacetimedb/react";
+import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
 import type { Appointment, User } from "./module_bindings/types";
 import { formatDate, startOfToday } from "./dates";
 import { useErrorBanner } from "./useErrorBanner";
@@ -24,12 +24,10 @@ const byDate = (appointments: readonly Appointment[]) => {
 
 export function Schedule({
   name,
-  service,
   tone,
   users,
 }: {
   name: string;
-  service: string;
   tone: number;
   users: readonly User[];
 }) {
@@ -42,8 +40,18 @@ export function Schedule({
   );
   const deleteAppointment = useReducer(reducers.deleteAppointment);
   const [error, withErrorBanner] = useErrorBanner();
-  const nameOf = (a: Appointment) =>
-    users.find((u) => u.identity.isEqual(a.client))?.name ?? "Someone";
+  const { identity } = useSpacetimeDB();
+  const userFor = (id: Identity) => users.find((u) => u.identity.isEqual(id));
+
+  // Providers can take classes too, so a line is either someone coming to
+  // see us, or us going to see someone else.
+  const describe = (a: Appointment) => {
+    const provider = userFor(a.provider);
+    const service = provider?.service ?? "Appointment";
+    return identity && a.provider.isEqual(identity)
+      ? `${userFor(a.client)?.name ?? "Someone"}: ${service}`
+      : `${service} with ${provider?.name ?? "someone"}`;
+  };
 
   return (
     <article className={`sheet tone-${tone}`} aria-labelledby="sheet-title">
@@ -67,16 +75,14 @@ export function Schedule({
                       hourCycle: "h23",
                     })}
                   </span>
-                  <span className="line-text">
-                    {nameOf(a)}: {service}
-                  </span>
+                  <span className="line-text">{describe(a)}</span>
                   <button
                     type="button"
                     className="erase"
                     onClick={() =>
                       withErrorBanner(deleteAppointment({ id: a.id }))
                     }
-                    aria-label={`Cancel ${nameOf(a)}'s ${service}`}
+                    aria-label={`Cancel ${describe(a)}`}
                     title="Cancel appointment"
                   >
                     <svg viewBox="0 0 16 16" aria-hidden="true">

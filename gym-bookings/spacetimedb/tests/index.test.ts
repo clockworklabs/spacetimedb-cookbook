@@ -319,9 +319,9 @@ describe("views of the one table", () => {
 
     expect(viewOf(myBookings, kris).map((a) => a.id)).toEqual([booked.id]);
     expect(viewOf(myWorkSchedule, alice).map((a) => a.id)).toEqual([booked.id]);
+    expect(viewOf(myWorkSchedule, kris).map((a) => a.id)).toEqual([booked.id]);
 
     expect(viewOf(myBookings, alice)).toHaveLength(0);
-    expect(viewOf(myWorkSchedule, kris)).toHaveLength(0);
     expect(viewOf(myWorkSchedule, bob)).toHaveLength(0);
     expect(viewOf(myBookings, dana)).toHaveLength(0);
   });
@@ -342,6 +342,17 @@ describe("views of the one table", () => {
       ["2026-10-26", 2],
       ["2026-11-02", 1],
     ]);
+  });
+
+  it("puts a provider's own bookings on their schedule alongside their work", () => {
+    const teaching = book(kris, alice, THU_10AM);
+    const learning = book(alice, bob, MON_10AM);
+
+    expect(
+      viewOf(myWorkSchedule, alice)
+        .map((a) => a.id)
+        .sort(),
+    ).toEqual([teaching.id, learning.id].sort());
   });
 
   it("gives the weekly counts to admins only", () => {

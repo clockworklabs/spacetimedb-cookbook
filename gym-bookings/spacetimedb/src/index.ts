@@ -120,7 +120,7 @@ export const myWorkSchedule = spacetimedb.view(
   t.array(appointment.rowType),
   (ctx) =>
     ctx.from.appointment.where((appointment) =>
-      appointment.provider.eq(ctx.sender),
+      appointment.provider.eq(ctx.sender).or(appointment.client.eq(ctx.sender)),
     ),
 );
 

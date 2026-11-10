@@ -80,7 +80,6 @@ function App() {
           {current === "schedule" && (
             <Schedule
               name={me.name}
-              service={me.service ?? "Appointment"}
               tone={providers.indexOf(me)}
               users={users}
             />
