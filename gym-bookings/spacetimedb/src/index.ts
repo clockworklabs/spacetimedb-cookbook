@@ -206,17 +206,17 @@ export const deleteAppointment = spacetimedb.reducer(
   (ctx, { id }) => {
     // Note: We send the same error when the appointment doesn't exist, and
     // when you don't have permission to know it exists.
-    const notFound = () => new SenderError("Appointment not found");
+    const NOT_FOUND = "Appointment not found";
 
     const existing = ctx.db.appointment.id.find(id);
-    if (!existing) throw notFound();
+    if (!existing) throw new SenderError(NOT_FOUND);
 
     const isAllowed =
       ctx.sender.equals(existing.client) ||
       ctx.sender.equals(existing.provider) ||
       ctx.db.user.identity.find(ctx.sender)?.isAdmin;
 
-    if (!isAllowed) throw notFound();
+    if (!isAllowed) throw new SenderError(NOT_FOUND);
 
     requireNotPast(existing.startsAt, ctx.timestamp);
 
