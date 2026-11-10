@@ -22,6 +22,8 @@ const time = (iso: string) => Timestamp.fromDate(new Date(iso));
 const NOW = time("2026-10-29T09:00:00Z");
 const THU_10AM = time("2026-10-29T10:00:00Z");
 const THU_11AM = time("2026-10-29T11:00:00Z");
+const THU_10_30AM = time("2026-10-29T10:30:00Z");
+const THU_JUST_AFTER_10AM = time("2026-10-29T10:00:00.001Z");
 const SUN_10AM = time("2026-11-01T10:00:00Z");
 const MON_10AM = time("2026-11-02T10:00:00Z");
 
@@ -158,6 +160,15 @@ describe("createAppointment", () => {
     );
   });
 
+  it("refuses a time that isn't on the hour", () => {
+    for (const startsAt of [THU_10_30AM, THU_JUST_AFTER_10AM]) {
+      expect(() => book(kris, alice, startsAt)).toThrow(
+        "Appointments start on the hour",
+      );
+    }
+    expect(appointments()).toHaveLength(0);
+  });
+
   it("records the caller as the client", () => {
     expect(book(kris, alice, THU_10AM).client.isEqual(identityOf(kris))).toBe(
       true,
@@ -187,6 +198,19 @@ describe("updateAppointment", () => {
         updateAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
       ),
     ).toThrow("That slot has been taken");
+  });
+
+  it("refuses a time that isn't on the hour", () => {
+    const booked = book(kris, alice, THU_10AM);
+
+    expect(() =>
+      test.withReducerTx(kris, (ctx) =>
+        updateAppointment(ctx, { id: booked.id, startsAt: THU_10_30AM }),
+      ),
+    ).toThrow("Appointments start on the hour");
+    expect(
+      test.db.appointment.id.find(booked.id)!.startsAt.microsSinceUnixEpoch,
+    ).toBe(THU_10AM.microsSinceUnixEpoch);
   });
 
   it("refuses anyone but the client", () => {

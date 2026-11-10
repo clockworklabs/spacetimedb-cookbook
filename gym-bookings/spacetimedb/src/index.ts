@@ -4,8 +4,16 @@ import { schema, table, t, SenderError } from "spacetimedb/server";
 ////////////////////////////////////////////////////////////
 // Constants
 ////////////////////////////////////////////////////////////
-const DAY = 86_400_000_000n;
+const HOUR = 3_600_000_000n;
+const DAY = 24n * HOUR;
 const FIRST_MONDAY = 4n * DAY; // 5 January 1970, the first Monday after the epoch.
+
+// Appointments are bookable by the hour.
+const requireOnTheHour = (startsAt: Timestamp) => {
+  if (startsAt.microsSinceUnixEpoch % HOUR !== 0n) {
+    throw new SenderError("Appointments start on the hour");
+  }
+};
 
 ////////////////////////////////////////////////////////////
 // STORAGE (Tables)
@@ -57,6 +65,7 @@ export const createAppointment = spacetimedb.reducer(
     if (!ctx.db.user.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
+    requireOnTheHour(startsAt);
     for (const booked of ctx.db.appointment.provider.filter(provider)) {
       if (booked.startsAt.toMillis() === startsAt.toMillis()) {
         throw new SenderError("That slot has been taken");
@@ -128,6 +137,7 @@ export const updateAppointment = spacetimedb.reducer(
     if (!existing || !ctx.sender.equals(existing.client)) {
       throw new SenderError("Appointment not found");
     }
+    requireOnTheHour(startsAt);
     for (const booked of ctx.db.appointment.provider.filter(
       existing.provider,
     )) {
