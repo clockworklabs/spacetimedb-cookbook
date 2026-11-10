@@ -7,12 +7,12 @@ import {
 } from "spacetimedb/server/test-utils";
 import spacetimedb, * as moduleExports from "../src/index";
 import {
-  bookAppointment,
-  cancelAppointment,
+  createAppointment,
+  deleteAppointment,
   init,
   myBookings,
   myWorkSchedule,
-  rescheduleAppointment,
+  updateAppointment,
   sessionsPerWeek,
   setPersona,
 } from "../src/index";
@@ -52,7 +52,7 @@ const book = (auth: TestAuth, provider: TestAuth, startsAt: Timestamp) => {
   const before = new Set(appointments().map((a) => a.id));
   const providerId = identityOf(provider);
   test.withReducerTx(auth, (ctx) =>
-    bookAppointment(ctx, {
+    createAppointment(ctx, {
       provider: providerId,
       startsAt,
     }),
@@ -123,7 +123,7 @@ describe("setPersona", () => {
   });
 });
 
-describe("bookAppointment", () => {
+describe("createAppointment", () => {
   it("books the slot for the caller", () => {
     const booked = book(kris, alice, THU_10AM);
 
@@ -158,17 +158,19 @@ describe("bookAppointment", () => {
     );
   });
 
-  it("takes the client's name from their persona, not from the caller", () => {
-    expect(book(kris, alice, THU_10AM).clientName).toBe("Kris");
+  it("records the caller as the client", () => {
+    expect(book(kris, alice, THU_10AM).client.isEqual(identityOf(kris))).toBe(
+      true,
+    );
   });
 });
 
-describe("rescheduleAppointment", () => {
+describe("updateAppointment", () => {
   it("moves the appointment", () => {
     const booked = book(kris, alice, THU_10AM);
 
     test.withReducerTx(kris, (ctx) =>
-      rescheduleAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
+      updateAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
     );
 
     expect(
@@ -182,7 +184,7 @@ describe("rescheduleAppointment", () => {
 
     expect(() =>
       test.withReducerTx(kris, (ctx) =>
-        rescheduleAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
+        updateAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
       ),
     ).toThrow("That slot has been taken");
   });
@@ -193,19 +195,19 @@ describe("rescheduleAppointment", () => {
     for (const auth of [dana, alice]) {
       expect(() =>
         test.withReducerTx(auth, (ctx) =>
-          rescheduleAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
+          updateAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
         ),
       ).toThrow("Appointment not found");
     }
   });
 });
 
-describe("cancelAppointment", () => {
+describe("deleteAppointment", () => {
   it("lets the client cancel", () => {
     const booked = book(kris, alice, THU_10AM);
 
     test.withReducerTx(kris, (ctx) =>
-      cancelAppointment(ctx, { id: booked.id }),
+      deleteAppointment(ctx, { id: booked.id }),
     );
 
     expect(appointments()).toHaveLength(0);
@@ -215,7 +217,7 @@ describe("cancelAppointment", () => {
     const booked = book(kris, alice, THU_10AM);
 
     test.withReducerTx(alice, (ctx) =>
-      cancelAppointment(ctx, { id: booked.id }),
+      deleteAppointment(ctx, { id: booked.id }),
     );
 
     expect(appointments()).toHaveLength(0);
@@ -225,7 +227,7 @@ describe("cancelAppointment", () => {
     const booked = book(kris, alice, THU_10AM);
 
     test.withReducerTx(owner, (ctx) =>
-      cancelAppointment(ctx, { id: booked.id }),
+      deleteAppointment(ctx, { id: booked.id }),
     );
 
     expect(appointments()).toHaveLength(0);
@@ -236,7 +238,7 @@ describe("cancelAppointment", () => {
 
     expect(() =>
       test.withReducerTx(bob, (ctx) =>
-        cancelAppointment(ctx, { id: booked.id }),
+        deleteAppointment(ctx, { id: booked.id }),
       ),
     ).toThrow("Appointment not found");
     expect(appointments()).toHaveLength(1);

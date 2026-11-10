@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useTable } from "spacetimedb/react";
-import type { Appointment } from "./module_bindings/types";
+import type { Appointment, User } from "./module_bindings/types";
 import { formatDate, startOfToday } from "./dates";
 import { useErrorBanner } from "./useErrorBanner";
 
@@ -26,10 +26,12 @@ export function Schedule({
   name,
   service,
   tone,
+  users,
 }: {
   name: string;
   service: string;
   tone: number;
+  users: readonly User[];
 }) {
   const [today] = useState(startOfToday);
 
@@ -38,8 +40,10 @@ export function Schedule({
       a.startsAt.gte(Timestamp.fromDate(today)),
     ),
   );
-  const cancelAppointment = useReducer(reducers.cancelAppointment);
+  const deleteAppointment = useReducer(reducers.deleteAppointment);
   const [error, withErrorBanner] = useErrorBanner();
+  const nameOf = (a: Appointment) =>
+    users.find((u) => u.identity.isEqual(a.client))?.name ?? "Someone";
 
   return (
     <article className={`sheet tone-${tone}`} aria-labelledby="sheet-title">
@@ -60,15 +64,15 @@ export function Schedule({
                     {a.startsAt.toDate().getHours()}
                   </span>
                   <span className="line-text">
-                    {a.clientName}: {service}
+                    {nameOf(a)}: {service}
                   </span>
                   <button
                     type="button"
                     className="erase"
                     onClick={() =>
-                      withErrorBanner(cancelAppointment({ id: a.id }))
+                      withErrorBanner(deleteAppointment({ id: a.id }))
                     }
-                    aria-label={`Cancel ${a.clientName}'s ${service}`}
+                    aria-label={`Cancel ${nameOf(a)}'s ${service}`}
                     title="Cancel appointment"
                   >
                     <svg viewBox="0 0 16 16" aria-hidden="true">

@@ -26,7 +26,6 @@ const appointment = table(
   {
     id: t.u64().primaryKey().autoInc(),
     client: t.identity().index("btree"),
-    clientName: t.string(),
     provider: t.identity().index("btree"),
     startsAt: t.timestamp(),
   },
@@ -49,12 +48,13 @@ export const myWorkSchedule = spacetimedb.view(
 );
 ```
 
-`ctx.sender` is whoever is subscribing, so the one `bookAppointment` call updates Kris's calendar and Alice's
+`ctx.sender` is whoever is subscribing, so the one `createAppointment` call updates Kris's calendar and Alice's
 schedule, and Bob's connection hears nothing about it. The filter runs on the server: Bob's browser never receives
 Alice's appointments.
 
 The `user` table is public, because clients need it to find out who they can book. It holds a name, the
-service they offer if any, and whether they're an admin.
+service they offer if any, and whether they're an admin. An appointment stores only identities, so Alice's
+schedule looks each client's name up in `user`, and a renamed client shows up under their new name.
 
 ### A view that aggregates
 
@@ -122,9 +122,9 @@ for (const booked of ctx.db.appointment.provider.filter(provider)) {
 ```
 
 Reducers run one at a time in transactions, so the second caller always sees the first caller's row, and gets
-the error instead of a double booking. `rescheduleAppointment` makes the same check.
+the error instead of a double booking. `updateAppointment` makes the same check.
 
-The rest is the same as the todo list: `rescheduleAppointment` is for the client only, and `cancelAppointment`
+The rest is the same as the todo list: `updateAppointment` is for the client only, and `deleteAppointment`
 is for either the client or the provider, so Alice cancelling makes a row vanish from Kris's calendar.
 
 ### Who you are

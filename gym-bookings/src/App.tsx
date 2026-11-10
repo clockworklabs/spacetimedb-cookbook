@@ -62,6 +62,7 @@ function App() {
               name={me.name}
               service={me.service ?? "Appointment"}
               tone={providers.indexOf(me)}
+              users={users}
             />
           )}
           {current === "admin" && <AdminGraph />}

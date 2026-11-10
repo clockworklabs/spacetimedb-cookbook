@@ -30,9 +30,9 @@ export function WeekCalendar({
       .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
       .where((a) => a.startsAt.lt(Timestamp.fromDate(addDays(monday, 7)))),
   );
-  const bookAppointment = useReducer(reducers.bookAppointment);
-  const rescheduleAppointment = useReducer(reducers.rescheduleAppointment);
-  const cancelAppointment = useReducer(reducers.cancelAppointment);
+  const createAppointment = useReducer(reducers.createAppointment);
+  const updateAppointment = useReducer(reducers.updateAppointment);
+  const deleteAppointment = useReducer(reducers.deleteAppointment);
 
   const [error, withErrorBanner] = useErrorBanner();
   const [chosenProvider, setChosenProvider] = useState<string | null>(null);
@@ -47,11 +47,11 @@ export function WeekCalendar({
   const fillSlot = (when: Date) => {
     const startsAt = Timestamp.fromDate(when);
     if (moving) {
-      withErrorBanner(rescheduleAppointment({ id: moving.id, startsAt }));
+      withErrorBanner(updateAppointment({ id: moving.id, startsAt }));
       setMoving(null);
     } else if (selected) {
       withErrorBanner(
-        bookAppointment({ provider: selected.identity, startsAt }),
+        createAppointment({ provider: selected.identity, startsAt }),
       );
     }
   };
@@ -133,7 +133,7 @@ export function WeekCalendar({
                           }
                           onCancel={() =>
                             withErrorBanner(
-                              cancelAppointment({ id: booked.id }),
+                              deleteAppointment({ id: booked.id }),
                             )
                           }
                         />

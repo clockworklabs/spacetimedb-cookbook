@@ -25,7 +25,6 @@ const appointment = table(
   {
     id: t.u64().primaryKey().autoInc(),
     client: t.identity().index("btree"),
-    clientName: t.string(),
     provider: t.identity().index("btree"),
     startsAt: t.timestamp(),
   },
@@ -49,11 +48,10 @@ export const init = spacetimedb.init((ctx) => {
 ////////////////////////////////////////////////////////////
 // CREATE
 ////////////////////////////////////////////////////////////
-export const bookAppointment = spacetimedb.reducer(
+export const createAppointment = spacetimedb.reducer(
   { provider: t.identity(), startsAt: t.timestamp() },
   (ctx, { provider, startsAt }) => {
-    const client = ctx.db.user.identity.find(ctx.sender);
-    if (!client) {
+    if (!ctx.db.user.identity.find(ctx.sender)) {
       throw new SenderError("You don't have an account yet");
     }
     if (!ctx.db.user.identity.find(provider)?.service) {
@@ -68,7 +66,6 @@ export const bookAppointment = spacetimedb.reducer(
     ctx.db.appointment.insert({
       id: 0n,
       client: ctx.sender,
-      clientName: client.name,
       provider,
       startsAt,
     });
@@ -124,7 +121,7 @@ export const sessionsPerWeek = spacetimedb.view(
 ////////////////////////////////////////////////////////////
 // UPDATE
 ////////////////////////////////////////////////////////////
-export const rescheduleAppointment = spacetimedb.reducer(
+export const updateAppointment = spacetimedb.reducer(
   { id: t.u64(), startsAt: t.timestamp() },
   (ctx, { id, startsAt }) => {
     const existing = ctx.db.appointment.id.find(id);
@@ -169,7 +166,7 @@ export const setPersona = spacetimedb.reducer(
 ////////////////////////////////////////////////////////////
 // DELETE
 ////////////////////////////////////////////////////////////
-export const cancelAppointment = spacetimedb.reducer(
+export const deleteAppointment = spacetimedb.reducer(
   { id: t.u64() },
   (ctx, { id }) => {
     // Note: We send the same error when the appointment doesn't exist, and

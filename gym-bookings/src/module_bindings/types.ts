@@ -13,7 +13,6 @@ import {
 export const Appointment = __t.object("Appointment", {
   id: __t.u64(),
   client: __t.identity(),
-  clientName: __t.string(),
   provider: __t.identity(),
   startsAt: __t.timestamp(),
 });

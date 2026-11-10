@@ -13,7 +13,6 @@ import {
 export default __t.row({
   id: __t.u64().primaryKey(),
   client: __t.identity(),
-  clientName: __t.string().name("client_name"),
   provider: __t.identity(),
   startsAt: __t.timestamp().name("starts_at"),
 });
