@@ -26,6 +26,7 @@ const THU_10_30AM = time("2026-10-29T10:30:00Z");
 const THU_JUST_AFTER_10AM = time("2026-10-29T10:00:00.001Z");
 const SUN_10AM = time("2026-11-01T10:00:00Z");
 const MON_10AM = time("2026-11-02T10:00:00Z");
+const WED_10AM = time("2026-10-28T10:00:00Z");
 
 const client = (sub: string, connectionId: bigint) =>
   TestAuth.fromJwtPayload(
@@ -40,10 +41,11 @@ const bob = client("bob", 4n);
 const owner = client("owner", 5n);
 
 let test: ReturnType<typeof newHarness>;
-const newHarness = () =>
-  createModuleTestHarness(spacetimedb, moduleExports, {
-    clock: new TestClock(NOW),
-  });
+let clock: TestClock;
+const newHarness = () => {
+  clock = new TestClock(NOW);
+  return createModuleTestHarness(spacetimedb, moduleExports, { clock });
+};
 
 const identityOf = (auth: TestAuth) =>
   test.withReducerTx(auth, (ctx) => ctx.sender);
@@ -169,6 +171,13 @@ describe("createAppointment", () => {
     expect(appointments()).toHaveLength(0);
   });
 
+  it("refuses a time that has already passed", () => {
+    expect(() => book(kris, alice, WED_10AM)).toThrow(
+      "That time has already passed",
+    );
+    expect(appointments()).toHaveLength(0);
+  });
+
   it("records the caller as the client", () => {
     expect(book(kris, alice, THU_10AM).client.isEqual(identityOf(kris))).toBe(
       true,
@@ -213,6 +222,27 @@ describe("updateAppointment", () => {
     ).toBe(THU_10AM.microsSinceUnixEpoch);
   });
 
+  it("refuses to move an appointment into the past", () => {
+    const booked = book(kris, alice, THU_10AM);
+
+    expect(() =>
+      test.withReducerTx(kris, (ctx) =>
+        updateAppointment(ctx, { id: booked.id, startsAt: WED_10AM }),
+      ),
+    ).toThrow("That time has already passed");
+  });
+
+  it("refuses to move an appointment that has already started", () => {
+    const booked = book(kris, alice, THU_10AM);
+    clock.set(THU_10_30AM);
+
+    expect(() =>
+      test.withReducerTx(kris, (ctx) =>
+        updateAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
+      ),
+    ).toThrow("That time has already passed");
+  });
+
   it("refuses anyone but the client", () => {
     const booked = book(kris, alice, THU_10AM);
 
@@ -255,6 +285,20 @@ describe("deleteAppointment", () => {
     );
 
     expect(appointments()).toHaveLength(0);
+  });
+
+  it("refuses to cancel an appointment that has already started, even for an admin", () => {
+    const booked = book(kris, alice, THU_10AM);
+    clock.set(THU_10_30AM);
+
+    for (const auth of [kris, alice, owner]) {
+      expect(() =>
+        test.withReducerTx(auth, (ctx) =>
+          deleteAppointment(ctx, { id: booked.id }),
+        ),
+      ).toThrow("That time has already passed");
+    }
+    expect(appointments()).toHaveLength(1);
   });
 
   it("refuses anyone else", () => {

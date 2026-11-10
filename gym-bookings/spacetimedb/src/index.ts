@@ -15,6 +15,14 @@ const requireOnTheHour = (startsAt: Timestamp) => {
   }
 };
 
+// The past is fixed: no booking, moving or cancelling appointments that
+// have already started.
+const requireNotPast = (startsAt: Timestamp, now: Timestamp) => {
+  if (startsAt.microsSinceUnixEpoch < now.microsSinceUnixEpoch) {
+    throw new SenderError("That time has already passed");
+  }
+};
+
 ////////////////////////////////////////////////////////////
 // STORAGE (Tables)
 ////////////////////////////////////////////////////////////
@@ -29,7 +37,18 @@ const user = table(
 );
 
 const appointment = table(
-  { name: "appointment" },
+  {
+    name: "appointment",
+    // Lets us check whether a slot is free with a single index lookup,
+    // however many bookings the provider has.
+    indexes: [
+      {
+        accessor: "providerSlot",
+        algorithm: "btree",
+        columns: ["provider", "startsAt"],
+      },
+    ],
+  },
   {
     id: t.u64().primaryKey().autoInc(),
     client: t.identity().index("btree"),
@@ -67,12 +86,13 @@ export const createAppointment = spacetimedb.reducer(
     }
 
     requireOnTheHour(startsAt);
+    requireNotPast(startsAt, ctx.timestamp);
 
-    for (const booked of ctx.db.appointment.provider.filter(provider)) {
-      if (booked.startsAt.toMillis() === startsAt.toMillis()) {
-        throw new SenderError("That slot has been taken");
-      }
-    }
+    const [taken] = ctx.db.appointment.providerSlot.filter([
+      provider,
+      startsAt,
+    ]);
+    if (taken) throw new SenderError("That slot has been taken");
 
     ctx.db.appointment.insert({
       id: 0n,
@@ -140,15 +160,16 @@ export const updateAppointment = spacetimedb.reducer(
       throw new SenderError("Appointment not found");
     }
 
+    requireNotPast(existing.startsAt, ctx.timestamp);
     requireOnTheHour(startsAt);
+    requireNotPast(startsAt, ctx.timestamp);
 
-    for (const booked of ctx.db.appointment.provider.filter(
+    const [taken] = ctx.db.appointment.providerSlot.filter([
       existing.provider,
-    )) {
-      if (booked.startsAt.toMillis() === startsAt.toMillis()) {
-        throw new SenderError("That slot has been taken");
-      }
-    }
+      startsAt,
+    ]);
+    if (taken) throw new SenderError("That slot has been taken");
+
     ctx.db.appointment.id.update({ ...existing, startsAt });
   },
 );
@@ -196,6 +217,8 @@ export const deleteAppointment = spacetimedb.reducer(
       ctx.db.user.identity.find(ctx.sender)?.isAdmin;
 
     if (!isAllowed) throw notFound();
+
+    requireNotPast(existing.startsAt, ctx.timestamp);
 
     ctx.db.appointment.id.delete(id);
   },
