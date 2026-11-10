@@ -1,7 +1,15 @@
 import { Timestamp } from "spacetimedb";
 import { schema, table, t, SenderError } from "spacetimedb/server";
 
-// STORE
+////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////
+const DAY = 86_400_000_000n;
+const FIRST_MONDAY = 4n * DAY; // 5 January 1970, the first Monday after the epoch.
+
+////////////////////////////////////////////////////////////
+// STORAGE (Tables)
+////////////////////////////////////////////////////////////
 const appointment = table(
   { name: "appointment" },
   {
@@ -36,40 +44,22 @@ export const init = spacetimedb.init((ctx) => {
   });
 });
 
+////////////////////////////////////////////////////////////
 // CREATE
-export const setPersona = spacetimedb.reducer(
-  {
-    identity: t.identity(),
-    name: t.string(),
-    service: t.option(t.string()),
-    isAdmin: t.bool(),
-  },
-  (ctx, { identity, name, service, isAdmin }) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
-      throw new SenderError("Only an admin can set a persona");
-    }
-    const persona = { identity, name, service, isAdmin };
-    if (ctx.db.person.identity.find(identity)) {
-      ctx.db.person.identity.update(persona);
-    } else {
-      ctx.db.person.insert(persona);
-    }
-  },
-);
-
+////////////////////////////////////////////////////////////
 export const bookAppointment = spacetimedb.reducer(
   { provider: t.identity(), startsAt: t.timestamp() },
   (ctx, { provider, startsAt }) => {
     const client = ctx.db.person.identity.find(ctx.sender);
     if (!client) {
-      throw new SenderError("You don't have a persona yet");
+      throw new SenderError("You don't have an account yet");
     }
     if (!ctx.db.person.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
     for (const booked of ctx.db.appointment.provider.filter(provider)) {
       if (booked.startsAt.toMillis() === startsAt.toMillis()) {
-        throw new SenderError("That slot has just been taken");
+        throw new SenderError("That slot has been taken");
       }
     }
 
@@ -83,15 +73,17 @@ export const bookAppointment = spacetimedb.reducer(
   },
 );
 
-// RETRIEVE: three views of the one table.
-export const myCalendar = spacetimedb.view(
-  { name: "my_calendar", public: true },
+////////////////////////////////////////////////////////////
+// RETRIEVE: Three diffferent views. Three ways of looking at one table.
+////////////////////////////////////////////////////////////
+export const myBookings = spacetimedb.view(
+  { name: "my_bookings", public: true },
   t.array(appointment.rowType),
   (ctx) => ctx.from.appointment.where((a) => a.client.eq(ctx.sender)),
 );
 
-export const mySchedule = spacetimedb.view(
-  { name: "my_schedule", public: true },
+export const myWorkSchedule = spacetimedb.view(
+  { name: "my_work_schedule", public: true },
   t.array(appointment.rowType),
   (ctx) => ctx.from.appointment.where((a) => a.provider.eq(ctx.sender)),
 );
@@ -100,9 +92,6 @@ const WeekTotal = t.row("WeekTotal", {
   weekStart: t.timestamp().primaryKey(),
   sessions: t.u32(),
 });
-
-const DAY = 86_400_000_000n;
-const FIRST_MONDAY = 4n * DAY; // 5 January 1970, the first Monday after the epoch.
 
 export const sessionsPerWeek = spacetimedb.view(
   { name: "sessions_per_week", public: true },
@@ -124,26 +113,54 @@ export const sessionsPerWeek = spacetimedb.view(
   },
 );
 
+////////////////////////////////////////////////////////////
 // UPDATE
+////////////////////////////////////////////////////////////
 export const rescheduleAppointment = spacetimedb.reducer(
   { id: t.u64(), startsAt: t.timestamp() },
   (ctx, { id, startsAt }) => {
     const existing = ctx.db.appointment.id.find(id);
-    if (!existing || !existing.client.equals(ctx.sender)) {
+    if (!existing || !ctx.sender.equals(existing.client)) {
       throw new SenderError("Appointment not found");
     }
     for (const booked of ctx.db.appointment.provider.filter(
       existing.provider,
     )) {
       if (booked.startsAt.toMillis() === startsAt.toMillis()) {
-        throw new SenderError("That slot has just been taken");
+        throw new SenderError("That slot has been taken");
       }
     }
     ctx.db.appointment.id.update({ ...existing, startsAt });
   },
 );
 
+export const setPersona = spacetimedb.reducer(
+  {
+    identity: t.identity(),
+    name: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
+  },
+  (ctx, { identity, name, service, isAdmin }) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      throw new SenderError("Only an admin can set a persona");
+    }
+    // Admins can only demote each other, so there is always one left.
+    if (ctx.sender.equals(identity) && !isAdmin) {
+      throw new SenderError("You can't remove your own admin rights");
+    }
+    const persona = { identity, name, service, isAdmin };
+    if (ctx.db.person.identity.find(identity)) {
+      ctx.db.person.identity.update(persona);
+    } else {
+      ctx.db.person.insert(persona);
+    }
+  },
+);
+
+////////////////////////////////////////////////////////////
 // DELETE
+////////////////////////////////////////////////////////////
 export const cancelAppointment = spacetimedb.reducer(
   { id: t.u64() },
   (ctx, { id }) => {
@@ -151,12 +168,33 @@ export const cancelAppointment = spacetimedb.reducer(
     if (
       !existing ||
       !(
-        existing.client.equals(ctx.sender) ||
-        existing.provider.equals(ctx.sender)
+        ctx.sender.equals(existing.client) ||
+        ctx.sender.equals(existing.provider)
       )
     ) {
       throw new SenderError("Appointment not found");
     }
     ctx.db.appointment.id.delete(id);
+  },
+);
+
+// ADMIN
+export const setPersona = spacetimedb.reducer(
+  {
+    identity: t.identity(),
+    name: t.string(),
+    service: t.option(t.string()),
+    isAdmin: t.bool(),
+  },
+  (ctx, { identity, name, service, isAdmin }) => {
+    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+      throw new SenderError("Only an admin can set a persona");
+    }
+    const persona = { identity, name, service, isAdmin };
+    if (ctx.db.person.identity.find(identity)) {
+      ctx.db.person.identity.update(persona);
+    } else {
+      ctx.db.person.insert(persona);
+    }
   },
 );

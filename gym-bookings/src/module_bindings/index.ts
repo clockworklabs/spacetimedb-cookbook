@@ -42,8 +42,8 @@ import SetPersonaReducer from "./set_persona_reducer";
 // Import all procedure arg schemas
 
 // Import all table schema definitions
-import MyCalendarRow from "./my_calendar_table";
-import MyScheduleRow from "./my_schedule_table";
+import MyBookingsRow from "./my_bookings_table";
+import MyWorkScheduleRow from "./my_work_schedule_table";
 import PersonRow from "./person_table";
 import SessionsPerWeekRow from "./sessions_per_week_table";
 
@@ -72,21 +72,21 @@ const tablesSchema = __schema({
     },
     PersonRow,
   ),
-  myCalendar: __table(
+  myBookings: __table(
     {
-      name: "my_calendar",
+      name: "my_bookings",
       indexes: [],
       constraints: [],
     },
-    MyCalendarRow,
+    MyBookingsRow,
   ),
-  mySchedule: __table(
+  myWorkSchedule: __table(
     {
-      name: "my_schedule",
+      name: "my_work_schedule",
       indexes: [],
       constraints: [],
     },
-    MyScheduleRow,
+    MyWorkScheduleRow,
   ),
   sessionsPerWeek: __table(
     {

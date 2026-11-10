@@ -26,7 +26,7 @@ export function WeekCalendar({
 
   const { isActive: connected } = useSpacetimeDB();
   const [appointments, ready] = useTable(
-    tables.myCalendar
+    tables.myBookings
       .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
       .where((a) => a.startsAt.lt(Timestamp.fromDate(addDays(monday, 7)))),
   );

@@ -34,7 +34,9 @@ export function Schedule({
   const [today] = useState(startOfToday);
 
   const [appointments, ready] = useTable(
-    tables.mySchedule.where((a) => a.startsAt.gte(Timestamp.fromDate(today))),
+    tables.myWorkSchedule.where((a) =>
+      a.startsAt.gte(Timestamp.fromDate(today)),
+    ),
   );
   const cancelAppointment = useReducer(reducers.cancelAppointment);
   const [error, withErrorBanner] = useErrorBanner();

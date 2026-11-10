@@ -36,14 +36,14 @@ const appointment = table(
 It's private, so no client can read it directly. Kris and Alice read that same row through different views:
 
 ```ts
-export const myCalendar = spacetimedb.view(
-  { name: "my_calendar", public: true },
+export const myBookings = spacetimedb.view(
+  { name: "my_bookings", public: true },
   t.array(appointment.rowType),
   (ctx) => ctx.from.appointment.where((a) => a.client.eq(ctx.sender)),
 );
 
-export const mySchedule = spacetimedb.view(
-  { name: "my_schedule", public: true },
+export const myWorkSchedule = spacetimedb.view(
+  { name: "my_work_schedule", public: true },
   t.array(appointment.rowType),
   (ctx) => ctx.from.appointment.where((a) => a.provider.eq(ctx.sender)),
 );
@@ -98,14 +98,14 @@ when it subscribes (`src/WeekCalendar.tsx`):
 
 ```ts
 const [appointments, ready] = useTable(
-  tables.myCalendar
+  tables.myBookings
     .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
     .where((a) => a.startsAt.lt(Timestamp.fromDate(addDays(monday, 7)))),
 );
 ```
 
 The server applies that filter too, so only the week's rows are sent. Turn the page and `useTable` swaps the
-subscription. `src/Schedule.tsx` does the same with everything from today onwards in `my_schedule`.
+subscription. `src/Schedule.tsx` does the same with everything from today onwards in `my_work_schedule`.
 
 The view decides what you're allowed to see. The `where` decides what you currently want.
 
@@ -208,8 +208,8 @@ spacetime sql gym-bookings "SELECT * FROM appointment"
 | `spacetimedb/tests/index.test.ts` | Tests for the reducers and the views, against an in-memory database   |
 | `src/main.tsx`                    | Connects to SpacetimeDB, keeping this browser's identity              |
 | `src/App.tsx`                     | Finds your persona, and switches between Week, Schedule and Admin     |
-| `src/WeekCalendar.tsx`            | The client's week: subscribes to `my_calendar`, books and reschedules |
-| `src/Schedule.tsx`                | A provider's appointments by date: subscribes to `my_schedule`        |
+| `src/WeekCalendar.tsx`            | The client's week: subscribes to `my_bookings`, books and reschedules |
+| `src/Schedule.tsx`                | A provider's appointments by date: subscribes to `my_work_schedule`   |
 | `src/AdminGraph.tsx`              | The admin's graph: subscribes to `sessions_per_week`                  |
 | `src/module_bindings/`            | Client bindings, generated from the module                            |
 

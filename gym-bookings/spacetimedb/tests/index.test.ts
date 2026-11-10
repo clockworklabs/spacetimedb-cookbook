@@ -10,8 +10,8 @@ import {
   bookAppointment,
   cancelAppointment,
   init,
-  myCalendar,
-  mySchedule,
+  myBookings,
+  myWorkSchedule,
   rescheduleAppointment,
   sessionsPerWeek,
   setPersona,
@@ -60,7 +60,7 @@ const book = (auth: TestAuth, provider: TestAuth, startsAt: Timestamp) => {
   return appointments().find((a) => !before.has(a.id))!;
 };
 
-const viewOf = (view: typeof myCalendar, auth: TestAuth) =>
+const viewOf = (view: typeof myBookings, auth: TestAuth) =>
   test.runQuery<ReturnType<typeof appointments>[number]>(
     view(test.viewContext(auth)) as never,
   );
@@ -133,7 +133,7 @@ describe("bookAppointment", () => {
     book(kris, alice, THU_10AM);
 
     expect(() => book(dana, alice, THU_10AM)).toThrow(
-      "That slot has just been taken",
+      "That slot has been taken",
     );
     expect(appointments()).toHaveLength(1);
   });
@@ -149,9 +149,9 @@ describe("bookAppointment", () => {
     expect(() => book(kris, dana, THU_10AM)).toThrow("Provider not found");
   });
 
-  it("refuses a caller without a persona", () => {
+  it("refuses a caller without an account", () => {
     expect(() => book(client("stranger", 6n), alice, THU_10AM)).toThrow(
-      "You don't have a persona yet",
+      "You don't have an account yet",
     );
   });
 
@@ -181,7 +181,7 @@ describe("rescheduleAppointment", () => {
       test.withReducerTx(kris, (ctx) =>
         rescheduleAppointment(ctx, { id: booked.id, startsAt: THU_11AM }),
       ),
-    ).toThrow("That slot has just been taken");
+    ).toThrow("That slot has been taken");
   });
 
   it("refuses anyone but the client", () => {
@@ -234,13 +234,13 @@ describe("views of the one table", () => {
   it("shows the same appointment to its client and its provider, and nobody else", () => {
     const booked = book(kris, alice, THU_10AM);
 
-    expect(viewOf(myCalendar, kris).map((a) => a.id)).toEqual([booked.id]);
-    expect(viewOf(mySchedule, alice).map((a) => a.id)).toEqual([booked.id]);
+    expect(viewOf(myBookings, kris).map((a) => a.id)).toEqual([booked.id]);
+    expect(viewOf(myWorkSchedule, alice).map((a) => a.id)).toEqual([booked.id]);
 
-    expect(viewOf(myCalendar, alice)).toHaveLength(0);
-    expect(viewOf(mySchedule, kris)).toHaveLength(0);
-    expect(viewOf(mySchedule, bob)).toHaveLength(0);
-    expect(viewOf(myCalendar, dana)).toHaveLength(0);
+    expect(viewOf(myBookings, alice)).toHaveLength(0);
+    expect(viewOf(myWorkSchedule, kris)).toHaveLength(0);
+    expect(viewOf(myWorkSchedule, bob)).toHaveLength(0);
+    expect(viewOf(myBookings, dana)).toHaveLength(0);
   });
 
   it("counts sessions per Monday-to-Sunday week", () => {

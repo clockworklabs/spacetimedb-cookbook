@@ -19,11 +19,11 @@ export const Appointment = __t.object("Appointment", {
 });
 export type Appointment = __Infer<typeof Appointment>;
 
-export const MyCalendar = __t.object("MyCalendar", {});
-export type MyCalendar = __Infer<typeof MyCalendar>;
+export const MyBookings = __t.object("MyBookings", {});
+export type MyBookings = __Infer<typeof MyBookings>;
 
-export const MySchedule = __t.object("MySchedule", {});
-export type MySchedule = __Infer<typeof MySchedule>;
+export const MyWorkSchedule = __t.object("MyWorkSchedule", {});
+export type MyWorkSchedule = __Infer<typeof MyWorkSchedule>;
 
 export const Person = __t.object("Person", {
   identity: __t.identity(),
