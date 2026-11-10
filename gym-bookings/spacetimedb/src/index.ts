@@ -177,24 +177,3 @@ export const cancelAppointment = spacetimedb.reducer(
     ctx.db.appointment.id.delete(id);
   },
 );
-
-// ADMIN
-export const setPersona = spacetimedb.reducer(
-  {
-    identity: t.identity(),
-    name: t.string(),
-    service: t.option(t.string()),
-    isAdmin: t.bool(),
-  },
-  (ctx, { identity, name, service, isAdmin }) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
-      throw new SenderError("Only an admin can set a persona");
-    }
-    const persona = { identity, name, service, isAdmin };
-    if (ctx.db.person.identity.find(identity)) {
-      ctx.db.person.identity.update(persona);
-    } else {
-      ctx.db.person.insert(persona);
-    }
-  },
-);

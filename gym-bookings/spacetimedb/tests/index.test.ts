@@ -110,6 +110,13 @@ describe("setPersona", () => {
     expect(test.db.person.identity.find(identityOf(kris))?.isAdmin).toBe(false);
   });
 
+  it("refuses to let an admin remove their own admin rights", () => {
+    expect(() => assign(owner, owner, "Owner", undefined, false)).toThrow(
+      "You can't remove your own admin rights",
+    );
+    expect(test.db.person.identity.find(identityOf(owner))?.isAdmin).toBe(true);
+  });
+
   it("lets a new admin set personas", () => {
     assign(owner, kris, "Kris", undefined, true);
     assign(kris, dana, "Dana", "Yoga");
