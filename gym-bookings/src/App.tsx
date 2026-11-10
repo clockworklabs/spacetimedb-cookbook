@@ -8,11 +8,11 @@ import "./App.css";
 
 function App() {
   const { isActive: connected, identity } = useSpacetimeDB();
-  const [people, ready] = useTable(tables.person);
+  const [users, ready] = useTable(tables.user);
   const [view, setView] = useState(location.hash.slice(1));
 
-  const me = people.find((p) => identity && p.identity.isEqual(identity));
-  const providers = people
+  const me = users.find((p) => identity && p.identity.isEqual(identity));
+  const providers = users
     .filter((p) => p.service)
     .sort((a, b) => a.name.localeCompare(b.name));
   const views = me?.isAdmin

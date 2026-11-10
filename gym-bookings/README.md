@@ -53,7 +53,7 @@ export const myWorkSchedule = spacetimedb.view(
 schedule, and Bob's connection hears nothing about it. The filter runs on the server: Bob's browser never receives
 Alice's appointments.
 
-The `person` table is public, because clients need it to find out who they can book. It holds a name, the
+The `user` table is public, because clients need it to find out who they can book. It holds a name, the
 service they offer if any, and whether they're an admin.
 
 ### A view that aggregates
@@ -65,7 +65,7 @@ export const sessionsPerWeek = spacetimedb.view(
   { name: "sessions_per_week", public: true },
   t.array(WeekTotal),
   (ctx) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+    if (!ctx.db.user.identity.find(ctx.sender)?.isAdmin) {
       return [];
     }
     const totals = new Map<bigint, number>();
@@ -141,7 +141,7 @@ export const setPersona = spacetimedb.reducer(
     isAdmin: t.bool(),
   },
   (ctx, { identity, name, service, isAdmin }) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+    if (!ctx.db.user.identity.find(ctx.sender)?.isAdmin) {
       throw new SenderError("Only an admin can set a persona");
     }
 ```

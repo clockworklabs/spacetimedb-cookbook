@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
-import type { Appointment, Person } from "./module_bindings/types";
+import type { Appointment, User } from "./module_bindings/types";
 import {
   HOURS,
   addDays,
@@ -19,7 +19,7 @@ export function WeekCalendar({
   providers,
 }: {
   name: string;
-  providers: Person[];
+  providers: User[];
 }) {
   const [monday, setMonday] = useState(() => startOfWeek(startOfToday()));
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));

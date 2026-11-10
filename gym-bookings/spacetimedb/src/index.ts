@@ -21,8 +21,8 @@ const appointment = table(
   },
 );
 
-const person = table(
-  { name: "person", public: true },
+const user = table(
+  { name: "user", public: true },
   {
     identity: t.identity().primaryKey(),
     name: t.string(),
@@ -31,12 +31,12 @@ const person = table(
   },
 );
 
-const spacetimedb = schema({ appointment, person });
+const spacetimedb = schema({ appointment, user });
 export default spacetimedb;
 
 // Whoever publishes the database is its first admin.
 export const init = spacetimedb.init((ctx) => {
-  ctx.db.person.insert({
+  ctx.db.user.insert({
     identity: ctx.sender,
     name: "Owner",
     service: undefined,
@@ -50,11 +50,11 @@ export const init = spacetimedb.init((ctx) => {
 export const bookAppointment = spacetimedb.reducer(
   { provider: t.identity(), startsAt: t.timestamp() },
   (ctx, { provider, startsAt }) => {
-    const client = ctx.db.person.identity.find(ctx.sender);
+    const client = ctx.db.user.identity.find(ctx.sender);
     if (!client) {
       throw new SenderError("You don't have an account yet");
     }
-    if (!ctx.db.person.identity.find(provider)?.service) {
+    if (!ctx.db.user.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
     for (const booked of ctx.db.appointment.provider.filter(provider)) {
@@ -97,7 +97,7 @@ export const sessionsPerWeek = spacetimedb.view(
   { name: "sessions_per_week", public: true },
   t.array(WeekTotal),
   (ctx) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+    if (!ctx.db.user.identity.find(ctx.sender)?.isAdmin) {
       return [];
     }
     const totals = new Map<bigint, number>();
@@ -142,7 +142,7 @@ export const setPersona = spacetimedb.reducer(
     isAdmin: t.bool(),
   },
   (ctx, { identity, name, service, isAdmin }) => {
-    if (!ctx.db.person.identity.find(ctx.sender)?.isAdmin) {
+    if (!ctx.db.user.identity.find(ctx.sender)?.isAdmin) {
       throw new SenderError("Only an admin can set a persona");
     }
     // Admins can only demote each other, so there is always one left.
@@ -150,10 +150,10 @@ export const setPersona = spacetimedb.reducer(
       throw new SenderError("You can't remove your own admin rights");
     }
     const persona = { identity, name, service, isAdmin };
-    if (ctx.db.person.identity.find(identity)) {
-      ctx.db.person.identity.update(persona);
+    if (ctx.db.user.identity.find(identity)) {
+      ctx.db.user.identity.update(persona);
     } else {
-      ctx.db.person.insert(persona);
+      ctx.db.user.insert(persona);
     }
   },
 );

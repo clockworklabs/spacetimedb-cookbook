@@ -25,16 +25,16 @@ export type MyBookings = __Infer<typeof MyBookings>;
 export const MyWorkSchedule = __t.object("MyWorkSchedule", {});
 export type MyWorkSchedule = __Infer<typeof MyWorkSchedule>;
 
-export const Person = __t.object("Person", {
+export const SessionsPerWeek = __t.object("SessionsPerWeek", {});
+export type SessionsPerWeek = __Infer<typeof SessionsPerWeek>;
+
+export const User = __t.object("User", {
   identity: __t.identity(),
   name: __t.string(),
   service: __t.option(__t.string()),
   isAdmin: __t.bool(),
 });
-export type Person = __Infer<typeof Person>;
-
-export const SessionsPerWeek = __t.object("SessionsPerWeek", {});
-export type SessionsPerWeek = __Infer<typeof SessionsPerWeek>;
+export type User = __Infer<typeof User>;
 
 export const WeekTotal = __t.object("WeekTotal", {
   weekStart: __t.timestamp(),

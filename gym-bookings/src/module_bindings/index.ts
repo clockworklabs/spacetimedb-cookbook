@@ -44,33 +44,33 @@ import SetPersonaReducer from "./set_persona_reducer";
 // Import all table schema definitions
 import MyBookingsRow from "./my_bookings_table";
 import MyWorkScheduleRow from "./my_work_schedule_table";
-import PersonRow from "./person_table";
 import SessionsPerWeekRow from "./sessions_per_week_table";
+import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
-  person: __table(
+  user: __table(
     {
-      name: "person",
+      name: "user",
       indexes: [
         {
           accessor: "identity",
-          name: "person_identity_idx_btree",
+          name: "user_identity_idx_btree",
           algorithm: "btree",
           columns: ["identity"],
         },
       ],
       constraints: [
         {
-          name: "person_identity_key",
+          name: "user_identity_key",
           constraint: "unique",
           columns: ["identity"],
         },
       ],
     },
-    PersonRow,
+    UserRow,
   ),
   myBookings: __table(
     {

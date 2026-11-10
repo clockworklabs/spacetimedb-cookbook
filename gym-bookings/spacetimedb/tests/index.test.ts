@@ -97,33 +97,29 @@ describe("setPersona", () => {
   it("changes an existing persona when called again", () => {
     assign(owner, alice, "Alice", "Yoga");
 
-    expect(test.db.person.identity.find(identityOf(alice))?.service).toBe(
-      "Yoga",
-    );
-    expect([...test.db.person.iter()]).toHaveLength(5);
+    expect(test.db.user.identity.find(identityOf(alice))?.service).toBe("Yoga");
+    expect([...test.db.user.iter()]).toHaveLength(5);
   });
 
   it("refuses anyone who isn't an admin", () => {
     expect(() => assign(kris, kris, "Kris", undefined, true)).toThrow(
       "Only an admin can set a persona",
     );
-    expect(test.db.person.identity.find(identityOf(kris))?.isAdmin).toBe(false);
+    expect(test.db.user.identity.find(identityOf(kris))?.isAdmin).toBe(false);
   });
 
   it("refuses to let an admin remove their own admin rights", () => {
     expect(() => assign(owner, owner, "Owner", undefined, false)).toThrow(
       "You can't remove your own admin rights",
     );
-    expect(test.db.person.identity.find(identityOf(owner))?.isAdmin).toBe(true);
+    expect(test.db.user.identity.find(identityOf(owner))?.isAdmin).toBe(true);
   });
 
   it("lets a new admin set personas", () => {
     assign(owner, kris, "Kris", undefined, true);
     assign(kris, dana, "Dana", "Yoga");
 
-    expect(test.db.person.identity.find(identityOf(dana))?.service).toBe(
-      "Yoga",
-    );
+    expect(test.db.user.identity.find(identityOf(dana))?.service).toBe("Yoga");
   });
 });
 
