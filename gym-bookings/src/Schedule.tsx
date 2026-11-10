@@ -61,7 +61,11 @@ export function Schedule({
               {booked.map((a) => (
                 <li key={a.id} className="line tab just-written">
                   <span className="margin-time">
-                    {a.startsAt.toDate().getHours()}
+                    {formatDate(a.startsAt.toDate(), {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hourCycle: "h23",
+                    })}
                   </span>
                   <span className="line-text">
                     {nameOf(a)}: {service}

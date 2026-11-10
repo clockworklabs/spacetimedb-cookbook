@@ -234,7 +234,7 @@ section:first-child .day-heading {
 
 .margin-time {
   flex: none;
-  width: 56px;
+  width: 84px; /* fits "17:00" in Bodoni at 26px (~66px) with air before the text */
   margin-left: 16px;
   font-family: var(--serif);
   font-size: 26px;
