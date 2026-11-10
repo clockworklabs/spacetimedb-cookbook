@@ -221,6 +221,16 @@ describe("cancelAppointment", () => {
     expect(appointments()).toHaveLength(0);
   });
 
+  it("lets an admin cancel an appointment they aren't part of", () => {
+    const booked = book(kris, alice, THU_10AM);
+
+    test.withReducerTx(owner, (ctx) =>
+      cancelAppointment(ctx, { id: booked.id }),
+    );
+
+    expect(appointments()).toHaveLength(0);
+  });
+
   it("refuses anyone else", () => {
     const booked = book(kris, alice, THU_10AM);
 

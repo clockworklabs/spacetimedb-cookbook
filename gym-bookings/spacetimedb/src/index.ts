@@ -172,16 +172,20 @@ export const setPersona = spacetimedb.reducer(
 export const cancelAppointment = spacetimedb.reducer(
   { id: t.u64() },
   (ctx, { id }) => {
+    // Note: We send the same error when the appointment doesn't exist, and
+    // when you don't have permission to know it exists.
+    const notFound = () => new SenderError("Appointment not found");
+
     const existing = ctx.db.appointment.id.find(id);
-    if (
-      !existing ||
-      !(
-        ctx.sender.equals(existing.client) ||
-        ctx.sender.equals(existing.provider)
-      )
-    ) {
-      throw new SenderError("Appointment not found");
-    }
+    if (!existing) throw notFound();
+
+    const isAllowed =
+      ctx.sender.equals(existing.client) ||
+      ctx.sender.equals(existing.provider) ||
+      ctx.db.user.identity.find(ctx.sender)?.isAdmin;
+
+    if (!isAllowed) throw notFound();
+
     ctx.db.appointment.id.delete(id);
   },
 );
