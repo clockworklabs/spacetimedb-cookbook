@@ -65,7 +65,9 @@ export const createAppointment = spacetimedb.reducer(
     if (!ctx.db.user.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
+
     requireOnTheHour(startsAt);
+
     for (const booked of ctx.db.appointment.provider.filter(provider)) {
       if (booked.startsAt.toMillis() === startsAt.toMillis()) {
         throw new SenderError("That slot has been taken");
@@ -137,7 +139,9 @@ export const updateAppointment = spacetimedb.reducer(
     if (!existing || !ctx.sender.equals(existing.client)) {
       throw new SenderError("Appointment not found");
     }
+
     requireOnTheHour(startsAt);
+
     for (const booked of ctx.db.appointment.provider.filter(
       existing.provider,
     )) {
