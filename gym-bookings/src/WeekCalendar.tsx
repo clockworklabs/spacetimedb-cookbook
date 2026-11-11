@@ -145,7 +145,7 @@ export function WeekCalendar({
                       {booked ? (
                         <Booked
                           service={booked.service}
-                          name={booked.providerName}
+                          name={booked.providerName ?? "Someone"}
                           tone={toneFor(booked)}
                           isMoving={moving?.id === booked.id}
                           isPast={isPast}

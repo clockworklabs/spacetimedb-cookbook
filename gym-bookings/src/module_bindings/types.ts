@@ -23,8 +23,8 @@ export const AppointmentDetail = __t.object("AppointmentDetail", {
   client: __t.identity(),
   provider: __t.identity(),
   startsAt: __t.timestamp(),
-  clientName: __t.string(),
-  providerName: __t.string(),
+  clientName: __t.option(__t.string()),
+  providerName: __t.option(__t.string()),
   service: __t.option(__t.string()),
 });
 export type AppointmentDetail = __Infer<typeof AppointmentDetail>;

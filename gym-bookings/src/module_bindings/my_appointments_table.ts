@@ -15,7 +15,7 @@ export default __t.row({
   client: __t.identity(),
   provider: __t.identity(),
   startsAt: __t.timestamp().name("starts_at"),
-  clientName: __t.string().name("client_name"),
-  providerName: __t.string().name("provider_name"),
+  clientName: __t.option(__t.string()).name("client_name"),
+  providerName: __t.option(__t.string()).name("provider_name"),
   service: __t.option(__t.string()),
 });

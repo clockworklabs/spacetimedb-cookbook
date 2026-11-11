@@ -174,6 +174,13 @@ describe("createAppointment", () => {
     expect(() => book(kris, dana, THU_10AM)).toThrow("Provider not found");
   });
 
+  it("refuses a provider booking their own class", () => {
+    expect(() => book(alice, alice, THU_10AM)).toThrow(
+      "You can't book yourself",
+    );
+    expect(appointments()).toHaveLength(0);
+  });
+
   it("refuses a caller without an account", () => {
     expect(() => book(client("stranger", 6n), alice, THU_10AM)).toThrow(
       "You don't have an account yet",
@@ -415,11 +422,5 @@ describe("who can see whom", () => {
     assign(owner, kris, "Kristopher");
 
     expect(appointmentsOf(alice)[0].clientName).toBe("Kristopher");
-  });
-
-  it("lists an appointment once when you book a class of your own", () => {
-    const booked = book(alice, alice, THU_10AM);
-
-    expect(appointmentsOf(alice).map((a) => a.id)).toEqual([booked.id]);
   });
 });

@@ -39,8 +39,8 @@ export function Schedule({ name, tone }: { name: string; tone: number }) {
   const describe = (a: Appointment) => {
     const service = a.service ?? "Appointment";
     return identity && a.provider.isEqual(identity)
-      ? `${a.clientName}: ${service}`
-      : `${service} with ${a.providerName}`;
+      ? `${a.clientName ?? "Someone"}: ${service}`
+      : `${service} with ${a.providerName ?? "someone"}`;
   };
 
   return (

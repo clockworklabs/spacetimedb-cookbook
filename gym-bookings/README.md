@@ -41,23 +41,18 @@ export const myAppointments = spacetimedb.view(
   { name: "my_appointments", public: true },
   t.array(AppointmentDetail),
   (ctx) => {
-    const userFor = (identity: Identity) => ctx.db.user.identity.find(identity);
+    // You can't book yourself, so these two never overlap.
+    const mine = [
+      ...ctx.db.appointment.client.filter(ctx.sender),
+      ...ctx.db.appointment.provider.filter(ctx.sender),
+    ];
 
-    // Keyed by id, so a class you've booked with yourself appears once.
-    const mine = new Map(
-      [
-        ...ctx.db.appointment.client.filter(ctx.sender),
-        ...ctx.db.appointment.provider.filter(ctx.sender),
-      ].map((appointment) => [appointment.id, appointment]),
-    );
-
-    return [...mine.values()].map((appointment) => {
-      const provider = userFor(appointment.provider);
-      const client = userFor(appointment.client);
+    return mine.map((appointment) => {
+      const provider = ctx.db.user.identity.find(appointment.provider);
       return {
         ...appointment,
-        clientName: client?.name ?? "Someone",
-        providerName: provider?.name ?? "Someone",
+        clientName: ctx.db.user.identity.find(appointment.client)?.name,
+        providerName: provider?.name,
         service: provider?.service,
       };
     });

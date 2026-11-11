@@ -1,4 +1,4 @@
-import { Timestamp, type Identity } from "spacetimedb";
+import { Timestamp } from "spacetimedb";
 import { schema, table, t, SenderError } from "spacetimedb/server";
 
 ////////////////////////////////////////////////////////////
@@ -86,6 +86,9 @@ export const createAppointment = spacetimedb.reducer(
     if (!ctx.db.user.identity.find(provider)?.service) {
       throw new SenderError("Provider not found");
     }
+    if (provider.equals(ctx.sender)) {
+      throw new SenderError("You can't book yourself");
+    }
 
     requireOnTheHour(startsAt);
     requireNotPast(startsAt, ctx.timestamp);
@@ -133,35 +136,29 @@ const AppointmentDetail = t.row("AppointmentDetail", {
   client: t.identity(),
   provider: t.identity(),
   startsAt: t.timestamp(),
-  clientName: t.string(),
-  providerName: t.string(),
+  clientName: t.option(t.string()),
+  providerName: t.option(t.string()),
   service: t.option(t.string()),
 });
 
 // Everything you're part of, whether you booked it or you're running it.
-// A function rather than a query, because a query can't add columns from
-// another table. Two index lookups keep it to your own appointments.
+// Two index lookups keep it to your own appointments.
 export const myAppointments = spacetimedb.view(
   { name: "my_appointments", public: true },
   t.array(AppointmentDetail),
   (ctx) => {
-    const userFor = (identity: Identity) => ctx.db.user.identity.find(identity);
+    const mine = [
+      ...ctx.db.appointment.client.filter(ctx.sender),
+      ...ctx.db.appointment.provider.filter(ctx.sender),
+    ];
 
-    // Keyed by id, so a class you've booked with yourself appears once.
-    const mine = new Map(
-      [
-        ...ctx.db.appointment.client.filter(ctx.sender),
-        ...ctx.db.appointment.provider.filter(ctx.sender),
-      ].map((appointment) => [appointment.id, appointment]),
-    );
-
-    return [...mine.values()].map((appointment) => {
-      const provider = userFor(appointment.provider);
-      const client = userFor(appointment.client);
+    return mine.map((appointment) => {
+      const provider = ctx.db.user.identity.find(appointment.provider);
+      const client = ctx.db.user.identity.find(appointment.client);
       return {
         ...appointment,
-        clientName: client?.name ?? "Someone",
-        providerName: provider?.name ?? "Someone",
+        clientName: client?.name,
+        providerName: provider?.name,
         service: provider?.service,
       };
     });
