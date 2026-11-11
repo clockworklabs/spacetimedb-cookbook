@@ -11,8 +11,8 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  id: __t.u64().primaryKey(),
-  client: __t.identity(),
-  provider: __t.identity(),
-  startsAt: __t.timestamp().name("starts_at"),
+  identity: __t.identity().primaryKey(),
+  name: __t.string(),
+  service: __t.option(__t.string()),
+  isAdmin: __t.bool().name("is_admin"),
 });

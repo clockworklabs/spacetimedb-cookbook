@@ -10,9 +10,10 @@ import {
   createAppointment,
   deleteAppointment,
   init,
-  myBookings,
-  myWorkSchedule,
+  me,
+  myAppointments,
   updateAppointment,
+  providers,
   sessionsPerWeek,
   setPersona,
 } from "../src/index";
@@ -64,10 +65,27 @@ const book = (auth: TestAuth, provider: TestAuth, startsAt: Timestamp) => {
   return appointments().find((a) => !before.has(a.id))!;
 };
 
-const viewOf = (view: typeof myBookings, auth: TestAuth) =>
-  test.runQuery<ReturnType<typeof appointments>[number]>(
-    view(test.viewContext(auth)) as never,
-  );
+const appointmentsOf = (auth: TestAuth) =>
+  myAppointments(test.viewContext(auth)) as Array<
+    ReturnType<typeof appointments>[number] & {
+      clientName: string;
+      providerName: string;
+      service?: string;
+    }
+  >;
+
+type UserRow =
+  ReturnType<typeof test.db.user.iter> extends Iterable<infer R> ? R : never;
+
+const myName = (auth: TestAuth) =>
+  test
+    .runQuery<UserRow>(me(test.viewContext(auth)) as never)
+    .map((u) => u.name);
+
+const providerNames = () =>
+  (providers(test.anonymousViewContext()) as UserRow[])
+    .map((u) => u.name)
+    .sort();
 
 const assign = (
   by: TestAuth,
@@ -317,13 +335,11 @@ describe("views of the one table", () => {
   it("shows the same appointment to its client and its provider, and nobody else", () => {
     const booked = book(kris, alice, THU_10AM);
 
-    expect(viewOf(myBookings, kris).map((a) => a.id)).toEqual([booked.id]);
-    expect(viewOf(myWorkSchedule, alice).map((a) => a.id)).toEqual([booked.id]);
-    expect(viewOf(myWorkSchedule, kris).map((a) => a.id)).toEqual([booked.id]);
+    expect(appointmentsOf(kris).map((a) => a.id)).toEqual([booked.id]);
+    expect(appointmentsOf(alice).map((a) => a.id)).toEqual([booked.id]);
 
-    expect(viewOf(myBookings, alice)).toHaveLength(0);
-    expect(viewOf(myWorkSchedule, bob)).toHaveLength(0);
-    expect(viewOf(myBookings, dana)).toHaveLength(0);
+    expect(appointmentsOf(bob)).toHaveLength(0);
+    expect(appointmentsOf(dana)).toHaveLength(0);
   });
 
   it("counts sessions per Monday-to-Sunday week", () => {
@@ -349,7 +365,7 @@ describe("views of the one table", () => {
     const learning = book(alice, bob, MON_10AM);
 
     expect(
-      viewOf(myWorkSchedule, alice)
+      appointmentsOf(alice)
         .map((a) => a.id)
         .sort(),
     ).toEqual([teaching.id, learning.id].sort());
@@ -361,5 +377,49 @@ describe("views of the one table", () => {
     expect(weeks(owner)).toHaveLength(1);
     expect(weeks(kris)).toHaveLength(0);
     expect(weeks(alice)).toHaveLength(0);
+  });
+});
+
+describe("who can see whom", () => {
+  it("lists only the users who offer a class", () => {
+    expect(providerNames()).toEqual(["Alice", "Bob"]);
+  });
+
+  it("adds a user to the providers once they offer a class", () => {
+    assign(owner, dana, "Dana", "Yoga");
+
+    expect(providerNames()).toEqual(["Alice", "Bob", "Dana"]);
+  });
+
+  it("shows each user their own persona and nobody else's", () => {
+    expect(myName(kris)).toEqual(["Kris"]);
+    expect(myName(owner)).toEqual(["Owner"]);
+    expect(myName(client("stranger", 6n))).toEqual([]);
+  });
+
+  it("names both people on an appointment, for both of them", () => {
+    book(kris, alice, THU_10AM);
+
+    for (const auth of [kris, alice]) {
+      const [seen] = appointmentsOf(auth);
+      expect([seen.clientName, seen.providerName, seen.service]).toEqual([
+        "Kris",
+        "Alice",
+        "Gym class",
+      ]);
+    }
+  });
+
+  it("shows a renamed client under their new name", () => {
+    book(kris, alice, THU_10AM);
+    assign(owner, kris, "Kristopher");
+
+    expect(appointmentsOf(alice)[0].clientName).toBe("Kristopher");
+  });
+
+  it("lists an appointment once when you book a class of your own", () => {
+    const booked = book(alice, alice, THU_10AM);
+
+    expect(appointmentsOf(alice).map((a) => a.id)).toEqual([booked.id]);
   });
 });

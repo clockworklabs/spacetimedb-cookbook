@@ -18,11 +18,25 @@ export const Appointment = __t.object("Appointment", {
 });
 export type Appointment = __Infer<typeof Appointment>;
 
-export const MyBookings = __t.object("MyBookings", {});
-export type MyBookings = __Infer<typeof MyBookings>;
+export const AppointmentDetail = __t.object("AppointmentDetail", {
+  id: __t.u64(),
+  client: __t.identity(),
+  provider: __t.identity(),
+  startsAt: __t.timestamp(),
+  clientName: __t.string(),
+  providerName: __t.string(),
+  service: __t.option(__t.string()),
+});
+export type AppointmentDetail = __Infer<typeof AppointmentDetail>;
 
-export const MyWorkSchedule = __t.object("MyWorkSchedule", {});
-export type MyWorkSchedule = __Infer<typeof MyWorkSchedule>;
+export const Me = __t.object("Me", {});
+export type Me = __Infer<typeof Me>;
+
+export const MyAppointments = __t.object("MyAppointments", {});
+export type MyAppointments = __Infer<typeof MyAppointments>;
+
+export const Providers = __t.object("Providers", {});
+export type Providers = __Infer<typeof Providers>;
 
 export const SessionsPerWeek = __t.object("SessionsPerWeek", {});
 export type SessionsPerWeek = __Infer<typeof SessionsPerWeek>;
@@ -40,3 +54,4 @@ export const WeekTotal = __t.object("WeekTotal", {
   sessions: __t.u32(),
 });
 export type WeekTotal = __Infer<typeof WeekTotal>;
+

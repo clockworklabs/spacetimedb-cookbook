@@ -15,3 +15,4 @@ export type CreateAppointmentParams = __Infer<typeof CreateAppointmentReducer>;
 export type DeleteAppointmentParams = __Infer<typeof DeleteAppointmentReducer>;
 export type SetPersonaParams = __Infer<typeof SetPersonaReducer>;
 export type UpdateAppointmentParams = __Infer<typeof UpdateAppointmentReducer>;
+

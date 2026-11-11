@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Timestamp, type Identity } from "spacetimedb";
+import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
-import type { Appointment, User } from "./module_bindings/types";
+import type { AppointmentDetail as Appointment } from "./module_bindings/types";
 import { formatDate, startOfToday } from "./dates";
 import { useErrorBanner } from "./useErrorBanner";
 
@@ -22,35 +22,25 @@ const byDate = (appointments: readonly Appointment[]) => {
   return [...days];
 };
 
-export function Schedule({
-  name,
-  tone,
-  users,
-}: {
-  name: string;
-  tone: number;
-  users: readonly User[];
-}) {
+export function Schedule({ name, tone }: { name: string; tone: number }) {
   const [today] = useState(startOfToday);
 
   const [appointments, ready] = useTable(
-    tables.myWorkSchedule.where((a) =>
+    tables.myAppointments.where((a) =>
       a.startsAt.gte(Timestamp.fromDate(today)),
     ),
   );
   const deleteAppointment = useReducer(reducers.deleteAppointment);
   const [error, withErrorBanner] = useErrorBanner();
   const { identity } = useSpacetimeDB();
-  const userFor = (id: Identity) => users.find((u) => u.identity.isEqual(id));
 
   // Providers can take classes too, so a line is either someone coming to
   // see us, or us going to see someone else.
   const describe = (a: Appointment) => {
-    const provider = userFor(a.provider);
-    const service = provider?.service ?? "Appointment";
+    const service = a.service ?? "Appointment";
     return identity && a.provider.isEqual(identity)
-      ? `${userFor(a.client)?.name ?? "Someone"}: ${service}`
-      : `${service} with ${provider?.name ?? "someone"}`;
+      ? `${a.clientName}: ${service}`
+      : `${service} with ${a.providerName}`;
   };
 
   return (

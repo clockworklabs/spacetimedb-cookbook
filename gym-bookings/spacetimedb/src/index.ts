@@ -1,4 +1,4 @@
-import { Timestamp } from "spacetimedb";
+import { Timestamp, type Identity } from "spacetimedb";
 import { schema, table, t, SenderError } from "spacetimedb/server";
 
 ////////////////////////////////////////////////////////////
@@ -26,8 +26,10 @@ const requireNotPast = (startsAt: Timestamp, now: Timestamp) => {
 ////////////////////////////////////////////////////////////
 // STORAGE (Tables)
 ////////////////////////////////////////////////////////////
+// Private: nobody can list every user. The views below each expose
+// just the users a caller has a reason to see.
 const user = table(
-  { name: "user", public: true },
+  { name: "user" },
   {
     identity: t.identity().primaryKey(),
     name: t.string(),
@@ -104,24 +106,66 @@ export const createAppointment = spacetimedb.reducer(
 );
 
 ////////////////////////////////////////////////////////////
-// RETRIEVE: Three diffferent views. Three ways of looking at one table.
+// RETRIEVE: Who you can see.
 ////////////////////////////////////////////////////////////
-export const myBookings = spacetimedb.view(
-  { name: "my_bookings", public: true },
-  t.array(appointment.rowType),
-  (ctx) =>
-    ctx.from.appointment.where((appointment) =>
-      appointment.client.eq(ctx.sender),
-    ),
+
+// The directory of classes on offer, the same for everyone.
+export const providers = spacetimedb.anonymousView(
+  { name: "providers", public: true },
+  t.array(user.rowType),
+  (ctx) => [...ctx.db.user.iter()].filter((u) => u.service),
 );
 
-export const myWorkSchedule = spacetimedb.view(
-  { name: "my_work_schedule", public: true },
-  t.array(appointment.rowType),
-  (ctx) =>
-    ctx.from.appointment.where((appointment) =>
-      appointment.provider.eq(ctx.sender).or(appointment.client.eq(ctx.sender)),
-    ),
+// Your own persona, so the app knows your name and whether you're an admin.
+export const me = spacetimedb.view(
+  { name: "me", public: true },
+  t.array(user.rowType),
+  (ctx) => ctx.from.user.where((u) => u.identity.eq(ctx.sender)),
+);
+
+////////////////////////////////////////////////////////////
+// RETRIEVE: Appointments.
+////////////////////////////////////////////////////////////
+// An appointment as one of its people sees it: the row itself, plus the names
+// it only refers to by identity.
+const AppointmentDetail = t.row("AppointmentDetail", {
+  id: t.u64().primaryKey(),
+  client: t.identity(),
+  provider: t.identity(),
+  startsAt: t.timestamp(),
+  clientName: t.string(),
+  providerName: t.string(),
+  service: t.option(t.string()),
+});
+
+// Everything you're part of, whether you booked it or you're running it.
+// A function rather than a query, because a query can't add columns from
+// another table. Two index lookups keep it to your own appointments.
+export const myAppointments = spacetimedb.view(
+  { name: "my_appointments", public: true },
+  t.array(AppointmentDetail),
+  (ctx) => {
+    const userFor = (identity: Identity) => ctx.db.user.identity.find(identity);
+
+    // Keyed by id, so a class you've booked with yourself appears once.
+    const mine = new Map(
+      [
+        ...ctx.db.appointment.client.filter(ctx.sender),
+        ...ctx.db.appointment.provider.filter(ctx.sender),
+      ].map((appointment) => [appointment.id, appointment]),
+    );
+
+    return [...mine.values()].map((appointment) => {
+      const provider = userFor(appointment.provider);
+      const client = userFor(appointment.client);
+      return {
+        ...appointment,
+        clientName: client?.name ?? "Someone",
+        providerName: provider?.name ?? "Someone",
+        service: provider?.service,
+      };
+    });
+  },
 );
 
 const WeekTotal = t.row("WeekTotal", {

@@ -42,60 +42,43 @@ import UpdateAppointmentReducer from "./update_appointment_reducer";
 // Import all procedure arg schemas
 
 // Import all table schema definitions
-import MyBookingsRow from "./my_bookings_table";
-import MyWorkScheduleRow from "./my_work_schedule_table";
+import MeRow from "./me_table";
+import MyAppointmentsRow from "./my_appointments_table";
+import ProvidersRow from "./providers_table";
 import SessionsPerWeekRow from "./sessions_per_week_table";
-import UserRow from "./user_table";
 
 /** Type-only namespace exports for generated type groups. */
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
-  user: __table(
-    {
-      name: "user",
-      indexes: [
-        {
-          accessor: "identity",
-          name: "user_identity_idx_btree",
-          algorithm: "btree",
-          columns: ["identity"],
-        },
-      ],
-      constraints: [
-        {
-          name: "user_identity_key",
-          constraint: "unique",
-          columns: ["identity"],
-        },
-      ],
-    },
-    UserRow,
-  ),
-  myBookings: __table(
-    {
-      name: "my_bookings",
-      indexes: [],
-      constraints: [],
-    },
-    MyBookingsRow,
-  ),
-  myWorkSchedule: __table(
-    {
-      name: "my_work_schedule",
-      indexes: [],
-      constraints: [],
-    },
-    MyWorkScheduleRow,
-  ),
-  sessionsPerWeek: __table(
-    {
-      name: "sessions_per_week",
-      indexes: [],
-      constraints: [],
-    },
-    SessionsPerWeekRow,
-  ),
+  me: __table({
+    name: 'me',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MeRow),
+  myAppointments: __table({
+    name: 'my_appointments',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyAppointmentsRow),
+  providers: __table({
+    name: 'providers',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, ProvidersRow),
+  sessionsPerWeek: __table({
+    name: 'sessions_per_week',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, SessionsPerWeekRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -107,7 +90,8 @@ const reducersSchema = __reducers(
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */
-const proceduresSchema = __procedures();
+const proceduresSchema = __procedures(
+);
 
 /** The remote SpacetimeDB module schema, both runtime and type information. */
 const REMOTE_MODULE = {
@@ -124,13 +108,10 @@ const REMOTE_MODULE = {
 >;
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */
-export const tables: __QueryBuilder<typeof tablesSchema.schemaType> =
-  __makeQueryBuilder(tablesSchema.schemaType);
+export const tables: __QueryBuilder<typeof tablesSchema.schemaType> = __makeQueryBuilder(tablesSchema.schemaType);
 
 /** The reducers available in this remote SpacetimeDB module. */
-export const reducers = __convertToAccessorMap(
-  reducersSchema.reducersType.reducers,
-);
+export const reducers = __convertToAccessorMap(reducersSchema.reducersType.reducers);
 
 /** The procedures available in this remote SpacetimeDB module. */
 export const procedures = __convertToAccessorMap(proceduresSchema.procedures);
@@ -138,22 +119,16 @@ export const procedures = __convertToAccessorMap(proceduresSchema.procedures);
 /** The context type returned in callbacks for all possible events. */
 export type EventContext = __EventContextInterface<typeof REMOTE_MODULE>;
 /** The context type returned in callbacks for reducer events. */
-export type ReducerEventContext = __ReducerEventContextInterface<
-  typeof REMOTE_MODULE
->;
+export type ReducerEventContext = __ReducerEventContextInterface<typeof REMOTE_MODULE>;
 /** The context type returned in callbacks for subscription events. */
-export type SubscriptionEventContext = __SubscriptionEventContextInterface<
-  typeof REMOTE_MODULE
->;
+export type SubscriptionEventContext = __SubscriptionEventContextInterface<typeof REMOTE_MODULE>;
 /** The context type returned in callbacks for error events. */
 export type ErrorContext = __ErrorContextInterface<typeof REMOTE_MODULE>;
 /** The subscription handle type to manage active subscriptions created from a {@link SubscriptionBuilder}. */
 export type SubscriptionHandle = __SubscriptionHandleImpl<typeof REMOTE_MODULE>;
 
 /** Builder class to configure a new subscription to the remote SpacetimeDB instance. */
-export class SubscriptionBuilder extends __SubscriptionBuilderImpl<
-  typeof REMOTE_MODULE
-> {}
+export class SubscriptionBuilder extends __SubscriptionBuilderImpl<typeof REMOTE_MODULE> {}
 
 /** Builder class to configure a new database connection to the remote SpacetimeDB instance. */
 export class DbConnectionBuilder extends __DbConnectionBuilder<DbConnection> {}
@@ -162,11 +137,7 @@ export class DbConnectionBuilder extends __DbConnectionBuilder<DbConnection> {}
 export class DbConnection extends __DbConnectionImpl<typeof REMOTE_MODULE> {
   /** Creates a new {@link DbConnectionBuilder} to configure and connect to the remote SpacetimeDB instance. */
   static builder = (): DbConnectionBuilder => {
-    return new DbConnectionBuilder(
-      REMOTE_MODULE,
-      (config: __DbConnectionConfig<typeof REMOTE_MODULE>) =>
-        new DbConnection(config),
-    );
+    return new DbConnectionBuilder(REMOTE_MODULE, (config: __DbConnectionConfig<typeof REMOTE_MODULE>) => new DbConnection(config));
   };
 
   /** Creates a new {@link SubscriptionBuilder} to configure a subscription to the remote SpacetimeDB instance. */
@@ -174,3 +145,4 @@ export class DbConnection extends __DbConnectionImpl<typeof REMOTE_MODULE> {
     return new SubscriptionBuilder(this);
   };
 }
+

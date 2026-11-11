@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Timestamp } from "spacetimedb";
 import { tables, reducers } from "./module_bindings";
 import { useReducer, useSpacetimeDB, useTable } from "spacetimedb/react";
-import type { Appointment, User } from "./module_bindings/types";
+import type {
+  AppointmentDetail as Appointment,
+  User,
+} from "./module_bindings/types";
 import {
   HOURS,
   addDays,
@@ -25,9 +28,11 @@ export function WeekCalendar({
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   const now = useNow();
 
-  const { isActive: connected } = useSpacetimeDB();
+  const { isActive: connected, identity } = useSpacetimeDB();
+  // Just the classes you've booked. Ones you're running are on your schedule.
   const [appointments, ready] = useTable(
-    tables.myBookings
+    tables.myAppointments
+      .where((a) => a.client.eq(identity!))
       .where((a) => a.startsAt.gte(Timestamp.fromDate(monday)))
       .where((a) => a.startsAt.lt(Timestamp.fromDate(addDays(monday, 7)))),
   );
@@ -39,8 +44,8 @@ export function WeekCalendar({
   const [chosenProvider, setChosenProvider] = useState<string | null>(null);
   const [moving, setMoving] = useState<Appointment | null>(null);
 
-  const providerFor = (appointment: Appointment) =>
-    providers.find((p) => p.identity.isEqual(appointment.provider));
+  const toneFor = (appointment: Appointment) =>
+    providers.findIndex((p) => p.identity.isEqual(appointment.provider));
   const selected =
     providers.find((p) => p.identity.toHexString() === chosenProvider) ??
     providers[0];
@@ -139,9 +144,9 @@ export function WeekCalendar({
                       )}
                       {booked ? (
                         <Booked
-                          service={providerFor(booked)?.service}
-                          name={providerFor(booked)?.name}
-                          tone={providers.indexOf(providerFor(booked)!)}
+                          service={booked.service}
+                          name={booked.providerName}
+                          tone={toneFor(booked)}
                           isMoving={moving?.id === booked.id}
                           isPast={isPast}
                           onMove={() =>

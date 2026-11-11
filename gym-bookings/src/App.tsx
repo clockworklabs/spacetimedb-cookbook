@@ -8,13 +8,13 @@ import "./App.css";
 
 function App() {
   const { isActive: connected, identity } = useSpacetimeDB();
-  const [users, ready] = useTable(tables.user);
+  const [[me], ready] = useTable(tables.me);
+  const [providerRows] = useTable(tables.providers);
   const [view, setView] = useState(location.hash.slice(1));
 
-  const me = users.find((p) => identity && p.identity.isEqual(identity));
-  const providers = users
-    .filter((p) => p.service)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const providers = [...providerRows].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
   const views = me?.isAdmin
     ? ["week", "schedule", "admin"]
     : ["week", "schedule"];
@@ -80,8 +80,7 @@ function App() {
           {current === "schedule" && (
             <Schedule
               name={me.name}
-              tone={providers.indexOf(me)}
-              users={users}
+              tone={providers.findIndex((p) => p.identity.isEqual(me.identity))}
             />
           )}
           {current === "admin" && <AdminGraph />}
