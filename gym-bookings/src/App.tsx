@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSpacetimeDB, useTable } from "spacetimedb/react";
 import { tables } from "./module_bindings";
 import { WeekCalendar } from "./WeekCalendar";
@@ -19,6 +19,11 @@ function App() {
     ? ["week", "schedule", "admin"]
     : ["week", "schedule"];
   const current = views.includes(view) ? view : "week";
+  const viewLabel = capitalise(current);
+
+  useEffect(() => {
+    document.title = ["Gym", me?.name, viewLabel].filter(Boolean).join(" - ");
+  }, [me?.name, viewLabel]);
 
   return (
     <main className="desk">
@@ -59,7 +64,7 @@ function App() {
                 aria-current={v === current ? "page" : undefined}
                 onClick={() => setView(v)}
               >
-                {v[0].toUpperCase() + v.slice(1)}
+                {capitalise(v)}
               </a>
             ))}
           </nav>
@@ -106,6 +111,10 @@ function App() {
       </p>
     </main>
   );
+}
+
+function capitalise(s: string) {
+  return s[0].toUpperCase() + s.slice(1);
 }
 
 export default App;
