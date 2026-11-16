@@ -1,0 +1,25 @@
+{
+  "name": "todo-list",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "spacetimedb": "2.13.*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "~5.6.2",
+    "vite": "^7.1.5",
+    "vitest": "^5.0.5"
+  }
+}

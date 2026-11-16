@@ -1,0 +1,21 @@
+{
+  "name": "todo-list",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "spacetime build",
+    "publish": "spacetime publish",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "spacetimedb": "2.13.*"
+  },
+  "devDependencies": {
+    "typescript": "~5.6.2",
+    "vitest": "^5.0.5"
+  },
+  "type": "module"
+}
