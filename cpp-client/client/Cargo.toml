@@ -1,0 +1,13 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "stdb_bridge"
+crate-type = ["staticlib", "cdylib" ]
+
+[dependencies]
+anyhow = "1.0.98"
+cxx = "1.0.157"
+spacetimedb-sdk = "1.1.1"

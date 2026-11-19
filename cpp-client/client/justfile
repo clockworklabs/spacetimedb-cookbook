@@ -1,0 +1,14 @@
+_default:
+    @just -l
+
+generate:
+  spacetime generate -o ./src/module_bindings/ -l rust -p ../server/
+
+build:
+  @cargo build -r
+  @cxxbridge src/lib.rs > stdb.hpp
+  @g++ -Wall -Oz -o client client.cpp ./target/release/libstdb_bridge.a -lcrypto -lssl
+
+run:
+  @just build
+  ./client
