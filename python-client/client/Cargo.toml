@@ -1,0 +1,13 @@
+[package]
+name = "client"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "stdb"
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1.0.98"
+pyo3 = { version = "0.24.2", features = ["auto-initialize", "extension-module", "abi3", "abi3-py37", "anyhow"] }
+spacetimedb-sdk = "1.1.1"
